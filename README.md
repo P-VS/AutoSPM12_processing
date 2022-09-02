@@ -1,6 +1,6 @@
 # UZB-fmr-processing-scripts
 
-This repository contains some scripts used at UZ Brussel to standardise, optimise and automate the processing single echo and multi echo fMRI data. The python and Matlab scripts can be used independently from each other.
+This repository contains some scripts used at UZ Brussel to standardise, optimise and automate the processing single echo and multi-echo fMRI data. The python and Matlab scripts can be used independently from each other.
 
 The scripts comes without any warrant for the results. You may use them at your own responsibility. I only share them to help and inspire others with their own processing scripts.
 
