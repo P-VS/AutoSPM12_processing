@@ -1,0 +1,234 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mar 2020
+
+@author: dr. Peter Van Schuerbeek
+"""
+
+"""
+
+Script to do cropping and bbrain extraction on a T1 image
+
+Preparation:
+* Organise the data in BIDS format
+    - datpath
+        -sub-##
+            -ses-00# (if your experiment contains multiple session per subject)
+                -anat: containes the anatomical data (3D T1)
+                    Files: sub-##_T1w.nii and sub-##_T1w.json
+            
+* IMPORTANT: !! Look at your data before starting any analysis. It makes no sense to lose time in trying to process bad data !!
+
+"""
+
+import warnings
+import sys
+import os
+import shutil
+
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+
+from nipype import Workflow, Node, IdentityInterface
+from nipype.interfaces.fsl.utils import RobustFOV
+from nipype.interfaces.fsl.preprocess import BET, FAST
+from nipype.interfaces.io import SelectFiles
+from nipype.interfaces.utility import Function
+
+def set_preprocessing_parameters():
+
+    """
+    Give the basic input information of your data
+    """
+    pp_params = {}
+    
+    pp_params['datpath'] = '/Volumes/LaCie/UZ_Brussel/DeNN_motor/Data/'  #No spaties in the path name
+    
+    first_sub = 2
+    last_sub = 5
+    pp_params['sublist'] = list(range(first_sub,last_sub+1)) #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
+    
+    pp_params['nsessions'] = [1] #list should be in sub-ii/ses-00j
+    
+    pp_params['do_segment'] = True
+    
+    return pp_params
+
+
+"""
+BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
+---------------------------------------------------------------------------------------
+"""
+
+def save_preproc_files(in_file,save_dir):
+    
+    import os
+    import shutil
+    
+    if len(in_file[0])>len(in_file):
+        for i in range(0,len(in_file)):
+            saved_file = os.path.join(save_dir,os.path.basename(in_file[i]))
+            shutil.copy(in_file[i],saved_file)
+    else:        
+        filen = os.path.basename(in_file)
+        if '_ROI.nii' in filen:
+            filen = filen.split('_ROI')[0]
+            filen = filen+'_Crop_1'
+            
+        saved_file = os.path.join(save_dir,filen+'.nii')
+        shutil.copy(in_file,saved_file)
+    
+    return saved_file
+
+"""
+---------------------------------------------------------------------------------------
+"""
+
+
+def main():
+    
+    pp_params = set_preprocessing_parameters()
+    
+    datpath = pp_params['datpath']
+
+    sublist = pp_params['sublist']
+    
+    nsessions = pp_params['nsessions']
+    
+    do_segment = pp_params['do_segment']
+    
+    print('Start preprocessing of the data')
+            
+    sesstring = list()
+    
+    do_segmentation = False
+    do_normalization = False
+    
+    for j in nsessions:
+        sesstring.append('ses-00'+str(j))
+        
+        substringslist = list()
+
+        ferror = 0
+            
+        for i in sublist:
+    
+            if i<10:
+                substring = 'sub-0'+str(i)
+            else:
+                substring = 'sub-'+str(i)
+                
+            substringslist.append(substring)
+        
+            subpath = os.path.join(datpath,substring)
+
+            subpath = os.path.join(subpath,'ses-00'+str(j))
+            subanadat = os.path.join(subpath,'anat',substring+'_T1w.nii')
+            
+            """
+            Check the existence of all files
+            """
+        
+            if not os.path.isdir(subpath):
+                print('Directory '+subpath+' not found.')
+                ferror = ferror+1
+        
+            if not os.path.isfile(subanadat):
+                print('File '+subanadat+' not found.')
+                ferror = ferror+1
+      
+    if ferror == 0:
+        print('Check of the data ok')
+        
+        templates = {}
+
+        templates['anat'] = os.path.join(datpath,'{substring}','{sesstring}','anat','{substring}'+'_T1w.nii')       
+        templates['save_anat_dir'] = os.path.join(datpath,'{substring}','{sesstring}','anat')
+                
+        """
+        Create a preprocessing workflow and select input files
+        """
+        print('Make workflow step: initiate')
+        
+        infosource = Node(IdentityInterface(fields=['substring','sesstring']),name='infosource')
+    
+        infosource.iterables = [('substring', substringslist),('sesstring',sesstring)]
+    
+        preproc = Workflow(base_dir=datpath,name='preproc')
+        
+        selectfiles = Node(SelectFiles(templates,base_directory=datpath),name="selectfiles")
+        
+        preproc.connect(infosource, 'substring', selectfiles, 'substring')
+        preproc.connect(infosource, 'sesstring', selectfiles, 'sesstring')
+                
+        """
+        FSL Crop T1 image
+        """
+        print('Make workflow step: crop T1')
+        
+        robustFOV_node = Node(RobustFOV(output_type='NIFTI'),name='RobustFOV')
+        
+        save_crop_node = Node(interface=Function(input_names=['in_file','save_dir'],
+                                                output_names=['saved_file'],
+                                                function=save_preproc_files),name='save_crop')
+        
+        preproc.connect([(selectfiles,robustFOV_node,[('anat','in_file')]),
+                         (robustFOV_node,save_crop_node,[('out_roi','in_file')]),
+                         (selectfiles,save_crop_node,[('save_anat_dir','save_dir')])
+                         ])
+          
+        if do_segment: 
+            """
+            FSL BET
+            """
+            print('Step: BET')
+            
+            bet_anat_node = Node(BET(remove_eyes=False, output_type='NIFTI'),name='BET_anat')
+            
+            save_bet_node = Node(interface=Function(input_names=['in_file','save_dir'],
+                                                    output_names=['saved_file'],
+                                                    function=save_preproc_files),name='save_bet')
+            
+            preproc.connect([(save_crop_node,bet_anat_node,[('saved_file','in_file')]),
+                             (bet_anat_node,save_bet_node,[('out_file','in_file')]),
+                             (selectfiles,save_bet_node,[('save_anat_dir','save_dir')])
+                             ])
+    
+            """
+            FSL FAST segmentation
+            """
+            print('Step: segmentation')
+            
+            fast_node = Node(FAST(img_type=1, 
+                                  bias_iters=4,
+                                  bias_lowpass=20,
+                                  iters_afterbias=2,
+                                  number_classes=3,
+                                  output_type='NIFTI'),name='FAST')
+            
+            save_seg_node = Node(interface=Function(input_names=['in_file','save_dir'],
+                                                    output_names=['saved_file'],
+                                                    function=save_preproc_files),name='save_seg')
+    
+            preproc.connect([(bet_anat_node,fast_node,[('out_file','in_files')]),
+                             (fast_node,save_seg_node,[('partial_volume_files','in_file')]),
+                             (selectfiles,save_seg_node,[('save_anat_dir','save_dir')])
+                             ])
+     
+        """
+        Run the workflow
+        """
+    
+        print('')
+        print('Start preprocessing')
+        print('')
+        #preproc.run()
+        preproc.run(plugin='MultiProc')
+        print('Done preprocessing')
+        print('')
+    
+        shutil.rmtree(os.path.join(datpath,'preproc'), ignore_errors=True)
+                    
+if __name__ == '__main__':
+    main()
