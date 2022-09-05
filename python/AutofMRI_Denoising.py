@@ -40,18 +40,22 @@ def set_denoising_parameters():
     """
     an_params = {}
     
-    an_params['datpath'] = '/Volumes/LaCie/UZ_Brussel/'  #No spaties in the path name
+    an_params['datpath'] = '/Volumes/LaCie/UZ_Brussel/Labo_fMRI/Full_dataset'  #No spaties in the path name
     
-    first_sub = 1
-    last_sub = 5
-    an_params['sublist'] = [1] #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
+    first_sub = 2
+    last_sub = 20
+    an_params['sublist'] = list(range(first_sub,last_sub+1)) #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
     
     an_params['nsessions'] = [1] #nsessions>0 data should be in sub-ii/ses-00j
-    an_params['ME_fMRI'] = True
+    an_params['ME_fMRI'] = False
     
-    an_params['task'] = [''] #text string that is in between task- and _bold in your fMRI nifti filename
+    an_params['task'] = ['affect_run-1'] #text string that is in between task- and _bold in your fMRI nifti filename
     
     an_params['preproc_folder'] = 'preproc_func'
+    
+    an_params['func_prefix'] = 'wuae' #unsmoothed funcfile = func_prefix + sub-...
+    an_params['anat_postfix'] = 'Crop_1' #anatfile = sub-..._T1w_ +anat_postfix+.nii
+    an_params['segtool'] = 'fsl'  #segmentation done in fsl or spm
     
     an_params['rp_derivatives'] = True
     an_params['censoring'] = False
@@ -613,6 +617,30 @@ def sum_mean_denoiefunc(funcfile,dfuncfile):
 ---------------------------------------------------------------------------------------
 """
 
+def make_epi_mask(in_file):
+    
+    import os
+    
+    import nibabel as nib
+    import numpy as np
+    
+    fmridat = nib.load(in_file)
+    fmrimask = np.mean(fmridat.get_data(),axis=3)
+    fmrimask[fmrimask<0.05*np.max(fmrimask)]  = 0
+    fmrimask[fmrimask>0] = 1
+    
+    maskim = nib.Nifti1Image(fmrimask,fmridat.affine,fmridat.header)
+    
+    mask =  os.path.join(os.getcwd(),'mask_'+os.path.basename(in_file))
+    
+    nib.save(maskim,mask)
+    
+    return mask
+
+"""
+---------------------------------------------------------------------------------------
+"""
+
 def main():
                    
     """
@@ -630,6 +658,13 @@ def main():
     
     preproc_folder = an_params['preproc_folder']
     
+    func_prefix = an_params['func_prefix']
+    rp_prefix = func_prefix.split('r')[-1]
+    rp_prefix = 'rp_'+rp_prefix.split('u')[-1]
+    
+    anat_postfix = an_params['anat_postfix']
+    segtool = an_params['segtool']
+     
     rp_derivatives = an_params['rp_derivatives']
     censoring = an_params['censoring']
     CompCor = an_params['CompCor']
@@ -689,25 +724,22 @@ def main():
                 if not an_params['ME_fMRI']:
                     jsonf = os.path.join(subpath,'func',substring+'_task-'+task[k]+'_bold.json')
                     
-                    subfmridat = os.path.join(subfmridir,'wraut'+substring+'_task-'+task[k]+'_bold.nii')
-                    ssubfmridat = os.path.join(subfmridir,'swraut'+substring+'_task-'+task[k]+'_bold.nii')
-                    subrpdat = os.path.join(subfmridir,'rp_t'+substring+'_task-'+task[k]+'_bold.txt')
-                    
-                    outldat = os.path.join(subfmridir,'art.ut'+substring+'_task-'+task[k]+'_bold_outliers.txt')
-                    maskdat = os.path.join(subfmridir,'mask_swraut'+substring+'_task-'+task[k]+'_bold.nii')
+                    subfmridat = os.path.join(subfmridir,func_prefix+substring+'_task-'+task[k]+'_bold.nii')
+                    subrpdat = os.path.join(subfmridir,rp_prefix+substring+'_task-'+task[k]+'_bold.txt')
                 else:
                     jsonf = os.path.join(subpath,'func',substring+'_task-'+task[k]+'_bold_e1.json')
-                    subfmridat = os.path.join(subfmridir,'wraucet'+substring+'_task-'+task[k]+'_bold.nii')
-                    ssubfmridat = os.path.join(subfmridir,'swraucet'+substring+'_task-'+task[k]+'_bold.nii')
-                    subrpdat = os.path.join(subfmridir,'rp_cet'+substring+'_task-'+task[k]+'_bold.txt')
-                    
-                    outldat = os.path.join(subfmridir,'art.ucet'+substring+'_task-'+task[k]+'_bold_outliers.txt')
-                    maskdat = os.path.join(subfmridir,'mask_swraucet'+substring+'_task-'+task[k]+'_bold.nii')
+                    subfmridat = os.path.join(subfmridir,func_prefix+substring+'_task-'+task[k]+'_bold.nii')
+                    subrpdat = os.path.join(subfmridir,rp_prefix+substring+'_task-'+task[k]+'_bold.txt')
    
-                subanadat = os.path.join(subanadir,'wr'+substring+'_T1w_ROI.nii')
-                subcbfdat = os.path.join(subanadir,'wr'+substring+'_T1w_ROI_brain_pve_0.nii')
-                subgmdat = os.path.join(subanadir,'wr'+substring+'_T1w_ROI_brain_pve_1.nii')
-                subwmdat = os.path.join(subanadir,'wr'+substring+'_T1w_ROI_brain_pve_2.nii')
+                subanadat = os.path.join(subanadir,'wr'+substring+'_T1w_'+anat_postfix+'.nii')
+                if 'fsl' in segtool:
+                    subcbfdat = os.path.join(subanadir,'w'+substring+'_T1w_'+anat_postfix+'_brain_pve_0.nii')
+                    subgmdat = os.path.join(subanadir,'w'+substring+'_T1w_'+anat_postfix+'_brain_pve_1.nii')
+                    subwmdat = os.path.join(subanadir,'w'+substring+'_T1w_'+anat_postfix+'_brain_pve_2.nii')
+                if 'spm' in segtool:
+                    subcbfdat = os.path.join(subanadir,'wc3'+substring+'_T1w_'+anat_postfix+'.nii')
+                    subgmdat = os.path.join(subanadir,'wc1'+substring+'_T1w_'+anat_postfix+'.nii')
+                    subwmdat = os.path.join(subanadir,'wc2'+substring+'_T1w_'+anat_postfix+'.nii')
                 
                 """
                 Check the existence of all files
@@ -738,24 +770,15 @@ def main():
                 if not os.path.isfile(subfmridat):
                     print('File '+subfmridat+' not found.')
                     ferror = ferror+1
-                if not os.path.isfile(ssubfmridat):
-                    print('File '+ssubfmridat+' not found.')
-                    ferror = ferror+1
                 if not os.path.isfile(subrpdat):
                     print('File '+subrpdat+' not found.')
                     ferror = ferror+1
                 if not os.path.isfile(jsonf):
                     print('File '+jsonf+' not found.')
                     ferror = ferror+1
-                if not os.path.isfile(outldat):
-                    print('File '+outldat+' not found.')
-                    ferror = ferror+1
-                if not os.path.isfile(maskdat):
-                    print('File '+maskdat+' not found.')
-                    ferror = ferror+1
                 
                 if do_ICA_aroma:
-                    save_melodic_dir = os.path.join(subpath,'melodic_'+'wraut'+substring+'_task-'+task[k]+'_bold')
+                    save_melodic_dir = os.path.join(subpath,'melodic_'+func_prefix+substring+'_task-'+task[k]+'_bold')
                     
                     if not os.path.isdir(save_melodic_dir) \
                         or not os.path.isfile(os.path.join(save_melodic_dir,'melodic_IC.nii')):
@@ -772,33 +795,30 @@ def main():
     if ferror == 0:
             
         templates = {}
-        templates['anat'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wr'+'{substring}'+'_T1w_ROI.nii')
-        templates['csf'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wr'+'{substring}'+'_T1w_ROI_brain_pve_0.nii')
-        templates['gm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wr'+'{substring}'+'_T1w_ROI_brain_pve_1.nii')
-        templates['wm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wr'+'{substring}'+'_T1w_ROI_brain_pve_2.nii')
+        templates['anat'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wr'+'{substring}'+'_T1w_'+anat_postfix+'.nii')
+        if 'fsl' in segtool:
+            templates['csf'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','w'+'{substring}'+'_T1w_'+anat_postfix+'_brain_pve_0.nii')
+            templates['gm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','w'+'{substring}'+'_T1w_'+anat_postfix+'_brain_pve_1.nii')
+            templates['wm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','w'+'{substring}'+'_T1w_'+anat_postfix+'_brain_pve_2.nii')
+        if 'spm' in segtool:
+            templates['csf'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wc3'+'{substring}'+'_T1w_'+anat_postfix+'.nii')
+            templates['gm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wc1'+'{substring}'+'_T1w_'+anat_postfix+'.nii')
+            templates['wm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wc2'+'{substring}'+'_T1w_'+anat_postfix+'.nii')
         
         if not an_params['ME_fMRI']:
             templates['json'] = os.path.join(datpath,'{substring}','{sesstring}','func','{substring}'+'_task-'+'{task}'+'_bold.json')
             
-            templates['func'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,'wraut'+'{substring}'+'_task-'+'{task}'+'_bold.nii')
-            #templates['sfunc'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,'swraut'+'{substring}'+'_task-'+'{task}'+'_bold.nii')
-            templates['rp_file'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,'rp_t'+'{substring}'+'_task-'+'{task}'+'_bold.txt')
-            
-            templates['outliers'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,'art.ut'+'{substring}'+'_task-'+'{task}'+'_bold_outliers.txt')
-            templates['mask'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,'mask_swraut'+'{substring}'+'_task-'+'{task}'+'_bold.nii')
+            templates['func'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,func_prefix+'{substring}'+'_task-'+'{task}'+'_bold.nii')
+            templates['rp_file'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,rp_prefix+'{substring}'+'_task-'+'{task}'+'_bold.txt')
      
         else:
             templates['json'] = os.path.join(datpath,'{substring}','{sesstring}','func','{substring}'+'_task-'+'{task}'+'_bold_e1.json')
             
-            templates['func'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,'wraucet'+'{substring}'+'_task-'+'{task}'+'_bold.nii')
-            #templates['sfunc'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,'swraucet'+'{substring}'+'_task-'+'{task}'+'_bold.nii')
-            templates['rp_file'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,'rp_cet'+'{substring}'+'_task-'+'{task}'+'_bold.txt')
-     
-            templates['outliers'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,'art.ucet'+'{substring}'+'_task-'+'{task}'+'_bold_outliers.txt')
-            templates['mask'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,'mask_swraucet'+'{substring}'+'_task-'+'{task}'+'_bold.nii')
+            templates['func'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,func_prefix+'{substring}'+'_task-'+'{task}'+'_bold.nii')
+            templates['rp_file'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,rp_prefix+'{substring}'+'_task-'+'{task}'+'_bold.txt')
         
         if do_ICA_aroma:
-            templates['melodic_dir'] = os.path.join(datpath,'{substring}','{sesstring}','melodic_'+'wraut'+'{substring}'+'_task-'+'{task}'+'_bold')
+            templates['melodic_dir'] = os.path.join(datpath,'{substring}','{sesstring}','melodic_'+func_prefix+'{substring}'+'_task-'+'{task}'+'_bold')
             
         templates['save_den_dir'] = os.path.join(datpath,'{substring}','{sesstring}',an_params['denoise_folder'])
                         
@@ -831,6 +851,15 @@ def main():
         read_tr.inputs.parameter = "RepetitionTime"
         
         preproc.connect([(selectfiles,read_tr,[('json','jsonfile')])])
+        
+        """
+        Make mask
+        """
+        mask_node = Node(interface=Function(input_names=['in_file'],
+                                            output_names=['mask'],
+                                            function=make_epi_mask),name='make_mask')
+        
+        preproc.connect([(selectfiles,mask_node,[('func','in_file')])])
                   
         """
         Motion derivative
@@ -858,6 +887,30 @@ def main():
         Censoring
         """
         if censoring:
+            ad_node = Node(ArtifactDetect(mask_type = 'spm_global',
+                                          norm_threshold = 1,
+                                          parameter_source = 'SPM',
+                                          zintensity_threshold = 3
+                                          ),name='artdect')
+        
+            save_ad_node = Node(interface=Function(input_names=['in_file','save_dir'],
+                                                   output_names=['saved_file'],
+                                                   function=save_preproc_files),name='save_ad')
+            
+            save_outl_node = Node(interface=Function(input_names=['in_file','save_dir'],
+                                                     output_names=['saved_file'],
+                                                     function=save_preproc_files),name='save_outliers')
+            
+            preproc.connect([(selectfiles,ad_node,[('rp_file','realignment_parameters')]),
+                             (selectfiles,ad_node,[('func','realigned_files')])
+                             ])
+                
+            preproc.connect([(ad_node,save_ad_node,[('plot_files','in_file')]),
+                             (selectfiles,save_ad_node,[('save_den_dir','save_dir')]),
+                             (ad_node,save_outl_node,[('outlier_files','in_file')]),
+                             (selectfiles,save_outl_node,[('save_den_dir','save_dir')])
+                             ])
+        
                 
             censconf_node = Node(interface=Function(input_names=['outlier_file','tdim'],
                                                     output_names=['confounds_file'],
@@ -875,7 +928,7 @@ def main():
                                                      function=save_preproc_files),name='save_cens')
             
             if rp_derivatives:
-                preproc.connect([(selectfiles,censconf_node,[('outliers','outlier_file')]),
+                preproc.connect([(ad_node,censconf_node,[('outlier_files','outlier_file')]),
                                  (conf_names,concat_censor_node,[('censor_confounds','fmriname')]),
                                  (exrp_node,concat_censor_node,[('rp_file','file_1')]),
                                  (censconf_node,concat_censor_node,[('confounds_file','file_2')]),
@@ -883,7 +936,7 @@ def main():
                                  (selectfiles,save_cens_node,[('save_den_dir','save_dir')])
                                 ])
             else:
-                preproc.connect([(selectfiles,censconf_node,[('outliers','outlier_file')]),
+                preproc.connect([(ad_node,censconf_node,[('outlier_files','outlier_file')]),
                                  (conf_names,concat_censor_node,[('censor_confounds','fmriname')]),
                                  (selectfiles,concat_censor_node,[('rp_file','file_1')]),
                                  (censconf_node,concat_censor_node,[('confounds_file','file_2')]),
@@ -981,12 +1034,12 @@ def main():
             else:
                 preproc.connect([(selectfiles,ica_aroma_node,[('melodic_dir','mel_dir')])])
                 
-            preproc.connect([(selectfiles,ica_aroma_node,[('func','func'),#('sfunc','func'),
-                                                          ('mask','mask'),
+            preproc.connect([(selectfiles,ica_aroma_node,[('func','func'),
                                                           ('csf','csf_file'),
                                                           ('gm','gm_file'),
                                                           ('wm','wm_file')
                                                          ]),
+                             (mask_node,ica_aroma_node,[('mask','mask')]),
                              (read_tr,ica_aroma_node,[('value','t_r')]),
                              (head_mask_node,ica_aroma_node,[('head_mask','head_mask')]),
                              (ica_aroma_node,save_confIC_node,[('confounds_ICs','in_file')]),
@@ -1037,8 +1090,8 @@ def main():
                                                        output_names=['saved_file'],
                                                        function=save_preproc_files),name='save_ica_aroma')
             
-            preproc.connect([(selectfiles,icasub_node,[('func','func'),#('sfunc','func'),
-                                                       ('mask','mask')]),
+            preproc.connect([(selectfiles,icasub_node,[('func','func')]),
+                             (mask_node,icasub_node,[('mask','mask')]),
                              (ica_aroma_node,icasub_node,[('confounds_ICs','confounds_ICs')]),
                              (icasub_node,save_icasub_node,[('denfunc','in_file')]),
                              (selectfiles,save_icasub_node,[('save_den_dir','save_dir')])
@@ -1075,7 +1128,7 @@ def main():
                              ])
             
             if concat_AROMA_CompCor:
-                preproc.connect([(selectfiles,regconf_node,[('mask','mask')]),
+                preproc.connect([(mask_node,regconf_node,[('mask','mask')]),
                                  (concat_aroma_node,regconf_node,[('confounds_file','confounds')]),
                                  (selectfiles,sum_meandn_node,[('sfunc','funcfile')]),
                                  (regconf_node,sum_meandn_node,[('res_func','dfuncfile')]),
@@ -1083,7 +1136,7 @@ def main():
                                  (selectfiles,save_meandn_node,[('save_den_dir','save_dir')])
                                  ])
             elif do_ICA_aroma:
-                preproc.connect([(selectfiles,regconf_node,[('mask','mask')]),
+                preproc.connect([(mask_node,regconf_node,[('mask','mask')]),
                                  (icareg_node,regconf_node,[('confounds_file','confounds')]),
                                  (selectfiles,sum_meandn_node,[('func','funcfile')]),#(selectfiles,sum_meandn_node,[('sfunc','funcfile')]),
                                  (regconf_node,sum_meandn_node,[('res_func','dfuncfile')]),
@@ -1091,7 +1144,7 @@ def main():
                                  (selectfiles,save_meandn_node,[('save_den_dir','save_dir')])
                                  ])
             elif CompCor:
-                preproc.connect([(selectfiles,regconf_node,[('mask','mask')]),
+                preproc.connect([(mask_node,regconf_node,[('mask','mask')]),
                                  (concat_compcor_node,regconf_node,[('confounds_file','confounds')]),
                                  (selectfiles,sum_meandn_node,[('func','funcfile')]),#(selectfiles,sum_meandn_node,[('sfunc','funcfile')]),
                                  (regconf_node,sum_meandn_node,[('res_func','dfuncfile')]),
@@ -1100,7 +1153,7 @@ def main():
                                  ])
             
             elif censoring:
-                preproc.connect([(selectfiles,regconf_node,[('mask','mask')]),
+                preproc.connect([(mask_node,regconf_node,[('mask','mask')]),
                                  (concat_censor_node,regconf_node,[('confounds_file','confounds')]),
                                  (selectfiles,sum_meandn_node,[('func','funcfile')]),#(selectfiles,sum_meandn_node,[('sfunc','funcfile')]),
                                  (regconf_node,sum_meandn_node,[('res_func','dfuncfile')]),
@@ -1108,7 +1161,7 @@ def main():
                                  (selectfiles,save_meandn_node,[('save_den_dir','save_dir')])
                                  ])
             elif rp_derivatives:
-                preproc.connect([(selectfiles,regconf_node,[('mask','mask')]),
+                preproc.connect([(mask_node,regconf_node,[('mask','mask')]),
                                  (exrp_node,regconf_node,[('rp_file','confounds')]),
                                  (selectfiles,sum_meandn_node,[('func','funcfile')]),#(selectfiles,sum_meandn_node,[('sfunc','funcfile')]),
                                  (regconf_node,sum_meandn_node,[('res_func','dfuncfile')]),
@@ -1116,7 +1169,7 @@ def main():
                                  (selectfiles,save_meandn_node,[('save_den_dir','save_dir')])
                                  ])
             else:
-                preproc.connect([(selectfiles,regconf_node,[('mask','mask')]),
+                preproc.connect([(mask_node,regconf_node,[('mask','mask')]),
                                  (selectfiles,regconf_node,[('rp_file','confounds')]),
                                  (selectfiles,sum_meandn_node,[('func','funcfile')]),#(selectfiles,sum_meandn_node,[('sfunc','funcfile')]),
                                  (regconf_node,sum_meandn_node,[('res_func','dfuncfile')]),
@@ -1160,7 +1213,7 @@ def main():
         """
         #Clean up intermediate saved data
         """
-        shutil.rmtree(os.path.join(datpath,'denoise'), ignore_errors=True)
+        #shutil.rmtree(os.path.join(datpath,'denoise'), ignore_errors=True)
                 
 if __name__ == '__main__':
     main()
