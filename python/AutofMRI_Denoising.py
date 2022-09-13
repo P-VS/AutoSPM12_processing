@@ -42,8 +42,8 @@ def set_denoising_parameters():
     
     an_params['datpath'] = '/Volumes/LaCie/UZ_Brussel/Labo_fMRI/Full_dataset'  #No spaties in the path name
     
-    first_sub = 2
-    last_sub = 20
+    first_sub = 1
+    last_sub = 1
     an_params['sublist'] = list(range(first_sub,last_sub+1)) #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
     
     an_params['nsessions'] = [1] #nsessions>0 data should be in sub-ii/ses-00j
@@ -61,6 +61,7 @@ def set_denoising_parameters():
     an_params['censoring'] = False
     an_params['CompCor'] = True
     
+    an_params['ica_decomposition'] = 'do_fastICA' # do_fastICA / save_fastICA / do_Melodic / save_Melodic / none
     an_params['do_ICA_aroma'] = True
     an_params['do_ICA_removal'] = True
     
@@ -261,7 +262,14 @@ def save_preproc_files(in_file,save_dir):
             saved_file = os.path.join(save_dir,os.path.basename(in_file[i]))
             shutil.copy(in_file[i],saved_file)
     else:
-        saved_file = os.path.join(save_dir,os.path.basename(in_file))
+        if 'smooth' in os.path.basename(in_file):
+            bname = os.path.basename(in_file)
+            bname = bname.split('_smooth')[0]
+            new_name = 's'+bname+'.nii'
+        else:
+            new_name = os.path.basename(in_file)
+            
+        saved_file = os.path.join(save_dir,new_name)
         
         if os.path.isfile(saved_file):
             os.remove(saved_file)
@@ -310,7 +318,7 @@ def make_head_mask(anat):
 """Code largely copied from https://github.com/maartenmennes/ICA-AROMA"""
 
 
-def ica_aroma(func,confounds,mel_dir,csf_file,gm_file,wm_file,head_mask,mask,t_r=2.0):
+def ica_aroma(func,confounds,ica_dir,ica_method,csf_file,gm_file,wm_file,head_mask,mask,t_r=2.0):
     
     def cross_correlation(a, b):
     
@@ -347,36 +355,55 @@ def ica_aroma(func,confounds,mel_dir,csf_file,gm_file,wm_file,head_mask,mask,t_r
     
     csf_data[csf_data<0.90]=0  
     csf_data[brain_data>0.5]=0
+
+    if 'Melodic' in ica_method:
+        melICim = nib.load(os.path.join(ica_dir,'melodic_IC.nii'))
     
-    melICim = nib.load(os.path.join(mel_dir,'melodic_IC.nii'))
-    
-    numIC = melICim.shape[3]
-    
+        numIC = melICim.shape[3]
+
+        iICdat = np.zeros(melICim.shape)
+        for i in range(numIC):
+            iIC=nib.load(os.path.join(ica_dir,'stats','thresh_zstat'+str(i)+'.nii'))
+            
+            iICdat[:,:,:,i] = abs(iIC.get_data())
+                 
+        # Load melodic_FTmix file
+        FT = np.loadtxt(os.path.join(ica_dir,'melodic_FTmix'))
+            
+        # Read melodic mix file (IC time-series)
+        mix = np.loadtxt(os.path.join(ica_dir,'melodic_mix'))
+        
+    elif 'fastICA' in ica_method:
+        ica_sim = nib.load(os.path.join(ica_dir,'ica_components.nii'))
+        iICdat = abs(ica_sim.get_data())
+              
+        numIC = iICdat.shape[3]
+        
+        # Read melodic mix file (IC time-series)
+        mix = np.loadtxt(os.path.join(ica_dir,'t_ica_components.txt'))
+        
+        # Take fft of mix
+        FT = np.abs(np.fft.rfft(mix,axis=0))
+  
     """Fraction component outside GM or WM"""
     edgeFract = np.zeros(numIC)
     csfFract = np.zeros(numIC)
-    for i in range(1,numIC):
-        iIC=nib.load(os.path.join(mel_dir,'stats','thresh_zstat'+str(i)+'.nii'))
-        
-        iICdat = abs(iIC.get_data())
-        
-        totSum = np.sum(iICdat>0)
-        nbSum = np.sum(iICdat[head_data>0]>0)
-        csfSum = np.sum(iICdat[csf_data>0]>0)
+    for i in range(1,numIC):       
+        totSum = np.sum(iICdat[:,:,:,i]>0)
+        nbSum = np.sum(iICdat[head_data>0,i]>0)
+        csfSum = np.sum(iICdat[csf_data>0,i]>0)
         
         if totSum>0:
             edgeFract[i]=nbSum/totSum
             csfFract[i]=csfSum/totSum
         
     """High frequency content"""
+       
     # Determine sample frequency
     Fs = 1/t_r
     
     # Determine Nyquist-frequency
     Ny = Fs/2
-    
-    # Load melodic_FTmix file
-    FT = np.loadtxt(os.path.join(mel_dir,'melodic_FTmix'))
     
     # Determine which frequencies are associated with every row in the melodic_FTmix file  (assuming the rows range from 0Hz to Nyquist)
     f = Ny * (np.array(list(range(1, FT.shape[0] + 1)))) / (FT.shape[0])
@@ -398,9 +425,9 @@ def ica_aroma(func,confounds,mel_dir,csf_file,gm_file,wm_file,head_mask,mask,t_r
     # Now get the fractions associated with those indices index, these are the final feature scores
     HFC = f_norm[idx_cutoff]
     
-    """Maximum robust correlation with confounds"""
-    # Read melodic mix file (IC time-series) and confounds
-    mix = np.loadtxt(os.path.join(mel_dir,'melodic_mix'))
+    """Maximum robust correlation with confounds"""  
+    
+    # Read confounds
     conf_model = np.loadtxt(confounds)  
     
     # Determine the maximum correlation between confounds and IC time-series
@@ -463,7 +490,7 @@ def ica_aroma(func,confounds,mel_dir,csf_file,gm_file,wm_file,head_mask,mask,t_r
 ---------------------------------------------------------------------------------------
 """ 
 
-def ica_aroma_subtraction(func,confounds_ICs,mel_dir,mask):
+def ica_aroma_subtraction(func,confounds_ICs,ica_dir,ica_method,mask):
     
     import os
     import numpy as np
@@ -481,7 +508,13 @@ def ica_aroma_subtraction(func,confounds_ICs,mel_dir,mask):
             
         regfilt_node = FilterRegressor()
         regfilt_node.inputs.in_file = func
-        regfilt_node.inputs.design_file = os.path.join(mel_dir,'melodic_mix')
+        
+        if 'Melodic' in ica_method:
+            mixfile = os.path.join(ica_dir,'melodic_mix')
+        elif 'fastICA' in ica_method:
+            mixfile = os.path.join(ica_dir,'t_ica_components.txt')
+            
+        regfilt_node.inputs.design_file = mixfile
         
         if motionICs.ndim>0:
             regfilt_node.inputs.filter_columns = list(motionICs)
@@ -506,13 +539,17 @@ def ica_aroma_subtraction(func,confounds_ICs,mel_dir,mask):
 ---------------------------------------------------------------------------------------
 """
 
-def make_aroma_regressors(confounds_ICs,mel_dir,fmriname,save_den_dir):
+def make_aroma_regressors(confounds_ICs,ica_dir,ica_method,fmriname,save_den_dir):
     
     import os
     import numpy as np
     import pandas as pd
     
-    mix = np.loadtxt(os.path.join(mel_dir,'melodic_mix'))
+    if 'Melodic' in ica_method:
+        mix = np.loadtxt(os.path.join(ica_dir,'melodic_mix'))
+    elif 'fastICA' in ica_method:
+        mix = np.loadtxt(os.path.join(ica_dir,'t_ica_components.txt'))
+        
     conf_model = np.loadtxt(confounds_ICs).astype(int)
     
     confounds_df = pd.DataFrame()
@@ -637,9 +674,99 @@ def make_epi_mask(in_file):
     
     return mask
 
+    
 """
 ---------------------------------------------------------------------------------------
+"""   
+
+def do_ica(func,mask):
+    """
+    Partly copied from https://github.com/ME-ICA/tedana/blob/main/tedana/decomposition/ica.py
+    """
+    
+    import os
+    import sklearn
+    
+    import logging
+    import warnings
+    
+    LGR = logging.getLogger("GENERAL")
+    RepLGR = logging.getLogger("REPORT")
+    
+    import nibabel as nib
+    import numpy as np
+    
+    from nilearn import input_data
+    from scipy import stats
+    
+    maskim = nib.load(mask)
+    fmridat = nib.load(func)
+    
+    head_masker = input_data.NiftiMasker(mask_img=mask)
+    fmriheadmask = head_masker.fit_transform(fmridat)
+    
+    print('Start ICA decomposition')
+    
+    fixed_seed = 45
+
+    for i_attempt in range(10):
+        fmri_ica = sklearn.decomposition.FastICA(n_components=128,
+                                                 algorithm="parallel",
+                                                 fun="logcosh",
+                                                 max_iter=500,
+                                                 random_state=fixed_seed)
+
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered in order to capture
+            # convergence failures.
+            warnings.simplefilter("always")
+
+            fmri_ica_s = fmri_ica.fit_transform(fmriheadmask.T).T
+
+            w = list(filter(lambda i: issubclass(i.category, UserWarning), w))
+            if len(w):
+                LGR.warning(
+                    "ICA with random seed {0} failed to converge after {1} "
+                    "iterations".format(fixed_seed, fmri_ica.n_iter_)
+                )
+                if i_attempt < 9:
+                    fixed_seed += 1
+                    LGR.warning("Random seed updated to {0}".format(fixed_seed))
+            else:
+                LGR.info(
+                    "ICA with random seed {0} converged in {1} "
+                    "iterations".format(fixed_seed, fmri_ica.n_iter_)
+                )
+                break
+
+    fmri_ica_t = fmri_ica.mixing_
+    fmri_ica_t = stats.zscore(fmri_ica_t, axis=0)
+        
+    # Normalize estimated components, for thresholding to make sense
+    fmri_ica_s -= fmri_ica_s.mean(axis=0)
+    fmri_ica_s /= fmri_ica_s.std(axis=0)
+    
+    # Threshold
+    fmri_ica_s[np.abs(fmri_ica_s) < .8] = 0
+        
+    fmri_ica_components = head_masker.inverse_transform(fmri_ica_s)
+
+    ica_s_file = os.path.join(os.getcwd(),'ica_components.nii')
+    nib.save(fmri_ica_components,ica_s_file)
+
+    ica_t_file = os.path.join(os.getcwd(),'t_ica_components.txt')
+    
+    np.savetxt(ica_t_file,fmri_ica_t)
+    
+    ica_dir = os.getcwd()
+        
+    print('Done ICA decomposition')
+    
+    return ica_s_file, ica_t_file, ica_dir
+    
 """
+---------------------------------------------------------------------------------------
+"""   
 
 def main():
                    
@@ -669,6 +796,7 @@ def main():
     censoring = an_params['censoring']
     CompCor = an_params['CompCor']
     
+    ica_decomposition = an_params['ica_decomposition']
     do_ICA_aroma = an_params['do_ICA_aroma']
     do_ICA_removal = an_params['do_ICA_removal']
     
@@ -694,8 +822,6 @@ def main():
     print('Start preprocessing of the data')
     
     sesstring = list()
-    
-    do_melodic = False
     
     ferror = 0
         
@@ -777,13 +903,13 @@ def main():
                     print('File '+jsonf+' not found.')
                     ferror = ferror+1
                 
-                if do_ICA_aroma:
+                if 'Melodic' in ica_decomposition:
                     save_melodic_dir = os.path.join(subpath,'melodic_'+func_prefix+substring+'_task-'+task[k]+'_bold')
                     
                     if not os.path.isdir(save_melodic_dir) \
                         or not os.path.isfile(os.path.join(save_melodic_dir,'melodic_IC.nii')):
                             if not os.path.isdir(save_melodic_dir): os.mkdir(save_melodic_dir)
-                            do_melodic = True
+                            ica_decomposition = 'do_Melodic'
 
                 save_den_dir = os.path.join(subpath,an_params['denoise_folder'])
                 
@@ -817,7 +943,7 @@ def main():
             templates['func'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,func_prefix+'{substring}'+'_task-'+'{task}'+'_bold.nii')
             templates['rp_file'] = os.path.join(datpath,'{substring}','{sesstring}',preproc_folder,rp_prefix+'{substring}'+'_task-'+'{task}'+'_bold.txt')
         
-        if do_ICA_aroma:
+        if 'Melodic' in ica_decomposition:
             templates['melodic_dir'] = os.path.join(datpath,'{substring}','{sesstring}','melodic_'+func_prefix+'{substring}'+'_task-'+'{task}'+'_bold')
             
         templates['save_den_dir'] = os.path.join(datpath,'{substring}','{sesstring}',an_params['denoise_folder'])
@@ -993,16 +1119,16 @@ def main():
         """
         ICA-AROMA
         """
-        if do_ICA_aroma:
+        if not 'none' in ica_decomposition:
             head_mask_node = Node(interface=Function(input_names=['anat'],
                                                      output_names=['head_mask'],
                                                      function=make_head_mask),name='head_mask')
             
             preproc.connect([(selectfiles,head_mask_node,[('anat','anat')])])
             
-            if do_melodic:
+            if'do_Melodic' in ica_decomposition:
                 
-                melodic_node = Node(MELODIC(output_type='NIFTI',out_all=True),name='melodic')
+                melodic_node = Node(MELODIC(output_type='NIFTI',out_all=True,no_bet=True),name='melodic')
                 
                 save_melodic_node = Node(interface=Function(input_names=['in_dir','save_dir'],
                                                             output_names=['save_dir'],
@@ -1014,9 +1140,29 @@ def main():
                                  (melodic_node,save_melodic_node,[('out_dir','in_dir')]),
                                  (selectfiles,save_melodic_node,[('melodic_dir','save_dir')])
                                  ])
-            
-            
-            ica_aroma_node = Node(interface=Function(input_names=['func','confounds','mel_dir','csf_file','gm_file','wm_file','head_mask','mask','t_r'],
+                
+            elif 'do_fastICA' in ica_decomposition:
+                ica_node = Node(interface=Function(input_names=['func','mask'],
+                                                   output_names=['ica_s_file','ica_t_file','ica_dir'],
+                                                   function=do_ica),name='do_ica')
+                
+                save_icas_node = Node(interface=Function(input_names=['in_file','save_dir'],
+                                                         output_names=['saved_file'],
+                                                         function=save_preproc_files),name='save_icas')
+                
+                save_icat_node = Node(interface=Function(input_names=['in_file','save_dir'],
+                                                         output_names=['saved_file'],
+                                                         function=save_preproc_files),name='save_icat')
+                
+                preproc.connect([(selectfiles,ica_node,[('func','func')]),
+                                 (mask_node,ica_node,[('mask','mask')]),
+                                 (ica_node,save_icas_node,[('ica_s_file','in_file')]),
+                                 (selectfiles,save_icas_node,[('save_den_dir','save_dir')]),
+                                 (ica_node,save_icat_node,[('ica_t_file','in_file')]),
+                                 (selectfiles,save_icat_node,[('save_den_dir','save_dir')])
+                                 ])
+                
+            ica_aroma_node = Node(interface=Function(input_names=['func','confounds','ica_dir','ica_method','csf_file','gm_file','wm_file','head_mask','mask','t_r'],
                                                      output_names=['confounds_ICs'],
                                                      function=ica_aroma),name='ica_aroma')
             
@@ -1024,15 +1170,21 @@ def main():
                                                        output_names=['saved_file'],
                                                        function=save_preproc_files),name='save_confIC')
             
+            ica_aroma_node.inputs.ica_method = ica_decomposition
+            
             if use_CompCor_in_AROMA:
                 preproc.connect([(concat_compcor_node,ica_aroma_node,[('confounds_file','confounds')])])             
             else:
                 preproc.connect([(exrp_node,ica_aroma_node,[('rp_file','confounds')])])
             
-            if do_melodic:
-                preproc.connect([(melodic_node,ica_aroma_node,[('out_dir','mel_dir')])])
-            else:
-                preproc.connect([(selectfiles,ica_aroma_node,[('melodic_dir','mel_dir')])])
+            if 'do_melodic' in ica_decomposition:
+                preproc.connect([(melodic_node,ica_aroma_node,[('out_dir','ica_dir')])])
+            elif 'save_melodic' in ica_decomposition:
+                preproc.connect([(selectfiles,ica_aroma_node,[('melodic_dir','ica_dir')])])
+            elif 'do_fastICA' in ica_decomposition:
+                preproc.connect([(ica_node,ica_aroma_node,[('ica_dir','ica_dir')])])
+            elif 'save_fastICA' in ica_decomposition:
+                preproc.connect([(selectfiles,ica_aroma_node,[('save_den_dir','ica_dir')])])
                 
             preproc.connect([(selectfiles,ica_aroma_node,[('func','func'),
                                                           ('csf','csf_file'),
@@ -1047,7 +1199,7 @@ def main():
                              ])   
             
             if do_noise_regression:
-                icareg_node=Node(interface=Function(input_names=['confounds_ICs','mel_dir','fmriname','save_den_dir'],
+                icareg_node=Node(interface=Function(input_names=['confounds_ICs','ica_dir','ica_method','fmriname','save_den_dir'],
                                                     output_names=['confounds_file'],
                                                     function=make_aroma_regressors),name='make_aroma_regressors')
                 
@@ -1056,10 +1208,16 @@ def main():
                                  (selectfiles,icareg_node,[('save_den_dir','save_den_dir')])
                                  ])
                 
-                if do_melodic:
-                    preproc.connect([(melodic_node,icareg_node,[('out_dir','mel_dir')])])
-                else:
-                    preproc.connect([(selectfiles,icareg_node,[('melodic_dir','mel_dir')])])
+                icareg_node.inputs.ica_method = ica_decomposition
+                
+                if 'do_melodic' in ica_decomposition:
+                    preproc.connect([(melodic_node,icareg_node,[('out_dir','ica_dir')])])
+                elif 'save_melodic' in ica_decomposition:
+                    preproc.connect([(selectfiles,icareg_node,[('melodic_dir','ica_dir')])])
+                elif 'do_fastICA' in ica_decomposition:
+                    preproc.connect([(ica_node,icareg_node,[('ica_dir','ica_dir')])])
+                elif 'save_fastICA' in ica_decomposition:
+                    preproc.connect([(selectfiles,icareg_node,[('save_den_dir','ica_dir')])])
                     
                 if concat_AROMA_CompCor:
                     concat_aroma_node = Node(interface=Function(input_names=['file_1','file_2','fmriname'],
@@ -1082,13 +1240,15 @@ def main():
         ICA-AROMA noise component subtraction
         """
         if do_ICA_removal:
-            icasub_node=Node(interface=Function(input_names=['func','confounds_ICs','mel_dir','mask'],
+            icasub_node=Node(interface=Function(input_names=['func','confounds_ICs','ica_dir','ica_method','mask'],
                                                 output_names=['denfunc'],
                                                 function=ica_aroma_subtraction),name='ica_removal')
             
             save_icasub_node = Node(interface=Function(input_names=['in_file','save_dir'],
                                                        output_names=['saved_file'],
                                                        function=save_preproc_files),name='save_ica_aroma')
+            
+            icasub_node.inputs.ica_method = ica_decomposition
             
             preproc.connect([(selectfiles,icasub_node,[('func','func')]),
                              (mask_node,icasub_node,[('mask','mask')]),
@@ -1097,10 +1257,14 @@ def main():
                              (selectfiles,save_icasub_node,[('save_den_dir','save_dir')])
                              ])
             
-            if do_melodic:
-                preproc.connect([(melodic_node,icasub_node,[('out_dir','mel_dir')])])
-            else:
-                preproc.connect([(selectfiles,icasub_node,[('melodic_dir','mel_dir')])])
+            if 'do_melodic' in ica_decomposition:
+                preproc.connect([(melodic_node,icasub_node,[('out_dir','ica_dir')])])
+            elif 'save_melodic' in ica_decomposition:
+                preproc.connect([(selectfiles,icasub_node,[('melodic_dir','ica_dir')])])
+            elif 'do_fastICA' in ica_decomposition:
+                preproc.connect([(ica_node,icasub_node,[('ica_dir','ica_dir')])])
+            elif 'save_fastICA' in ica_decomposition:
+                preproc.connect([(selectfiles,icasub_node,[('save_den_dir','ica_dir')])])
                         
                    
         """
@@ -1205,8 +1369,8 @@ def main():
         print('')
         print('Start denoising')
         print('')
-        preproc.run(plugin='MultiProc')
-        #preproc.run()
+        #preproc.run(plugin='MultiProc')
+        preproc.run()
         print('Done denoising')
         print('')
         
