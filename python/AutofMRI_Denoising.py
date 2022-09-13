@@ -1369,15 +1369,15 @@ def main():
         print('')
         print('Start denoising')
         print('')
-        #preproc.run(plugin='MultiProc')
-        preproc.run()
+        preproc.run(plugin='MultiProc')
+        #preproc.run()
         print('Done denoising')
         print('')
         
         """
         #Clean up intermediate saved data
         """
-        #shutil.rmtree(os.path.join(datpath,'denoise'), ignore_errors=True)
+        shutil.rmtree(os.path.join(datpath,'denoise'), ignore_errors=True)
                 
 if __name__ == '__main__':
     main()
