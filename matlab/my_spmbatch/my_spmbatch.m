@@ -1,5 +1,7 @@
 function [delfiles,keepfiles] = my_spmbatch(sub,ses,task,datpath,params,save_intermediate_results)
 
+testscript = false;
+
 substring = ['sub-' num2str(sub,'%02d')];
 
 if ~isfolder(fullfile(datpath,substring))
@@ -22,10 +24,16 @@ keepfiles = {};
 
 if ~exist(fullfile(subanatdir,[substring '_T1w_Crop_1.nii']),'file')
     nsubannat = [substring '_T1w.nii'];
+    nsubanstring = [substring '_T1w'];
 else
     nsubannat = [substring '_T1w_Crop_1.nii'];
+    nsubanstring = [substring '_T1w_Crop_1'];
 end
 subanat = fullfile(subanatdir,nsubannat);
+
+if params.do_aCompCor
+    params.do_segmentation = 1;
+end
 
 %% Segmentation and normalization of the anatomical T1w scan
 
@@ -34,6 +42,23 @@ if exist(fullfile(preproc_anat,['wr' nsubannat]),'file')
         if exist(fullfile(preproc_anat,['wc2r' nsubannat]),'file')
             if exist(fullfile(preproc_anat,['wc3r' nsubannat]),'file')
                 params.do_segmentation = 0;
+
+                c1im = fullfile(preproc_anat,['wc1r' nsubannat]);
+                c2im = fullfile(preproc_anat,['wc2r' nsubannat]);
+                c3im = fullfile(preproc_anat,['wc3r' nsubannat]);
+            end
+        end
+    end
+end
+if exist(fullfile(preproc_anat,['wr' nsubanstring]),'file')
+    if exist(fullfile(preproc_anat,['w' nsubanstring '_brain_pve_0.nii']),'file')
+        if exist(fullfile(preproc_anat,['w' nsubanstring '_brain_pve_1.nii']),'file')
+            if exist(fullfile(preproc_anat,['w' nsubanstring '_brain_pve_2.nii']),'file')
+                params.do_segmentation = 0;
+
+                c1im = fullfile(preproc_anat,['w' nsubanstring '_brain_pve_1.nii']);
+                c2im = fullfile(preproc_anat,['w' nsubanstring '_brain_pve_2.nii']);
+                c3im = fullfile(preproc_anat,['w' nsubanstring '_brain_pve_0.nii']);
             end
         end
     end
@@ -136,6 +161,10 @@ if params.do_segmentation
         keepfiles{numel(keepfiles)+1} = {spm_file(c1im, 'prefix','w')};
         keepfiles{numel(keepfiles)+1} = {spm_file(c2im, 'prefix','w')};
         keepfiles{numel(keepfiles)+1} = {spm_file(c3im, 'prefix','w')};
+
+        c1im = spm_file(subanat, 'prefix','wc1');
+        c2im = spm_file(subanat, 'prefix','wc2');
+        c3im = spm_file(subanat, 'prefix','wc3');
     else
         keepfiles{numel(keepfiles)+1} = {c1im};
         keepfiles{numel(keepfiles)+1} = {c2im};
@@ -195,7 +224,9 @@ if params.nechoes==1
     end
 
     Vfunc = Vfunc(numdummy+1:end);
-    %Vfunc = Vfunc(1:25); %Only for a quick test of the batch script
+    if testscript
+        Vfunc = Vfunc(1:50); %Only for a quick test of the batch script
+    end
 
     funcdat = spm_read_vols(Vfunc);
 else  
@@ -231,7 +262,9 @@ else
         end
         
         Vfunc = Vfunc(numdummy+1:end);
-        %Vfunc = Vfunc(1:25); %Only for a quick test of the batch script
+        if testscript
+            Vfunc = Vfunc(1:50); %Only for a quick test of the batch script
+        end
 
         if i==1
             voldim = Vfunc.dim;
@@ -267,6 +300,7 @@ if params.do_slicetime
     for k=1:numel(Vfunc)
         Vfunc(k).fname = spm_file(funcfile, 'prefix','ae');
         Vfunc(k).descrip = 'my_spmbatch - slice time correction';
+        Vfunc(k).n = [k 1];
         Vfunc(k) = spm_create_vol(Vfunc(k));
         Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
     end
@@ -279,6 +313,7 @@ else
     for k=1:numel(Vfunc)
         Vfunc(k).fname = spm_file(funcfile, 'prefix','e');
         Vfunc(k).descrip = 'my_spmbatch - remove dummys';
+        Vfunc(k).n = [k 1];
         Vfunc(k) = spm_create_vol(Vfunc(k));
         Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
     end
@@ -305,6 +340,7 @@ rdat = spm_read_vols(Rfunc);
 
 Rfunc.fname = spm_file(funcfile, 'prefix','f');
 Rfunc.descrip = 'my_spmbatch - first volume';
+Rfunc.n = [1 1];
 Rfunc = spm_create_vol(Rfunc);
 Rfunc = spm_write_vol(Rfunc,rdat);
 
@@ -378,6 +414,7 @@ if params.pepolar
 
     Vppfunc.fname = spm_file(ppfunc, 'prefix','f');
     Vppfunc.descrip = 'my_spmbatch - first volume';
+    Vppfunc.n = [1 1];
     Vppfunc = spm_create_vol(Vppfunc);
     Vppfunc = spm_write_vol(Vppfunc,ppfuncdat);
 
@@ -690,6 +727,8 @@ if params.do_realignment
         realignunwarp.uwroptions.prefix = 'u';
         
         spm_run_realignunwarp(realignunwarp);
+
+        rp_file = spm_file(funcfile, 'prefix','rp_','ext','.txt');
     
         keepfiles{numel(keepfiles)+1} = {spm_file(funcfile, 'prefix','rp_','ext','.txt')};
     
@@ -716,6 +755,8 @@ if params.do_realignment
         realignestwrite.roptions.prefix = 'r';
         
         spm_run_realign(realignestwrite);
+
+        rp_file = spm_file(funcfile, 'prefix','rp_','ext','.txt');
     
         keepfiles{numel(keepfiles)+1} = {spm_file(funcfile, 'prefix','rp_','ext','.txt')};
     
@@ -809,11 +850,100 @@ if params.do_normalization
 
 end
 
+%%Denoising with motion derivatives and squared regressors (24 regressors)
+if params.do_mot_derivatives & exist('rp_file')
+    if exist(rp_file)
+        confounds = load(rp_file);
+        confounds = cat(2,confounds,cat(1,zeros(1,6),diff(confounds)));
+        confounds = cat(2,confounds,power(confounds,2));
+
+        rp_file = spm_file(rp_file, 'prefix','der_','ext','.txt');
+
+        writematrix(confounds,rp_file,'Delimiter','tab');
+
+        keepfiles{numel(keepfiles)+1} = {rp_file};
+    end
+end
+
+%%Denoising with aCompCor covariates
+if params.do_aCompCor & exist('rp_file')
+    if exist(rp_file)
+        confounds = load(rp_file);
+    else
+        confounds = [];
+    end
+
+    GM = spm_vol(c1im);
+    WM = spm_vol(c2im);
+    CSF = spm_vol(c3im);
+
+    gmdat = spm_read_vols(GM);
+    wmdat = spm_read_vols(WM);
+    csfdat = spm_read_vols(CSF);
+
+    braindat = gmdat+wmdat;
+    braindat(braindat<0.2)=0;
+    braindat(braindat>0.0)=1;
+
+    csfdat(braindat>0.0)=0;
+    csfdat(csfdat<0.8)=0;
+    csfdat(csfdat>0.0)=1;
+
+    if ~params.do_normalization
+        acc_confounds = fmri_acompcor(funcfile,{csfdat},0.5,'confounds',confounds);
+    else
+        acc_confounds = fmri_acompcor(funcdat(:,:,:,:),{csfdat},0.5,'confounds',confounds);
+    end
+
+    if exist(rp_file)
+        confounds = cat(2,confounds,acc_confounds);
+    
+        rp_file = spm_file(rp_file, 'prefix','acc_','ext','.txt');
+    
+        writematrix(confounds,rp_file,'Delimiter','tab');
+    else
+        rp_file = spm_file(funcfile, 'prefix','acc_','ext','.txt');
+    
+        writematrix(acc_confounds,rp_file,'Delimiter','tab');
+    end
+
+    keepfiles{numel(keepfiles)+1} = {rp_file};
+end
+
+if params.do_noiseregression
+    if exist(rp_file)
+        confounds = load(rp_file);
+        Vfunc = spm_vol(funcfile);
+
+        if params.do_normalization
+            s = size(funcdat);
+            funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
+
+            [funcdat,~] = fmri_cleaning(funcdat(:,:),2,[],confounds,[],'restoremean','on');
+        else
+            [funcdat,~] = fmri_cleaning(funcfile,2,[],confounds,[],'restoremean','on');
+        end
+        
+        funcdat = reshape(funcdat(:,:),[Vfunc(1).dim(1),Vfunc(1).dim(2),Vfunc(1).dim(3),numel(Vfunc)]);
+
+        for k=1:numel(Vfunc)
+            Vfunc(k).fname = spm_file(funcfile, 'prefix','d');
+            Vfunc(k).descrip = 'my_spmbatch - remove dummys';
+            Vfunc(k).n = [k 1];
+            Vfunc(k) = spm_create_vol(Vfunc(k));
+            Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
+        end
+
+        funcfile = spm_file(funcfile, 'prefix','d');
+        keepfiles{numel(keepfiles)+1} = {funcfile};
+    end
+end
+
 if params.do_smoothing
 
     %% Smooth func
     
-    if ~params.do_normalization
+    if ~params.do_normalization || ~params.do_noiseregression
 
         for i=1:numel(Vfunc)
             sfuncfiles{i,1} = [funcfile ',' num2str(i)];

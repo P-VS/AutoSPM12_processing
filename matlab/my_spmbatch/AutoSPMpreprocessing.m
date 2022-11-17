@@ -36,14 +36,14 @@ SPMid                 = spm('FnBanner',mfilename,'2.10');
 %%
 %%Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/DeNN_motor/Data';
+datpath = '/Volumes/LaCie/UZ_Brussel/Labo_fMRI/Full_dataset/';
 
 first_sub = 7;
 last_sub = 7;
 sublist = [2];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-task ={'fingerfootlips'};
+task ={'affect_run-1'};
 
 params.nechoes = 1; %number of echoes for ME-fMRI. The combination is done wi=TEi 
 params.dummytime = 10; %time in seconds
@@ -58,6 +58,10 @@ params.do_realignment = true;
 params.do_slicetime = true;
 params.do_segmentation = false;
 params.do_normalization = true;
+params.do_mot_derivatives = true;
+params.do_aCompCor = true;
+params.do_noiseregression = true;
+params.do_ICA_AROMA = true;
 params.do_smoothing = true;
 
 params.normvox = [1.5 1.5 1.5];
