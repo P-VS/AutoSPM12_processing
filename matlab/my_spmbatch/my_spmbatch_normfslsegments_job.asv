@@ -1,0 +1,142 @@
+function [delfiles,keepfiles] = my_spmbatch_normfslsegments_job(sub,ses,datpath,params)
+
+substring = ['sub-' num2str(sub,'%02d')];
+
+if ~isfolder(fullfile(datpath,substring))
+    substring = ['sub-' num2str(sub,'%03d')];
+end
+
+subpath = fullfile(datpath,substring,['ses-' num2str(ses,'%03d')]);
+
+if ~isfolder(subpath)
+    subpath = fullfile(datpath,substring,['ses-' num2str(ses,'%02d')]);
+end
+
+subanatdir = fullfile(subpath,'anat');
+
+preproc_anat = fullfile(subpath,'preproc_anat');
+
+delfiles = {};
+keepfiles = {};
+
+if ~exist(fullfile(subanatdir,[substring '_T1w_Crop_1.nii']),'file')
+    nsubannat = [substring '_T1w.nii'];
+    nm = [substring '_T1w'];
+else
+    nsubannat = [substring '_T1w_Crop_1.nii'];
+    nm = [substring '_T1w_Crop_1'];
+end
+subanat = fullfile(subanatdir,nsubannat);
+
+gmim = fullfile(subanatdir,[nm '_brain_pve_1.nii']);
+wmim = fullfile(subanatdir,[nm '_brain_pve_2.nii']);
+csfim = fullfile(subanatdir,[nm '_brain_pve_0.nii']);
+
+if params.reorient
+    [pth nm ext] = fileparts(subanat);
+    transfile = fullfile(subanatdir,[nm '_reorient.mat']);
+    if isfile(transfile)
+        load(transfile,'M')
+        transM = M;
+    else
+        transM = eye(4);
+    end
+
+    Vanat = spm_vol(subanat);
+    MM = Vanat.private.mat0;
+
+    Vanat = my_reset_orientation(Vanat,transM * MM);
+
+    anatdat = spm_read_vols(Vanat);
+
+    Vanat.fname = spm_file(subanat, 'prefix','r');
+    Vanat.descrip = 'reoriented';
+    Vanat = spm_create_vol(Vanat);
+    Vanat = spm_write_vol(Vanat,anatdat);
+
+    subanat = spm_file(subanat, 'prefix','r');
+    delfiles{numel(delfiles)+1} = {subanat};
+
+    auto_acpc_reorient(subanat,'T1');
+
+    Vanat = spm_vol(subanat);
+    Vgm = spm_vol(gmim);
+    Vwm = spm_vol(wmim);
+    Vcsf = spm_vol(csfim);
+
+    M = Vanat.private.mat0;
+
+    gmdat = spm_read_vols(Vgm);
+    Vgm = my_reset_orientation(Vgm,M);
+    Vgm.fname = spm_file(gmim, 'prefix','r');
+    Vgm.descrip = 'reoriented';
+    Vgm = spm_create_vol(Vgm);
+    Vgm = spm_write_vol(Vgm,gmdat);
+
+    gmim = spm_file(gmim, 'prefix','r');
+    delfiles{numel(delfiles)+1} = {gmim};
+
+    wmdat = spm_read_vols(Vwm);
+    Vwm = my_reset_orientation(Vwm,M);
+    Vwm.fname = spm_file(wmim, 'prefix','r');
+    Vwm.descrip = 'reoriented';
+    Vwm = spm_create_vol(Vwm);
+    Vwm = spm_write_vol(Vwm,wmdat);
+
+    wmim = spm_file(wmim, 'prefix','r');
+    delfiles{numel(delfiles)+1} = {wmim};
+
+    csfdat = spm_read_vols(Vcsf);
+    Vcsf = my_reset_orientation(Vcsf,M);
+    Vcsf.fname = spm_file(csfim, 'prefix','r');
+    Vcsf.descrip = 'reoriented';
+    Vcsf = spm_create_vol(Vcsf);
+    Vcsf = spm_write_vol(Vcsf,csfdat);
+
+    csfim = spm_file(csfim, 'prefix','r');
+    delfiles{numel(delfiles)+1} = {csfim};
+end
+
+matlabbatch{1}.spm.spatial.normalise.est.subj.vol = {subanat};
+matlabbatch{1}.spm.spatial.normalise.est.eoptions.biasreg = 0.0001;
+matlabbatch{1}.spm.spatial.normalise.est.eoptions.biasfwhm = 60;
+matlabbatch{1}.spm.spatial.normalise.est.eoptions.tpm = {'/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/spm12/tpm/TPM.nii'};
+matlabbatch{1}.spm.spatial.normalise.est.eoptions.affreg = 'mni';
+matlabbatch{1}.spm.spatial.normalise.est.eoptions.reg = [0 0.001 0.5 0.05 0.2];
+matlabbatch{1}.spm.spatial.normalise.est.eoptions.fwhm = 0;
+matlabbatch{1}.spm.spatial.normalise.est.eoptions.samp = 3;
+
+deffile = spm_file(subanat, 'prefix','y_');
+
+matlabbatch{2}.spm.spatial.normalise.write.subj.def(1) = {deffile};
+matlabbatch{2}.spm.spatial.normalise.write.subj.resample = {gmim,wmim,csfim};
+matlabbatch{2}.spm.spatial.normalise.write.woptions.bb = [-78 -112 -70; 78 76 85];
+matlabbatch{2}.spm.spatial.normalise.write.woptions.vox = params.normvox;
+matlabbatch{2}.spm.spatial.normalise.write.woptions.interp = 4;
+matlabbatch{2}.spm.spatial.normalise.write.woptions.prefix = 'w';
+matlabbatch{2}.spm.spatial.normalise.write.subj.resample
+%Run matlabbatch
+spm_jobman('run', matlabbatch);
+
+keepfiles{numel(keepfiles)+1} = {spm_file(gmim, 'prefix','w')};
+keepfiles{numel(keepfiles)+1} = {spm_file(wmim, 'prefix','w')};
+keepfiles{numel(keepfiles)+1} = {spm_file(csfim, 'prefix','w')};
+
+end
+
+function P = my_reset_orientation(P,MM)
+
+    if ~isempty(P(1).private.extras) && isstruct(P(1).private.extras) && isfield(P(1).private.extras,'mat')
+        for i=1:size(P(1).private.dat,4)
+            mat(:,:,i) = MM;
+        end
+    end
+    for k=1:numel(P)
+        P(k).mat = MM;
+        P(k).private.mat = MM;
+        if ~isempty(P(k).private.extras) && isstruct(P(k).private.extras) && isfield(P(k).private.extras,'mat')
+            P(k).private.extras.mat = mat;
+        end
+    end
+
+end

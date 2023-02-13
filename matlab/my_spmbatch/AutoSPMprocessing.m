@@ -19,25 +19,25 @@ function AutoSPMprocessing
 
 %﻿Give the basic input information of your data
 
-params.datpath = '/Volumes/LaCie/UZ_Brussel/Labo_fMRI/Full_dataset';
-params.analysisname = 'standaard';
+params.datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
+params.analysisname = 'SE_EFT_ICA-AROMA';
 
 first_sub = 1;
-last_sub = 30;
-sublist = [12,14,16,17,18,19,20]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+last_sub = 1;
+sublist = [2:7]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-task = {'affect_run-1'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
+task = {'SE-EFT'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
 
-params.preprocfmridir = 'preproc_func';
+params.preprocfmridir = 'preproc_func_ICA-AROMA';
 params.fmri_prefix = 'swuae'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
-params.fmri_endfix = 'bold';
+params.fmri_endfix = 'bold_regfilt';
 
 params.dummytime = 0;
 params.multi_echo=false;
 
 params.confounds_prefix = 'rp_ae'; %confounds file of form [confounds_prefix 'sub-ii_task-... .txt']
-params.add_regressors = true;
+params.add_regressors = false;
 params.use_ownmask = false;
 params.model_serial_correlations = 'AR(1)';
 params.hpf = 200; %default 128
@@ -49,23 +49,29 @@ params.hpf = 200; %default 128
 %   contrast(i).conditions={'condition 1','condition 2'};
 %   contrast(i).vector=[1 -1];
 
-params.contrast(1).conditions = {'1','4'};
-params.contrast(1).vector = [1,1]/2;
+params.contrast(1).conditions = {'episodic','semantic'};
+params.contrast(1).vector = [1,-1];
 
-params.contrast(2).conditions = {'1','4'};
-params.contrast(2).vector = [-1,-1]/2;
+params.contrast(2).conditions = {'episodic','semantic'};
+params.contrast(2).vector = [-1,1];
 
-params.contrast(3).conditions = {'2','3'};
-params.contrast(3).vector = [1,1]/2;
+%params.contrast(1).conditions = {'sad','neutral'};
+%params.contrast(1).vector = [1,-1];
 
-params.contrast(4).conditions = {'2','3'};
-params.contrast(4).vector = [-1,-1]/2;
+%params.contrast(2).conditions = {'sad','neutral'};
+%params.contrast(2).vector = [-1,1];
 
-params.contrast(5).conditions = {'1','2','3','4'};
-params.contrast(5).vector = [1,-1,-1,1]/2;
+%params.contrast(3).conditions = {'happy','neutral'};
+%params.contrast(3).vector = [1,-1];
 
-params.contrast(6).conditions = {'1','2','3','4'};
-params.contrast(6).vector = [-1,1,1,-1]/2;
+%params.contrast(4).conditions = {'happy','neutral'};
+%params.contrast(4).vector = [-1,1];
+
+%params.contrast(5).conditions = {'sad','happy'};
+%params.contrast(5).vector = [1,-1];
+
+%params.contrast(6).conditions = {'sad','happy'};
+%params.contrast(6).vector = [-1,1];
 
 use_parallel = true;
 

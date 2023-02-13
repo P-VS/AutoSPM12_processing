@@ -30,11 +30,11 @@ SPMid                 = spm('FnBanner',mfilename,'2.10');
 %%
 %%Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/DeNN_motor/Data';
+datpath = '/Volumes/LaCie/UZ_Brussel/rTMS-fMRI_Interleaved/Data';
 
 first_sub = 7;
 last_sub = 7;
-sublist = [2:5];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [3,4,6,8,10,11,12,13,17,19,20,21,22,24,25,26,27,28,29,30,31,32];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
 params.reorient = true;

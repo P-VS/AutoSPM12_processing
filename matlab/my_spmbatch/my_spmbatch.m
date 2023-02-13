@@ -1,6 +1,6 @@
 function [delfiles,keepfiles] = my_spmbatch(sub,ses,task,datpath,params,save_intermediate_results)
 
-testscript = false;
+testscript = true;
 
 substring = ['sub-' num2str(sub,'%02d')];
 
@@ -405,7 +405,7 @@ if params.pepolar
         ppfuncdat = ppfuncdat./sum(te);
 
         fname=Vppfunc(1).fname;
-        nfname = split(fname,['_e' num2str(nechoes)]);
+        nfname = split(fname,['_e' num2str(params.nechoes)]);
     
         Vppfunc(1).fname = [nfname{1} '.nii'];
     
@@ -969,7 +969,7 @@ if params.do_smoothing
             [pth,nm,xt] = fileparts(Vfunc(i).fname);
 
             Q = fullfile(pth, ['s' nm  '.nii,' num2str(Vfunc(i).n)]);
-            my_spmbatch_smooth(funcdat(:,:,:,i),Vfunc(i),Q,[params.smoothfwhm params.smoothfwhm params.smoothfwhm],0)
+            my_spmbatch_smooth(funcdat(:,:,:,i),Vfunc(i),Q,[params.smoothfwhm params.smoothfwhm params.smoothfwhm],0);
 
             spm_progress_bar('Set',i);
         end
