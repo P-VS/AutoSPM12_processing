@@ -1,6 +1,6 @@
 function [delfiles,keepfiles] = my_spmbatch(sub,ses,task,datpath,params,save_intermediate_results)
 
-testscript = true;
+testscript = false;
 
 substring = ['sub-' num2str(sub,'%02d')];
 
@@ -469,8 +469,7 @@ if params.pepolar
     matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.others_dw(1) = {''};
     matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.perm_dim = pedim;
     matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.dummy_fast = 1;
-    matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.dummy_ecc = 0;
-    matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.dummy_3dor4d = 0;
+    matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.outdir = {''};
     
     mbstep = mbstep+1;
 
