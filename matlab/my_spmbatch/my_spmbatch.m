@@ -747,7 +747,7 @@ if params.do_realignment
         funcfile = spm_file(funcfile, 'prefix','u');
     
         delfiles{numel(delfiles)+1} = {reffunc};
-        keepfiles{numel(keepfiles)+1} = {funcfile}; %delfiles{numel(delfiles)+1} = {funcfile};
+        delfiles{numel(delfiles)+1} = {funcfile};
     else
         %% Reslice the func series
         
@@ -775,7 +775,7 @@ if params.do_realignment
         funcfile = spm_file(funcfile, 'prefix','r');
     
         delfiles{numel(delfiles)+1} = {reffunc};
-        keepfiles{numel(keepfiles)+1} = {funcfile};%delfiles{numel(delfiles)+1} = {funcfile};
+        delfiles{numel(delfiles)+1} = {funcfile};
     end
 end
 
