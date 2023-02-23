@@ -36,17 +36,17 @@ SPMid                 = spm('FnBanner',mfilename,'2.10');
 %%
 %%Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/Labo_fMRI/Individual_demo';
+datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
 first_sub = 7;
 last_sub = 7;
-sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [2];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-task ={'affect_run-1'};
+task ={'SE-EFT'};
 
 params.nechoes = 1; %number of echoes for ME-fMRI. The combination is done wi=TEi 
-params.dummytime = 6; %time in seconds
+params.dummytime = 8; %time in seconds
 
 params.reorient = true;
 
@@ -56,19 +56,19 @@ params.pepolar = true;
 
 params.do_realignment = true;
 params.do_slicetime = true;
-params.do_segmentation = false;
-params.do_normalization = false;
+params.do_segmentation = true;
+params.do_normalization = true;
 params.do_mot_derivatives = false;
 params.do_aCompCor = false;
 params.do_noiseregression = false;
 params.do_ICA_AROMA = false;
-params.do_smoothing = false;
+params.do_smoothing = true;
 
 params.normvox = [1.5 1.5 1.5];
 params.smoothfwhm = 6;
 
-use_parallel = false;
-save_intermediate_results = true;
+use_parallel = true;
+save_intermediate_results = false;
 
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------

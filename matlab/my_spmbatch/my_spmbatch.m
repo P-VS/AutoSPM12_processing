@@ -490,7 +490,7 @@ if params.pepolar
     
     fmstep = mbstep;
     
-    matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.data.precalcfieldmap.precalcfieldmap = cfg_dep('HySCO: Estimated fieldmap', substruct('.','val', '{}',{hyscostep}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','fieldmap'));
+    matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.data.precalcfieldmap.precalcfieldmap = cfg_dep('HySCO: Inhomogeneity field', substruct('.','val', '{}',{hyscostep}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','fieldmap'));
     matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.data.precalcfieldmap.magfieldmap = {''};
     matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.et = [te te];
     matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.maskbrain = 0;
@@ -517,9 +517,21 @@ if params.pepolar
     
     mbstep = mbstep+1;
 
-    vdm_file = spm_file(ppfunc, 'prefix','vdm5_HySCov2_r');
+    d = dir(fullfile(subpath,'func'));
+    ddir=[d(:).isdir];
+    dfolders = {d(ddir).name};
+    delfolders = find(contains(dfolders,'derivatives'));
 
-    delfiles{numel(delfiles)+1} = {spm_file(ppfunc, 'prefix','vdm5_HySCov2_r')};
+    if ~isempty(delfolders)
+        for delf=1:numel(delfolders)
+            rmdir(fullfile(subpath,'func',dfolders{delfolders(delf)}),'s');
+        end
+    end
+
+    [pth,name,ext] = fileparts(reffunc);
+    vdm_file = fullfile(subpath,'func','derivatives','HySCO-Run',['vdm5_' name '_desc-H-HySCO-ESTIMATED-FIELDMAP_dwi.nii']);
+
+    delfiles{numel(delfiles)+1} = {fullfile(subpath,'func','derivatives')}; 
     delfiles{numel(delfiles)+1} = {spm_file(reffunc, 'prefix','u')};
 
 elseif params.fieldmap
@@ -735,7 +747,7 @@ if params.do_realignment
         funcfile = spm_file(funcfile, 'prefix','u');
     
         delfiles{numel(delfiles)+1} = {reffunc};
-        delfiles{numel(delfiles)+1} = {funcfile};
+        keepfiles{numel(keepfiles)+1} = {funcfile}; %delfiles{numel(delfiles)+1} = {funcfile};
     else
         %% Reslice the func series
         
@@ -763,7 +775,7 @@ if params.do_realignment
         funcfile = spm_file(funcfile, 'prefix','r');
     
         delfiles{numel(delfiles)+1} = {reffunc};
-        delfiles{numel(delfiles)+1} = {funcfile};
+        keepfiles{numel(keepfiles)+1} = {funcfile};%delfiles{numel(delfiles)+1} = {funcfile};
     end
 end
 
