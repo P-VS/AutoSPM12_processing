@@ -62,7 +62,7 @@ denoise         = cfg_choice;
 denoise.tag     = 'fmri_denoise';
 denoise.name    = 'fMRI denoising';
 denoise.help    = {'This toolbox is meant to denoise fMRI data'};
-denoise.values  = {regression};
+denoise.values  = {regression acompcor};
 
 function out = vout_denoise(cmd,job)
 
