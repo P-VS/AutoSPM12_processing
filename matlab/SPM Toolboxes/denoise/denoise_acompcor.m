@@ -3,7 +3,7 @@ function [out,norms] = denoise_acompcor(job)
 warnstate = warning;
 warning off;
 
-spm_defaults;
+spm_get_defaults;
 
 rp_file = job.rp_file{1};
 expand_regressors = job.expand_regressors;
@@ -61,7 +61,7 @@ else
     end
 end
 
-acc_confounds = den_fmri_acompcor(funcdat(:,:,:,:),{csfdat},0.5,'confounds',confounds);
+acc_confounds = den_fmri_acompcor(funcdat(:,:,:,:),{csfdat},job.ncomp,'confounds',confounds,'PolOrder',1);
 
 confounds = cat(2,confounds,acc_confounds);
     
@@ -74,7 +74,7 @@ norms = rp_file;
 s = size(funcdat);
 funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
 
-[funcdat,~] = den_fmri_cleaning(funcdat(:,:),2,[],confounds,[],'restoremean','on');
+[funcdat,~] = den_fmri_cleaning(funcdat(:,:),1,[job.reptime job.filtfreq(1) job.filtfreq(2)],confounds,[],'restoremean','on');
 
 funcdat = reshape(funcdat(:,:),s);
 

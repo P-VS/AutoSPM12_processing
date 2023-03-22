@@ -1,28 +1,7 @@
-function [out,norms] = denoise_regression(job)
+function [out] = denoise_bppassfilt(job)
 
 warnstate = warning;
 warning off;
-
-spm_get_defaults;
-
-rp_file = job.rp_file{1};
-expand_regressors = job.expand_regressors;
-
-confounds = load(rp_file);
-
-if expand_regressors>1
-    confounds = cat(2,confounds,cat(1,zeros(1,6),diff(confounds)));
-
-    if expand_regressors==3
-        confounds = cat(2,confounds,power(confounds,2));
-    end
-
-    rp_file = spm_file(rp_file, 'prefix','der_','ext','.txt');
-
-    writematrix(confounds,rp_file,'Delimiter','tab');
-end
-
-norms = rp_file;
 
 funcfile = job.func_file;
 
@@ -47,14 +26,14 @@ end
 s = size(funcdat);
 funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
 
-[funcdat,~] = den_fmri_cleaning(funcdat(:,:),1,[job.reptime job.filtfreq(1) job.filtfreq(2)],confounds,[],'restoremean','on');
+[funcdat,~] = den_fmri_cleaning(funcdat(:,:),1,[job.reptime job.filtfreq(1) job.filtfreq(2)],[],[],'restoremean','on');
 
 funcdat = reshape(funcdat(:,:),s);
 
 if numel(funcfile)==1
     for k=1:numel(Vfunc)
         Vfunc(k).fname = spm_file(funcf, 'prefix','d');
-        Vfunc(k).descrip = 'denoise - regression';
+        Vfunc(k).descrip = 'denoise - bandpass filter';
         Vfunc(k).n = [k 1];
         Vfunc(k) = spm_create_vol(Vfunc(k));
         Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
@@ -66,7 +45,7 @@ else
     for k=1:numel(funcfile)
         Vfunc=spm_vol(funcfile{k});
         Vfunc.fname = spm_file(funcfile{k}, 'prefix','d');
-        Vfunc.descrip = 'denoise - regression';
+        Vfunc.descrip = 'denoise - bandpass filter';
         Vfunc = spm_create_vol(Vfunc(k));
         Vfunc = spm_write_vol(Vfunc,funcdat(:,:,:,k));
         out = [out;spm_file(funcfile{k}, 'prefix','d')];
