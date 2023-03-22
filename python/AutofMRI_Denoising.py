@@ -40,37 +40,39 @@ def set_denoising_parameters():
     """
     an_params = {}
     
-    an_params['datpath'] = '/Volumes/LaCie/UZ_Brussel/Labo_fMRI/Full_dataset'  #No spaties in the path name
+    an_params['datpath'] = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data'  #No spaties in the path name
     
-    first_sub = 1
-    last_sub = 1
-    an_params['sublist'] = list(range(first_sub,last_sub+1)) #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
+    first_sub = 2
+    last_sub = 20
+    an_params['sublist'] = [8] #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
     
     an_params['nsessions'] = [1] #nsessions>0 data should be in sub-ii/ses-00j
     an_params['ME_fMRI'] = False
     
-    an_params['task'] = ['affect_run-1'] #text string that is in between task- and _bold in your fMRI nifti filename
+    an_params['task'] = ['ME1E-EmoFaces'] #text string that is in between task- and _bold in your fMRI nifti filename
     
     an_params['preproc_folder'] = 'preproc_func'
     
     an_params['func_prefix'] = 'wuae' #unsmoothed funcfile = func_prefix + sub-...
     an_params['anat_postfix'] = 'Crop_1' #anatfile = sub-..._T1w_ +anat_postfix+.nii
-    an_params['segtool'] = 'fsl'  #segmentation done in fsl or spm
+    an_params['segtool'] = 'spm'  #segmentation done in fsl or spm
     
     an_params['rp_derivatives'] = True
     an_params['censoring'] = False
     an_params['CompCor'] = True
     
-    an_params['ica_decomposition'] = 'do_fastICA' # do_fastICA / save_fastICA / do_Melodic / save_Melodic / none
-    an_params['do_ICA_aroma'] = True
-    an_params['do_ICA_removal'] = True
+    an_params['ica_decomposition'] = 'none' # do_fastICA / save_fastICA / do_Melodic / save_Melodic / none
+    an_params['do_ICA_aroma'] = False
+    an_params['do_ICA_removal'] = False
     
-    an_params['use_CompCor_in_AROMA'] = True
+    an_params['use_CompCor_in_AROMA'] = False
     an_params['concat_AROMA_CompCor'] = False
     
-    an_params['do_noise_regression'] = False
+    an_params['do_noise_regression'] = True
+    an_params['do_bandpass_filter'] = True
+    an_params['bandpass'] = [0.008,0.1]
     
-    an_params['denoise_folder'] = 'preproc_func_AROMA'
+    an_params['denoise_folder'] = 'preproc_func_compcor_python'
     
     return an_params
 
@@ -81,72 +83,56 @@ BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 ---------------------------------------------------------------------------------------
 """
     
-def compcor_dn(fmrifile,csf_file,gm_file,wm_file,t_r=2.0):
+def compcor_dn(fmrifile,mask,csf_file,gm_file,wm_file,t_r=2.0):
     
     import os
     
     import nibabel as nib
+    import numpy as np
     
     from nilearn import masking
+    from nilearn.image import mean_img, clean_img
     
     from scipy.ndimage import binary_dilation
     from skimage.morphology import ball
     
     from nipype.algorithms.confounds import ACompCor
     
-    csfim = nib.load(csf_file)
     gmim = nib.load(gm_file)
     wmim = nib.load(wm_file)
     
-    gm_data = gmim.get_data()>0.05
-    wm_data = wmim.get_data()
-    csf_data = csfim.get_data()
+    gm_data = gmim.get_fdata()
+    gm_data = np.nan_to_num(gm_data,nan=0.0)
+    wm_data = wmim.get_fdata()
+    wm_data = np.nan_to_num(wm_data,nan=0.0)
     
-    wm_data[wmim.get_data()<0.99]=0
-    csf_data[csfim.get_data()<0.99]=0
+    maskim = nib.load(mask)
+    brain_data = maskim.get_fdata()
+    brain_data[(gm_data+wm_data)<0.2]=0
+    brain_data[brain_data>0.0]=1
     
     # Dilate the GM mask
-    gm_data = binary_dilation(gm_data, structure=ball(2))
+    brain_data = binary_dilation(brain_data, structure=ball(2))
     
-    wm_data[gm_data] = 0
-    comb_data = wm_data+csf_data
+    maskim = nib.load(mask)
+    head_data = maskim.get_fdata()
+    head_data[brain_data>0.0]=0
+    head_data[head_data>0.0]=1
+
+    nbim=nib.Nifti1Image(head_data,gmim.affine,gmim.header)
+    nb_file = os.path.join(os.getcwd(),'compcor_nb.nii')
     
-    fmridat = nib.load(fmrifile)
-    fmrimask = masking.compute_epi_mask(fmridat)
-    
-    boldmask_file = os.path.join(os.getcwd(),'boldmask.nii')
-    
-    nib.save(fmrimask,boldmask_file)
-    
-    wm_data[fmrimask.get_data()<0.5]=0
-    csf_data[fmrimask.get_data()<0.5]=0
-    comb_data[fmrimask.get_data()<0.5]=0
-    
-    wm_data[wm_data>0.0]=1
-    csf_data[csf_data>0.0]=1
-    comb_data[comb_data>0.0]=1
-    
-    nwmim=nib.Nifti1Image(wm_data,gmim.affine,gmim.header)
-    csfmim=nib.Nifti1Image(csf_data,gmim.affine,gmim.header)
-    ncombim=nib.Nifti1Image(comb_data,gmim.affine,gmim.header)
-    
-    wm_file = os.path.join(os.getcwd(),'compcor_wm.nii')
-    csf_file = os.path.join(os.getcwd(),'compcor_csf.nii')
-    comb_file = os.path.join(os.getcwd(),'compcor_csfwm.nii')
-    
-    nib.save(nwmim,wm_file)
-    nib.save(csfmim,csf_file)
-    nib.save(ncombim,comb_file)
+    nib.save(nbim,nb_file)
     
     acompcor_node = ACompCor()
     acompcor_node.inputs.realigned_file = fmrifile
     acompcor_node.inputs.pre_filter='cosine'
     acompcor_node.inputs.components_file = 'acompcor_components.tsv'
     acompcor_node.inputs.header_prefix = 'acompcor_'
-    acompcor_node.inputs.mask_files = [csf_file]
+    acompcor_node.inputs.mask_files = [nb_file]
     acompcor_node.inputs.merge_method='none'
-    #acompcor_node.inputs.variance_threshold = 0.5
-    acompcor_node.inputs.num_components = 5 #'all'
+    acompcor_node.inputs.variance_threshold = 0.5
+    #acompcor_node.inputs.num_components = 'all'
     acompcor_node.inputs.repetition_time = t_r
     acompcor_node.inputs.failure_mode='NaN'
     
@@ -320,16 +306,20 @@ def make_head_mask(anat):
 
 def ica_aroma(func,confounds,ica_dir,ica_method,csf_file,gm_file,wm_file,head_mask,mask,t_r=2.0):
     
-    def cross_correlation(a, b):
+    def compute_lcm(x, y):
+       # choose the greater number
+       if x > y:
+           greater = x
+       else:
+           greater = y
     
-        import numpy as np
-        
-        """Cross Correlations between columns of two matrices"""
-        assert a.ndim == b.ndim == 2
-        _, ncols_a = a.shape
-        # nb variables in columns rather than rows hence transpose
-        # extract just the cross terms between cols in a and cols in b
-        return np.corrcoef(a.T, b.T)[:ncols_a, ncols_a:]
+       while(True):
+           if((greater % x == 0) and (greater % y == 0)):
+               lcm = greater
+               break
+           greater += 1
+    
+       return lcm
     
     import os
     
@@ -338,23 +328,28 @@ def ica_aroma(func,confounds,ica_dir,ica_method,csf_file,gm_file,wm_file,head_ma
     import numpy as np
     import pandas as pd
     
+    from scipy.stats.mstats import zscore
+    
     gmim = nib.load(gm_file)
     wmim = nib.load(wm_file)
     csfim = nib.load(csf_file)
     
     headmask = nib.load(head_mask)
     
-    gm_data = gmim.get_data()>0.05
-    wm_data = wmim.get_data()>0.05
-    csf_data = csfim.get_data()>0.05
+    gm_data = gmim.get_fdata()
+    wm_data = wmim.get_fdata()
+    csf_dat = csfim.get_fdata()
     brain_data = gm_data+wm_data
-    head_data = headmask.get_data()
     
-    head_data[brain_data>0.5]=0
-    head_data[csf_data>0.5]=0
+    head_data = headmask.get_fdata()
+    head_data[brain_data>0.2]=0
+    head_data[csf_dat>0.2]=0
+    head_data[head_data>0.0]=1
     
-    csf_data[csf_data<0.90]=0  
-    csf_data[brain_data>0.5]=0
+    csf_data = headmask.get_fdata()
+    csf_data[brain_data>0.2]=0  
+    csf_data[csf_dat<0.5]=0 
+    csf_data[csf_data>0.0]=1
 
     if 'Melodic' in ica_method:
         melICim = nib.load(os.path.join(ica_dir,'melodic_IC.nii'))
@@ -365,7 +360,7 @@ def ica_aroma(func,confounds,ica_dir,ica_method,csf_file,gm_file,wm_file,head_ma
         for i in range(numIC):
             iIC=nib.load(os.path.join(ica_dir,'stats','thresh_zstat'+str(i)+'.nii'))
             
-            iICdat[:,:,:,i] = abs(iIC.get_data())
+            iICdat[:,:,:,i] = abs(iIC.get_fdata())
                  
         # Load melodic_FTmix file
         FT = np.loadtxt(os.path.join(ica_dir,'melodic_FTmix'))
@@ -375,7 +370,7 @@ def ica_aroma(func,confounds,ica_dir,ica_method,csf_file,gm_file,wm_file,head_ma
         
     elif 'fastICA' in ica_method:
         ica_sim = nib.load(os.path.join(ica_dir,'ica_components.nii'))
-        iICdat = abs(ica_sim.get_data())
+        iICdat = abs(ica_sim.get_fdata())
               
         numIC = iICdat.shape[3]
         
@@ -388,7 +383,7 @@ def ica_aroma(func,confounds,ica_dir,ica_method,csf_file,gm_file,wm_file,head_ma
     """Fraction component outside GM or WM"""
     edgeFract = np.zeros(numIC)
     csfFract = np.zeros(numIC)
-    for i in range(1,numIC):       
+    for i in range(0,numIC):       
         totSum = np.sum(iICdat[:,:,:,i]>0)
         nbSum = np.sum(iICdat[head_data>0,i]>0)
         csfSum = np.sum(iICdat[csf_data>0,i]>0)
@@ -429,37 +424,25 @@ def ica_aroma(func,confounds,ica_dir,ica_method,csf_file,gm_file,wm_file,head_ma
     
     # Read confounds
     conf_model = np.loadtxt(confounds)  
-    
+
     # Determine the maximum correlation between confounds and IC time-series
-    nsplits = 1000
     nmixrows, nmixcols = mix.shape
-    nrows_to_choose = int(round(0.9 * nmixrows))
+    nconfrows, nconfcols = conf_model.shape
     
-    # Max correlations for multiple splits of the dataset (for a robust estimate)
-    max_correls = np.empty((nsplits, nmixcols))
-    for i in range(nsplits):
-        # Select a random subset of 90% of the dataset rows (*without* replacement)
-        chosen_rows = random.sample(population=range(nmixrows),k=nrows_to_choose)
-
-        # Combined correlations between RP and IC time-series, squared and non squared
-        correl_nonsquared = cross_correlation(mix[chosen_rows],
-                                              conf_model[chosen_rows])
-        correl_squared = cross_correlation(mix[chosen_rows]**2,
-                                           conf_model[chosen_rows]**2)
-        correl_both = np.hstack((correl_squared, correl_nonsquared))
-
-        # Maximum absolute temporal correlation for every IC
-        max_correls[i] = np.abs(correl_both).max(axis=1)
-
-    # Feature score is the mean of the maximum correlation over all the random splits
-    # Avoid propagating occasional nans that arise in artificial test cases
-    maxRPcorr=np.nanmean(max_correls, axis=0)
+    nmix = np.repeat(mix,compute_lcm(nmixcols,nconfcols)/nmixcols,axis=1)
+    nconf_model = np.repeat(conf_model,compute_lcm(nmixcols,nconfcols)/nconfcols,axis=1)
+    
+    corr_mat = np.corrcoef(np.transpose(nmix),np.transpose(nconf_model))
+    max_correls= corr_mat.max(axis=1)
+    
+    max_correls = np.reshape(max_correls,[nmixcols,int(max_correls.shape[0]/nmixcols)])
+    maxRPcorr = max_correls[:,0]
     
     """ This function classifies a set of components into motion and non-motion components based on three features; 
-    maximum RP correlation, high-frequency content and non-bbrain-fraction"""
+    maximum RP correlation, high-frequency content and non-brain-fraction"""
     
     # Define criteria needed for classification (thresholds and hyperplane-parameters)
-    thr_csf = 0.10
+    thr_csf = 0.50
     thr_HFC = 0.35
     hyp = np.array([-19.9751070082159, 9.95127547670627, 24.8333160239175])
     
@@ -601,7 +584,7 @@ def read_json_parameter(jsonfile,parameter):
 ---------------------------------------------------------------------------------------
 """
 
-def regress_confounds(confounds,funcfile,mask,t_r):
+def regress_confounds(confounds,funcfile,mask,t_r,lowpass,highpass):
     import os
     
     import numpy as np
@@ -612,9 +595,9 @@ def regress_confounds(confounds,funcfile,mask,t_r):
     confound_df = np.loadtxt(confounds)
     
     if confound_df.size>0:
-        clean_func = clean_img(funcfile,confounds=confound_df,detrend=True,standardize=False,t_r=t_r, mask_img=mask)
+        clean_func = clean_img(funcfile,confounds=confound_df,low_pass=lowpass,high_pass=highpass,detrend=True,standardize=False,t_r=t_r, mask_img=mask)
     else:
-        clean_func = clean_img(funcfile,detrend=True,standardize=False,t_r=t_r, mask_img=mask)
+        clean_func = clean_img(funcfile,low_pass=lowpass,high_pass=highpass,detrend=True,standardize=False,t_r=t_r, mask_img=mask)
     
     res_func =  os.path.join(os.getcwd(),'d'+os.path.basename(funcfile))
     
@@ -626,7 +609,7 @@ def regress_confounds(confounds,funcfile,mask,t_r):
 ---------------------------------------------------------------------------------------
 """
 
-def sum_mean_denoiefunc(funcfile,dfuncfile):
+def sum_mean_denoisefunc(funcfile,dfuncfile):
     import os
     
     import nibabel as nib
@@ -636,8 +619,8 @@ def sum_mean_denoiefunc(funcfile,dfuncfile):
     clean_func = nib.load(dfuncfile)
     mean_func = mean_img(funcfile)
     
-    cleandat = clean_func.get_data()
-    meandat = mean_func.get_data()
+    cleandat = clean_func.get_fdata()
+    meandat = mean_func.get_fdata()
     
     for i in range(0,cleandat.shape[3]):
         cleandat[:,:,:,i]=cleandat[:,:,:,i]+meandat[:,:,:]
@@ -662,7 +645,7 @@ def make_epi_mask(in_file):
     import numpy as np
     
     fmridat = nib.load(in_file)
-    fmrimask = np.mean(fmridat.get_data(),axis=3)
+    fmrimask = np.mean(fmridat.get_fdata(),axis=3)
     fmrimask[fmrimask<0.05*np.max(fmrimask)]  = 0
     fmrimask[fmrimask>0] = 1
     
@@ -698,6 +681,7 @@ def do_ica(func,mask):
     
     from nilearn import input_data
     from scipy import stats
+    from random import randint
     
     maskim = nib.load(mask)
     fmridat = nib.load(func)
@@ -710,35 +694,26 @@ def do_ica(func,mask):
     fixed_seed = 45
 
     for i_attempt in range(10):
-        fmri_ica = sklearn.decomposition.FastICA(n_components=128,
+        fmri_ica = sklearn.decomposition.FastICA(n_components=80,
                                                  algorithm="parallel",
                                                  fun="logcosh",
                                                  max_iter=500,
                                                  random_state=fixed_seed)
-
+        
         with warnings.catch_warnings(record=True) as w:
             # Cause all warnings to always be triggered in order to capture
             # convergence failures.
             warnings.simplefilter("always")
-
-            fmri_ica_s = fmri_ica.fit_transform(fmriheadmask.T).T
-
+            
             w = list(filter(lambda i: issubclass(i.category, UserWarning), w))
             if len(w):
-                LGR.warning(
-                    "ICA with random seed {0} failed to converge after {1} "
-                    "iterations".format(fixed_seed, fmri_ica.n_iter_)
-                )
                 if i_attempt < 9:
-                    fixed_seed += 1
-                    LGR.warning("Random seed updated to {0}".format(fixed_seed))
+                    fixed_seed = randint(40,60)
             else:
-                LGR.info(
-                    "ICA with random seed {0} converged in {1} "
-                    "iterations".format(fixed_seed, fmri_ica.n_iter_)
-                )
                 break
 
+    fmri_ica_s = fmri_ica.fit_transform(fmriheadmask.T).T
+    
     fmri_ica_t = fmri_ica.mixing_
     fmri_ica_t = stats.zscore(fmri_ica_t, axis=0)
         
@@ -766,7 +741,38 @@ def do_ica(func,mask):
     
 """
 ---------------------------------------------------------------------------------------
-"""   
+"""  
+
+def bandpass_filter(in_file,mask,bandpass,t_r):
+    
+    import os
+    
+    import nibabel as nib
+    import numpy as np
+    
+    from nilearn import masking
+    from nilearn.image import mean_img, clean_img
+    from scipy.stats.mstats import zscore
+    
+    clean_func = clean_img(in_file,confounds=None,low_pass=bandpass[1],high_pass=bandpass[0],detrend=True,standardize=False,t_r=t_r, mask_img=mask)
+    cleandat = clean_func.get_fdata()
+    
+    meanim = mean_img(in_file)
+    meandat = meanim.get_fdata()
+    
+    for i in range(0,cleandat.shape[3]):
+        cleandat[:,:,:,i]=cleandat[:,:,:,i]+meandat[:,:,:]
+        
+    resultim = nib.Nifti1Image(cleandat,clean_func.affine,clean_func.header)
+    
+    out_file = os.path.join(os.getcwd(),'d'+os.path.basename(in_file))
+    nib.save(resultim,out_file)
+           
+    return out_file
+
+"""
+---------------------------------------------------------------------------------------
+"""  
 
 def main():
                    
@@ -810,6 +816,8 @@ def main():
         concat_AROMA_CompCor = False
     
     do_noise_regression = an_params['do_noise_regression']
+    do_bandpass_filter = an_params['do_bandpass_filter']
+    bandpass = an_params['bandpass']
     
     if do_ICA_aroma:
         rp_derivatives = True
@@ -863,9 +871,9 @@ def main():
                     subgmdat = os.path.join(subanadir,'w'+substring+'_T1w_'+anat_postfix+'_brain_pve_1.nii')
                     subwmdat = os.path.join(subanadir,'w'+substring+'_T1w_'+anat_postfix+'_brain_pve_2.nii')
                 if 'spm' in segtool:
-                    subcbfdat = os.path.join(subanadir,'wc3'+substring+'_T1w_'+anat_postfix+'.nii')
-                    subgmdat = os.path.join(subanadir,'wc1'+substring+'_T1w_'+anat_postfix+'.nii')
-                    subwmdat = os.path.join(subanadir,'wc2'+substring+'_T1w_'+anat_postfix+'.nii')
+                    subcbfdat = os.path.join(subanadir,'wc3r'+substring+'_T1w_'+anat_postfix+'.nii')
+                    subgmdat = os.path.join(subanadir,'wc1r'+substring+'_T1w_'+anat_postfix+'.nii')
+                    subwmdat = os.path.join(subanadir,'wc2r'+substring+'_T1w_'+anat_postfix+'.nii')
                 
                 """
                 Check the existence of all files
@@ -927,9 +935,9 @@ def main():
             templates['gm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','w'+'{substring}'+'_T1w_'+anat_postfix+'_brain_pve_1.nii')
             templates['wm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','w'+'{substring}'+'_T1w_'+anat_postfix+'_brain_pve_2.nii')
         if 'spm' in segtool:
-            templates['csf'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wc3'+'{substring}'+'_T1w_'+anat_postfix+'.nii')
-            templates['gm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wc1'+'{substring}'+'_T1w_'+anat_postfix+'.nii')
-            templates['wm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wc2'+'{substring}'+'_T1w_'+anat_postfix+'.nii')
+            templates['csf'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wc3r'+'{substring}'+'_T1w_'+anat_postfix+'.nii')
+            templates['gm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wc1r'+'{substring}'+'_T1w_'+anat_postfix+'.nii')
+            templates['wm'] = os.path.join(datpath,'{substring}','{sesstring}','preproc_anat','wc2r'+'{substring}'+'_T1w_'+anat_postfix+'.nii')
         
         if not an_params['ME_fMRI']:
             templates['json'] = os.path.join(datpath,'{substring}','{sesstring}','func','{substring}'+'_task-'+'{task}'+'_bold.json')
@@ -986,7 +994,28 @@ def main():
                                             function=make_epi_mask),name='make_mask')
         
         preproc.connect([(selectfiles,mask_node,[('func','in_file')])])
+        
+        """
+        Bandpass filtering
+        """
+        if do_bandpass_filter:
+            filt_node = Node(interface=Function(input_names=['in_file','mask','bandpass','t_r'],
+                                                output_names=['out_file'],
+                                                function=bandpass_filter),name='bandpass')
+            
+            filt_node.inputs.bandpass = bandpass
                   
+            save_filt_node = Node(interface=Function(input_names=['in_file','save_dir'],
+                                                     output_names=['saved_file'],
+                                                     function=save_preproc_files),name='save_filt')
+            
+            preproc.connect([(selectfiles,filt_node,[('func','in_file')]),
+                             (mask_node,filt_node,[('mask','mask')]),
+                             (read_tr,filt_node,[('value','t_r')]),
+                             (filt_node,save_filt_node,[('out_file','in_file')]),
+                             (selectfiles,save_filt_node,[('save_den_dir','save_dir')])
+                             ])
+            
         """
         Motion derivative
         """
@@ -1027,9 +1056,13 @@ def main():
                                                      output_names=['saved_file'],
                                                      function=save_preproc_files),name='save_outliers')
             
-            preproc.connect([(selectfiles,ad_node,[('rp_file','realignment_parameters')]),
-                             (selectfiles,ad_node,[('func','realigned_files')])
-                             ])
+            
+            preproc.connect([(selectfiles,ad_node,[('rp_file','realignment_parameters')])])
+                             
+            if do_bandpass_filter:
+                preproc.connect([(filt_node,ad_node,[('out_file','realigned_files')])])
+            else:
+                preproc.connect([(selectfiles,ad_node,[('func','realigned_files')])])
                 
             preproc.connect([(ad_node,save_ad_node,[('plot_files','in_file')]),
                              (selectfiles,save_ad_node,[('save_den_dir','save_dir')]),
@@ -1074,17 +1107,22 @@ def main():
         aCompCor
         """
         if CompCor:
-            compcor_node=Node(interface=Function(input_names=['fmrifile','csf_file','gm_file','wm_file'],
+            compcor_node=Node(interface=Function(input_names=['fmrifile','mask','csf_file','gm_file','wm_file'],
                                                  output_names=['confounds_file'],
                                                  function=compcor_dn),name='compcor')
             
-            preproc.connect([(selectfiles,compcor_node,[('func','fmrifile'),
-                                                        ('csf','csf_file'),
+            preproc.connect([(selectfiles,compcor_node,[('csf','csf_file'),
                                                         ('gm','gm_file'),
                                                         ('wm','wm_file'),
                                                         ]),
+                             (mask_node,compcor_node,[('mask','mask')]),
                              (read_tr,compcor_node,[('value','t_r')])
                             ])
+            
+            if do_bandpass_filter:
+                preproc.connect([(filt_node,compcor_node,[('out_file','fmrifile')])])
+            else:
+                preproc.connect([(selectfiles,compcor_node,[('func','fmrifile')])])
             
             save_compcor_node = Node(interface=Function(input_names=['in_file','save_dir'],
                                                         output_names=['saved_file'],
@@ -1128,14 +1166,14 @@ def main():
             
             if'do_Melodic' in ica_decomposition:
                 
-                melodic_node = Node(MELODIC(output_type='NIFTI',out_all=True,no_bet=True),name='melodic')
+                melodic_node = Node(MELODIC(num_ICs=80,maxit=500,max_restart=5,output_type='NIFTI',out_all=True,no_bet=False),name='melodic')
                 
                 save_melodic_node = Node(interface=Function(input_names=['in_dir','save_dir'],
                                                             output_names=['save_dir'],
                                                             function=save_melodic_folder),name='save_melodic')
         
                 preproc.connect([(selectfiles,melodic_node,[('func','in_files')]),
-                                 (head_mask_node,melodic_node,[('head_mask','mask')]),
+                                 (mask_node,melodic_node,[('mask','mask')]),
                                  (read_tr,melodic_node,[('value','tr_sec')]),
                                  (melodic_node,save_melodic_node,[('out_dir','in_dir')]),
                                  (selectfiles,save_melodic_node,[('melodic_dir','save_dir')])
@@ -1271,9 +1309,17 @@ def main():
         Noise regression
         """
         if do_noise_regression:
-            regconf_node=Node(interface=Function(input_names=['confounds','funcfile','mask','t_r'],
+            regconf_node=Node(interface=Function(input_names=['confounds','funcfile','mask','t_r','lowpass','highpass'],
                                                  output_names=['res_func'],
                                                  function=regress_confounds),name='regconf')
+            
+            
+            if do_bandpass_filter:
+                regconf_node.inputs.lowpass = bandpass[1]
+                regconf_node.inputs.highpass = bandpass[0]
+            else:
+                regconf_node.inputs.lowpass = None
+                regconf_node.inputs.highpass = None
             
             """save_reconf_node = Node(interface=Function(input_names=['in_file','save_dir'],
                                                        output_names=['saved_file'],
@@ -1281,14 +1327,14 @@ def main():
             
             sum_meandn_node=Node(interface=Function(input_names=['funcfile','dfuncfile'],
                                                     output_names=['res_func'],
-                                                    function=sum_mean_denoiefunc),name='summeandf')
+                                                    function=sum_mean_denoisefunc),name='summeandf')
             
             save_meandn_node = Node(interface=Function(input_names=['in_file','save_dir'],
                                                        output_names=['saved_file'],
                                                        function=save_preproc_files),name='save_meandn')
             
-            preproc.connect([(selectfiles,regconf_node,[('func','funcfile')]),#[('sfunc','funcfile')]),
-                             (read_tr,regconf_node,[('value','t_r')])
+            preproc.connect([(read_tr,regconf_node,[('value','t_r')]),
+                             (selectfiles,regconf_node,[('func','funcfile')])
                              ])
             
             if concat_AROMA_CompCor:
@@ -1356,6 +1402,11 @@ def main():
                              (smooth_node,save_smooth_node,[('smoothed_file','in_file')]),
                              (selectfiles,save_smooth_node,[('save_den_dir','save_dir')])
                              ])
+        elif do_bandpass_filter:
+            preproc.connect([(filt_node,smooth_node,[('out_file','in_file')]),
+                             (smooth_node,save_smooth_node,[('smoothed_file','in_file')]),
+                             (selectfiles,save_smooth_node,[('save_den_dir','save_dir')])
+                             ])
         else:   
             preproc.connect([(sum_meandn_node,smooth_node,[('res_func','in_file')]),
                              (smooth_node,save_smooth_node,[('smoothed_file','in_file')]),
@@ -1369,8 +1420,8 @@ def main():
         print('')
         print('Start denoising')
         print('')
-        preproc.run(plugin='MultiProc')
-        #preproc.run()
+        #preproc.run(plugin='MultiProc')
+        preproc.run()
         print('Done denoising')
         print('')
         
