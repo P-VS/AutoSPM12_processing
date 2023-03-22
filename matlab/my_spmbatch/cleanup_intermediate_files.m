@@ -44,10 +44,20 @@ end
 %% Move results
 for i=1:numel(keepfiles)
     if contains(keepfiles{i},'anat')
-            if isfile(keepfiles{i}{1}); movefile(keepfiles{i}{1},preproc_anat); end
+        if isfile(keepfiles{i}{1})
+            [opath,~,~] = fileparts(keepfiles{i}{1});
+            if ~strcmp(opath,preproc_anat)
+                movefile(keepfiles{i}{1},preproc_anat); 
+            end
+        end
     end
     if contains(keepfiles{i},'func')
-        if isfile(keepfiles{i}{1}); movefile(keepfiles{i}{1},preproc_func); end
+        if isfile(keepfiles{i}{1}) 
+            [opath,~,~] = fileparts(keepfiles{i}{1});
+            if ~strcmp(opath,preproc_func)
+                movefile(keepfiles{i}{1},preproc_func); 
+            end
+        end
     end
 end
 

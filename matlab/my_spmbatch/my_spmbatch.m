@@ -194,7 +194,7 @@ elseif params.do_normalization
     keepfiles{numel(keepfiles)+1} = {spm_file(subanat, 'prefix','w')};
 end
 
-if params.nechoes==1
+if params.nechoes==1 && ~params.do_onlydenoise
     %% Loading the fMRI time series and deleting dummy scans
     fprintf('Reading the data \n')
 
@@ -229,7 +229,7 @@ if params.nechoes==1
     end
 
     funcdat = spm_read_vols(Vfunc);
-else  
+elseif params.nechoes>1 && ~params.do_onlydenoise
     %% Loading the fMRI time series and deleting dummy scans
     fprintf('Reading the data \n')
 
@@ -307,7 +307,7 @@ if params.do_slicetime
 
     funcfile = spm_file(funcfile, 'prefix','ae');
     delfiles{numel(delfiles)+1} = {funcfile};
-else
+elseif ~params.do_onlydenoise
     fprintf('Write data without dummys\n')
     
     for k=1:numel(Vfunc)
@@ -335,17 +335,20 @@ if params.reorient
     end
 end
 
-Rfunc = Vfunc(1);
-rdat = spm_read_vols(Rfunc);
+if ~params.do_onlydenoise
+    Rfunc = Vfunc(1);
+    rdat = spm_read_vols(Rfunc);
+    
+    Rfunc.fname = spm_file(funcfile, 'prefix','f');
+    Rfunc.descrip = 'my_spmbatch - first volume';
+    Rfunc.n = [1 1];
+    Rfunc = spm_create_vol(Rfunc);
+    Rfunc = spm_write_vol(Rfunc,rdat);
+    
+    reffunc = spm_file(funcfile, 'prefix','f');
+    delfiles{numel(delfiles)+1} = {reffunc};
+end
 
-Rfunc.fname = spm_file(funcfile, 'prefix','f');
-Rfunc.descrip = 'my_spmbatch - first volume';
-Rfunc.n = [1 1];
-Rfunc = spm_create_vol(Rfunc);
-Rfunc = spm_write_vol(Rfunc,rdat);
-
-reffunc = spm_file(funcfile, 'prefix','f');
-delfiles{numel(delfiles)+1} = {reffunc};
 
 mbstep = 1;
 
@@ -854,16 +857,36 @@ if params.do_normalization
     defs.comp{2}.idbbvox.vox(~isfinite(defs.comp{2}.idbbvox.vox)) = vx(~isfinite(defs.comp{2}.idbbvox.vox));
     defs.comp{2}.idbbvox.bb(~isfinite(defs.comp{2}.idbbvox.bb)) = bb(~isfinite(defs.comp{2}.idbbvox.bb));
     
-    [~,funcdat] = my_spmbatch_deformations(defs);
+    [~,wfuncdat] = my_spmbatch_deformations(defs);
 
     funcfile = spm_file(funcfile, 'prefix','w');
     keepfiles{numel(keepfiles)+1} = {funcfile};
 
 end
 
+if params.do_onlydenoise
+    fprintf('Start loading preprocessed data \n')
+
+    funcfile = fullfile(subpath,'preproc_func',['wuae' substring '_task-' task '_bold.nii']);
+
+    if ~exist(funcfile)
+        funcfile = fullfile(subpath,'preproc_func',['wrae' substring '_task-' task '_bold.nii']);
+    end
+
+    Vfunc = spm_vol(funcfile);
+
+    wfuncdat = spm_read_vols(Vfunc);
+
+    rp_file = fullfile(subpath,'preproc_func',['rp_ae' substring '_task-' task '_bold.txt']);
+
+    fprintf('Done loading preprocessed data \n')
+end
+
 %%Denoising with motion derivatives and squared regressors (24 regressors)
-if params.do_mot_derivatives & exist('rp_file')
-    if exist(rp_file)
+if params.do_mot_derivatives & exist('rp_file','var')
+    fprintf('Start motion derivatives \n')
+
+    if exist(rp_file,'file')
         confounds = load(rp_file);
         confounds = cat(2,confounds,cat(1,zeros(1,6),diff(confounds)));
         confounds = cat(2,confounds,power(confounds,2));
@@ -874,11 +897,15 @@ if params.do_mot_derivatives & exist('rp_file')
 
         keepfiles{numel(keepfiles)+1} = {rp_file};
     end
+
+    fprintf('Done motion derivatives \n')
 end
 
 %%Denoising with aCompCor covariates
-if params.do_aCompCor & exist('rp_file')
-    if exist(rp_file)
+if params.do_aCompCor & exist('rp_file','var')
+    fprintf('Start aCompCor \n')
+
+    if exist(rp_file,'file')
         confounds = load(rp_file);
     else
         confounds = [];
@@ -900,10 +927,10 @@ if params.do_aCompCor & exist('rp_file')
     csfdat(csfdat<0.8)=0;
     csfdat(csfdat>0.0)=1;
 
-    if ~params.do_normalization
-        acc_confounds = fmri_acompcor(funcfile,{csfdat},0.5,'confounds',confounds);
+    if ~exist('wfuncdat','var')
+        acc_confounds = fmri_acompcor(funcfile,{csfdat},params.Ncomponents,'confounds',confounds,'PolOrder',1);
     else
-        acc_confounds = fmri_acompcor(funcdat(:,:,:,:),{csfdat},0.5,'confounds',confounds);
+        acc_confounds = fmri_acompcor(wfuncdat(:,:,:,:),{csfdat},params.Ncomponents,'confounds',confounds,'PolOrder',1);
     end
 
     if exist(rp_file)
@@ -919,42 +946,69 @@ if params.do_aCompCor & exist('rp_file')
     end
 
     keepfiles{numel(keepfiles)+1} = {rp_file};
+
+    fprintf('Done aCompCor \n')
 end
 
-if params.do_noiseregression
+if params.do_noiseregression || params.do_bpfilter
+    fprintf('Start noise regression \n')
+
     if exist(rp_file)
         confounds = load(rp_file);
-        Vfunc = spm_vol(funcfile);
-
-        if params.do_normalization
-            s = size(funcdat);
-            funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
-
-            [funcdat,~] = fmri_cleaning(funcdat(:,:),2,[],confounds,[],'restoremean','on');
-        else
-            [funcdat,~] = fmri_cleaning(funcfile,2,[],confounds,[],'restoremean','on');
-        end
-        
-        funcdat = reshape(funcdat(:,:),[Vfunc(1).dim(1),Vfunc(1).dim(2),Vfunc(1).dim(3),numel(Vfunc)]);
-
-        for k=1:numel(Vfunc)
-            Vfunc(k).fname = spm_file(funcfile, 'prefix','d');
-            Vfunc(k).descrip = 'my_spmbatch - remove dummys';
-            Vfunc(k).n = [k 1];
-            Vfunc(k) = spm_create_vol(Vfunc(k));
-            Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
-        end
-
-        funcfile = spm_file(funcfile, 'prefix','d');
-        keepfiles{numel(keepfiles)+1} = {funcfile};
+    else
+        confounds = [];
     end
+
+    if params.do_bpfilter
+        if params.nechoes==1
+            funcjsonfile = fullfile(subfmridir,[substring '_task-' task '_bold.json']);
+        else
+            funcjsonfile = fullfile(subfmridir,[substring '_task-' task '_bold_e1.json']);
+        end
+
+        jsondat = fileread(funcjsonfile);
+        jsondat = jsondecode(jsondat);
+
+        tr = jsondat.RepetitionTime;
+
+        bpfilter = [tr params.bpfilter(1:2)];
+    else
+        bpfilter = [];
+    end
+
+    if exist('wfuncdat','var')
+        s = size(wfuncdat);
+        wfuncdat = reshape(wfuncdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
+
+        [wfuncdat,~] = fmri_cleaning(wfuncdat(:,:),1,bpfilter,confounds,[],'restoremean','on');
+    else
+        [wfuncdat,~] = fmri_cleaning(funcfile,1,bpfilter,confounds,[],'restoremean','on');
+    end
+    
+    wfuncdat = reshape(wfuncdat(:,:),s);
+
+    Vfunc = spm_vol(funcfile);
+
+    for k=1:numel(Vfunc)
+        Vfunc(k).fname = spm_file(funcfile, 'prefix','d');
+        Vfunc(k).descrip = 'my_spmbatch - denoise';
+        Vfunc(k).n = [k 1];
+        Vfunc(k) = spm_create_vol(Vfunc(k));
+        Vfunc(k) = spm_write_vol(Vfunc(k),wfuncdat(:,:,:,k));
+    end
+
+    funcfile = spm_file(funcfile, 'prefix','d');
+    keepfiles{numel(keepfiles)+1} = {funcfile};
+
+    fprintf('Done noise regression \n')
 end
 
 if params.do_smoothing
+    fprintf('Start smoothing \n')
 
     %% Smooth func
     
-    if ~params.do_normalization || ~params.do_noiseregression
+    if ~exist('wfuncdat','var')
 
         for i=1:numel(Vfunc)
             sfuncfiles{i,1} = [funcfile ',' num2str(i)];
@@ -980,7 +1034,7 @@ if params.do_smoothing
             [pth,nm,xt] = fileparts(Vfunc(i).fname);
 
             Q = fullfile(pth, ['s' nm  '.nii,' num2str(Vfunc(i).n)]);
-            my_spmbatch_smooth(funcdat(:,:,:,i),Vfunc(i),Q,[params.smoothfwhm params.smoothfwhm params.smoothfwhm],0);
+            my_spmbatch_smooth(wfuncdat(:,:,:,i),Vfunc(i),Q,[params.smoothfwhm params.smoothfwhm params.smoothfwhm],0);
 
             spm_progress_bar('Set',i);
         end
@@ -989,8 +1043,9 @@ if params.do_smoothing
     end
 
     funcfile = spm_file(funcfile, 'prefix','s');
-    keepfiles{numel(keepfiles)+1} = {funcfile};
-        
+    keepfiles{numel(keepfiles)+1} = {funcfile};    
+
+    fprintf('Done smoothing \n')
 end
 
 end
