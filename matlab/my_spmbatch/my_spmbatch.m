@@ -927,10 +927,27 @@ if params.do_aCompCor & exist('rp_file','var')
     csfdat(csfdat<0.8)=0;
     csfdat(csfdat>0.0)=1;
 
-    if ~exist('wfuncdat','var')
-        acc_confounds = fmri_acompcor(funcfile,{csfdat},params.Ncomponents,'confounds',confounds,'PolOrder',1);
+    if params.do_bpfilter
+        if params.nechoes==1
+            funcjsonfile = fullfile(subfmridir,[substring '_task-' task '_bold.json']);
+        else
+            funcjsonfile = fullfile(subfmridir,[substring '_task-' task '_bold_e1.json']);
+        end
+
+        jsondat = fileread(funcjsonfile);
+        jsondat = jsondecode(jsondat);
+
+        tr = jsondat.RepetitionTime;
+
+        bpfilter = [tr params.bpfilter(1:2)];
     else
-        acc_confounds = fmri_acompcor(wfuncdat(:,:,:,:),{csfdat},params.Ncomponents,'confounds',confounds,'PolOrder',1);
+        bpfilter = [];
+    end
+
+    if ~exist('wfuncdat','var')
+        acc_confounds = fmri_acompcor(funcfile,{csfdat},params.Ncomponents,'confounds',confounds,'filter',bpfilter,'PolOrder',1);
+    else
+        acc_confounds = fmri_acompcor(wfuncdat(:,:,:,:),{csfdat},params.Ncomponents,'confounds',confounds,'filter',bpfilter,'PolOrder',1);
     end
 
     if exist(rp_file)
