@@ -61,7 +61,7 @@ else
     end
 end
 
-acc_confounds = den_fmri_acompcor(funcdat(:,:,:,:),{csfdat},job.ncomp,'confounds',confounds,'PolOrder',1);
+acc_confounds = den_fmri_acompcor(funcdat(:,:,:,:),{csfdat},job.ncomp,'confounds',confounds,'filter',[job.reptime job.filtfreq(1) job.filtfreq(2)],'PolOrder',1);
 
 confounds = cat(2,confounds,acc_confounds);
     

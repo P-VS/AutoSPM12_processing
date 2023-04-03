@@ -34,7 +34,7 @@ if numel(funcfile)==1
     funcdat = spm_read_vols(Vfunc);
 else
     Vfunc = spm_vol(funcfile{1});
-    dim = V.dim;
+    dim = Vfunc.dim;
 
     funcdat = zeros([dim(1:3) numel(funcfile)]);
 
