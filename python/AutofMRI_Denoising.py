@@ -61,15 +61,15 @@ def set_denoising_parameters():
     an_params['censoring'] = False
     an_params['CompCor'] = True
     
-    an_params['ica_decomposition'] = 'none' # do_fastICA / save_fastICA / do_Melodic / save_Melodic / none
-    an_params['do_ICA_aroma'] = False
-    an_params['do_ICA_removal'] = False
+    an_params['ica_decomposition'] = 'do_fastICA' # do_fastICA / save_fastICA / do_Melodic / save_Melodic / none
+    an_params['do_ICA_aroma'] = True
+    an_params['do_ICA_removal'] = True
     
     an_params['use_CompCor_in_AROMA'] = False
     an_params['concat_AROMA_CompCor'] = False
     
-    an_params['do_noise_regression'] = True
-    an_params['do_bandpass_filter'] = True
+    an_params['do_noise_regression'] = False
+    an_params['do_bandpass_filter'] = False
     an_params['bandpass'] = [0.008,0.1]
     
     an_params['denoise_folder'] = 'preproc_func_compcor_python'
@@ -147,9 +147,8 @@ def compcor_dn(fmrifile,mask,csf_file,gm_file,wm_file,t_r=2.0):
 """  
 def mot_derivatives(rp_file,order=0,derivatives=1,fmriname=''):
     """
-    Expand motion regressors upto 2nd order derivative
+    Expand motion regressors upto 1st order derivative (derivatives=1) and quadratic terms (order=2)
 
-    motion + d(motion)/dt + d2(motion)/dt2 (linear + quadratic)
     """
     import os
     
@@ -289,7 +288,7 @@ def make_head_mask(anat):
     from nilearn import masking
     
     head_im = nib.load(anat)
-    hmask = masking.compute_epi_mask(head_im)
+    hmask = masking.compute_epi_mask(head_im,opening=2,connected=True)
     
     head_mask = os.path.join(os.getcwd(),'headmask.nii')
     
