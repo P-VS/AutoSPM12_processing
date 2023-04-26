@@ -288,7 +288,7 @@ def make_head_mask(anat):
     from nilearn import masking
     
     head_im = nib.load(anat)
-    hmask = masking.compute_epi_mask(head_im,opening=2,connected=True)
+    hmask = masking.compute_epi_mask(head_im,lower_cutoff=0.2,upper_cutoff=0.25,opening=2,connected=True)
     
     head_mask = os.path.join(os.getcwd(),'headmask.nii')
     
