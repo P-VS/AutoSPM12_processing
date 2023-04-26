@@ -61,7 +61,7 @@ def set_denoising_parameters():
     an_params['censoring'] = False
     an_params['CompCor'] = True
     
-    an_params['ica_decomposition'] = 'do_fastICA' # do_fastICA / save_fastICA / do_Melodic / save_Melodic / none
+    an_params['ica_decomposition'] = 'do_Melodic' # do_fastICA / save_fastICA / do_Melodic / save_Melodic / none
     an_params['do_ICA_aroma'] = True
     an_params['do_ICA_removal'] = True
     
@@ -1214,9 +1214,9 @@ def main():
             else:
                 preproc.connect([(exrp_node,ica_aroma_node,[('rp_file','confounds')])])
             
-            if 'do_melodic' in ica_decomposition:
+            if 'do_Melodic' in ica_decomposition:
                 preproc.connect([(melodic_node,ica_aroma_node,[('out_dir','ica_dir')])])
-            elif 'save_melodic' in ica_decomposition:
+            elif 'save_Melodic' in ica_decomposition:
                 preproc.connect([(selectfiles,ica_aroma_node,[('melodic_dir','ica_dir')])])
             elif 'do_fastICA' in ica_decomposition:
                 preproc.connect([(ica_node,ica_aroma_node,[('ica_dir','ica_dir')])])
@@ -1247,9 +1247,9 @@ def main():
                 
                 icareg_node.inputs.ica_method = ica_decomposition
                 
-                if 'do_melodic' in ica_decomposition:
+                if 'do_Melodic' in ica_decomposition:
                     preproc.connect([(melodic_node,icareg_node,[('out_dir','ica_dir')])])
-                elif 'save_melodic' in ica_decomposition:
+                elif 'save_Melodic' in ica_decomposition:
                     preproc.connect([(selectfiles,icareg_node,[('melodic_dir','ica_dir')])])
                 elif 'do_fastICA' in ica_decomposition:
                     preproc.connect([(ica_node,icareg_node,[('ica_dir','ica_dir')])])
@@ -1294,9 +1294,9 @@ def main():
                              (selectfiles,save_icasub_node,[('save_den_dir','save_dir')])
                              ])
             
-            if 'do_melodic' in ica_decomposition:
+            if 'do_Melodic' in ica_decomposition:
                 preproc.connect([(melodic_node,icasub_node,[('out_dir','ica_dir')])])
-            elif 'save_melodic' in ica_decomposition:
+            elif 'save_Melodic' in ica_decomposition:
                 preproc.connect([(selectfiles,icasub_node,[('melodic_dir','ica_dir')])])
             elif 'do_fastICA' in ica_decomposition:
                 preproc.connect([(ica_node,icasub_node,[('ica_dir','ica_dir')])])
