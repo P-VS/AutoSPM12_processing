@@ -44,12 +44,12 @@ def set_denoising_parameters():
     
     first_sub = 2
     last_sub = 20
-    an_params['sublist'] = [8] #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
+    an_params['sublist'] = [2,3,4,5,6,7,8,9,10] #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
     
     an_params['nsessions'] = [1] #nsessions>0 data should be in sub-ii/ses-00j
     an_params['ME_fMRI'] = False
     
-    an_params['task'] = ['ME1E-EmoFaces'] #text string that is in between task- and _bold in your fMRI nifti filename
+    an_params['task'] = ['SE-EmoFaces'] #text string that is in between task- and _bold in your fMRI nifti filename
     
     an_params['preproc_folder'] = 'preproc_func'
     
@@ -65,14 +65,14 @@ def set_denoising_parameters():
     an_params['do_ICA_aroma'] = True
     an_params['do_ICA_removal'] = True
     
-    an_params['use_CompCor_in_AROMA'] = False
+    an_params['use_CompCor_in_AROMA'] = True
     an_params['concat_AROMA_CompCor'] = False
     
     an_params['do_noise_regression'] = False
     an_params['do_bandpass_filter'] = False
     an_params['bandpass'] = [0.008,0.1]
     
-    an_params['denoise_folder'] = 'preproc_func_compcor_python'
+    an_params['denoise_folder'] = 'preproc_func_ica-aroma'
     
     return an_params
 
@@ -356,7 +356,7 @@ def ica_aroma(func,confounds,ica_dir,ica_method,csf_file,gm_file,wm_file,head_ma
         numIC = melICim.shape[3]
 
         iICdat = np.zeros(melICim.shape)
-        for i in range(numIC):
+        for i in range(1,numIC):
             iIC=nib.load(os.path.join(ica_dir,'stats','thresh_zstat'+str(i)+'.nii'))
             
             iICdat[:,:,:,i] = abs(iIC.get_fdata())
@@ -1165,7 +1165,7 @@ def main():
             
             if'do_Melodic' in ica_decomposition:
                 
-                melodic_node = Node(MELODIC(num_ICs=80,maxit=500,max_restart=5,output_type='NIFTI',out_all=True,no_bet=False),name='melodic')
+                melodic_node = Node(MELODIC(maxit=500,max_restart=5,output_type='NIFTI',out_all=True,no_bet=False),name='melodic')
                 
                 save_melodic_node = Node(interface=Function(input_names=['in_dir','save_dir'],
                                                             output_names=['save_dir'],
