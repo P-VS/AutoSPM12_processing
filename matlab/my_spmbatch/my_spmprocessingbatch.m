@@ -28,7 +28,7 @@ for k=1:numel(task)
 end
 
 %fMRI model specification
-resultmap = fullfile(subpath,['SPMMAT-' params.analysisname]);
+resultmap = fullfile(subpath,['SPMMAT-' task{k} '_' params.analysisname]);
 if exist(resultmap,'dir'); rmdir(resultmap,'s'); end
 mkdir(resultmap)
 
@@ -36,7 +36,7 @@ jsondat = fileread(jsonfile{1});
 jsondat = jsondecode(jsondat);
 tr = jsondat.RepetitionTime;
 SliceTiming = jsondat.SliceTiming;
-nsl= ceil(numel(SliceTiming)/numel(SliceTiming(SliceTiming==SliceTiming(1))));
+nsl= ceil(numel(SliceTiming)/numel(find(SliceTiming(SliceTiming==SliceTiming(1)))));
 
 step=step+1;
 matlabbatch{step}.spm.stats.fmri_spec.dir = {resultmap};
