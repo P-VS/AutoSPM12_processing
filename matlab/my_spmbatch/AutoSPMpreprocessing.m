@@ -40,12 +40,15 @@ datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
 first_sub = 7;
 last_sub = 7;
-sublist = [2];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [10];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-task ={'SE-EFT'};
+task ={'ME-EmoFaces'};
 
-params.nechoes = 1; %number of echoes for ME-fMRI. The combination is done wi=TEi 
+params.nechoes = 3; %number of echoes for ME-fMRI. 
+params.combination = 'T2_weighted'; %TE_weighted: The combination is done wi=TEi or T2_weighted: The combinnation is done by a T2* fit per dynnamic
+%see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
+
 params.dummytime = 8; %time in seconds
 
 params.reorient = true;
@@ -54,21 +57,27 @@ params.reorient = true;
 params.fieldmap = false;
 params.pepolar = true;
 
-params.do_realignment = true;
+params.do_segmentation = false;
 params.do_slicetime = true;
-params.do_segmentation = true;
+params.do_realignment = true;
 params.do_normalization = true;
-params.do_mot_derivatives = false;
+
+params.do_onlydenoise = false; %only if data iss already preprocessed (slice time corrected, realigned and normalized (wuae or wrae prefix))
+params.do_bpfilter = false;
+params.bpfilter = [0.008 0.1]; %no highpass filter is first 0, no lowpass filter is last Inf, default is [0.008 0.1]
+params.do_mot_derivatives = false; %derivatives+squares (24 regressors)
 params.do_aCompCor = false;
+params.Ncomponents = 0.5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variatiion in the signal
 params.do_noiseregression = false;
 params.do_ICA_AROMA = false;
+
 params.do_smoothing = true;
 
 params.normvox = [1.5 1.5 1.5];
 params.smoothfwhm = 6;
 
-use_parallel = true;
-save_intermediate_results = false;
+use_parallel = false;
+save_intermediate_results = true;
 
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------
@@ -79,62 +88,9 @@ curdir = pwd;
 spm('defaults', 'FMRI');
 
 if use_parallel
-    datlist = zeros(numel(sublist)*numel(nsessions),2);
-
-    dpos = 1;
-    for i = 1:numel(sublist)
-        for j = 1:numel(nsessions)
-                datlist(dpos,1) = sublist(i);
-                datlist(dpos,2) = nsessions(j);
-
-                dpos = dpos+1;
-        end
-    end
-
-    for k = 1:numel(task)
-        pa=parpool(min([10,numel(datlist(:,1))])); %25 is the maximum number of workers allowed in the 'local' profile while 10 is set to avoid memory issues on my computer
-        parfor i = 1:numel(datlist(:,1))
-            try
-                %% make and run batch
-                
-                [delfiles,keepfiles] = my_spmbatch(datlist(i,1),datlist(i,2),task{k},datpath,params);
-                
-                %% Clean up unnecessary files
-                cleanup_intermediate_files(datlist(i,1),datlist(i,2),datpath,delfiles,keepfiles,save_intermediate_results);
-        
-            catch
-                fprintf(['\nError for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' task ' task{k} '\n'])
-            end
-        end
-        delete(pa)
-
-        for i = 1:numel(datlist(:,1))
-            %% Print and save realignment paramers  
-            save_rp_plot(datlist(i,1),datlist(i,2),task{k},datpath);
-        end
-    end
+    my_spmbatch_parallel(sublist,nsessions,task,datpath,params,save_intermediate_results)
 else
-    for i = 1:numel(sublist)
-        for j = 1:numel(nsessions)
-            for k=1:numel(task)
-                itstart = tic;
-
-                %% make and run batch
-
-                [delfiles,keepfiles] = my_spmbatch(sublist(i),nsessions(j),task{k},datpath,params,save_intermediate_results);
-
-                %% Clean up unnecessary files
-                cleanup_intermediate_files(sublist(i),nsessions(j),datpath,delfiles,keepfiles,save_intermediate_results);
-
-                %% Print and save realignment paramers  
-                save_rp_plot(sublist(i),nsessions(j),task{k},datpath);
-
-                itstop = toc(itstart);
-
-                fprintf(['subject ' num2str(sublist(i)) ' session ' num2str(nsessions(j)) ' processed in ' datestr(duration([0,0,itstop],'InputFormat','ss'),'HH:MM:SS') '\n'])
-            end
-        end
-    end
+    my_spmbatch_noparallel(sublist,nsessions,task,datpath,params,save_intermediate_results)
 end
 
 fprintf(['\nDone\n'])
