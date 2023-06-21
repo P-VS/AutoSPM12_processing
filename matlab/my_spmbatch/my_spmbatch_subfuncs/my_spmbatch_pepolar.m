@@ -1,19 +1,19 @@
-function [vdm_file,delfiles,keepfiles] = my_spmbatch_pepolar(subpath,substring,task,numdummy,reffunc,params,delfiles,keepfiles)
+function [vdm_file,delfiles,keepfiles] = my_spmbatch_pepolar(subpath,substring,task,numdummy,ne,reffunc,params,delfiles,keepfiles)
 
-mbstep = 1;
+fdir = fullfile(subpath,'fmap');
 
 if params.nechoes==1
-    fdir = fullfile(subpath,'fmap');
     subfmapstring = [substring '_dir-pi_epi'];
 
     [Vppfunc,ppfuncdat] = my_spmbatch_readSEfMRI(subfmapstring,fdir,numdummy,params,1);
 
     ppfunc = fullfile(fdir,[subfmapstring '.nii']);
 else
-    fdir = fullfile(subpath,'fmap');
-    subfmapstring = [substring '_dir-pi_epi_e'];
+    subfmapstring = [substring '_dir-pi_epi_e' num2str(ne)];
 
-    [Vppfunc,ppfuncdat,ppfunc] = my_spmbatch_readMEfMRI(subfmapstring,fdir,numdummy,params,1);
+    [Vppfunc,ppfuncdat] = my_spmbatch_readSEfMRI(subfmapstring,fdir,numdummy,params,1);
+
+    ppfunc = fullfile(fdir,[subfmapstring '.nii']);
 end
 
 Vppfunc.fname = spm_file(ppfunc, 'prefix','f');
@@ -26,26 +26,61 @@ ppfunc = spm_file(ppfunc, 'prefix','f');
 delfiles{numel(delfiles)+1} = {ppfunc};
 
 if params.reorient
-    auto_acpc_reorient(ppfunc,'EPI');
+    MMfile = fullfile(fdir,[substring '_MM_dir-pi_epi_e1.mat']);
+
+    if ne==1
+        auto_acpc_reorient(ppfunc,'EPI');
+
+        Vppfunc = spm_vol(ppfunc);
+        MM = Vppfunc(1).mat;
+
+        save(MMfile,'MM','-mat')
+
+        delfiles{numel(delfiles)+1} = {MMfile};
+    else
+        MM = load(MMfile);
+        MM = MM.MM;
+
+        Vppfunc = spm_vol(ppfunc);
+        Vfunc = my_reset_orientation(Vppfunc,MM);
+    end
 end
 
 %% coregister fmap to func
 
-rfuncpsstep = mbstep;
+CMfile = fullfile(fdir,[substring '_CM_dir-pi_epi_e1.mat']);
 
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.ref(1) = {reffunc};
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.source(1) = {ppfunc};
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.other = {ppfunc};
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.eoptions.cost_fun = 'nmi';
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.eoptions.sep = [4 2];
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.eoptions.tol = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.eoptions.fwhm = [7 7];
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.roptions.interp = 4;
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.roptions.wrap = [0 0 0];
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.roptions.mask = 0;
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.roptions.prefix = 'r';
+if ne==1
+    estwrite.ref(1) = {reffunc};
+    estwrite.source(1) = {ppfunc};
+    estwrite.other = {ppfunc};
+    estwrite.eoptions.cost_fun = 'nmi';
+    estwrite.eoptions.sep = [4 2];
+    estwrite.eoptions.tol = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
+    estwrite.eoptions.fwhm = [7 7];
+    estwrite.roptions.interp = 4;
+    estwrite.roptions.wrap = [0 0 0];
+    estwrite.roptions.mask = 0;
+    estwrite.roptions.prefix = 'r';
+    
+    out_coreg = spm_run_coreg(estwrite);
+    
+    save(CMfile,'out_coreg','-mat')
 
-mbstep = mbstep+1;
+    delfiles{numel(delfiles)+1} = {CMfile};
+else
+    in_coreg = load(CMfile);
+    in_coreg = in_coreg.out_coreg;
+
+    write.ref = {in_coreg.rfiles{1}};
+    write.source = {ppfunc};
+    write.roptions.interp = 4;
+    write.roptions.wrap = [0 0 0];
+    write.roptions.mask = 0;
+    write.roptions.prefix = 'r';
+
+    out_coreg = spm_run_coreg(write);
+end
 
 delfiles{numel(delfiles)+1} = {ppfunc};
 delfiles{numel(delfiles)+1} = {spm_file(ppfunc, 'prefix','r')};
@@ -72,17 +107,26 @@ else
     WrapD = [0 0 1];
 end
 
-hyscostep = mbstep;
+if contains(pedir,'-')
+    blipdir=-1;
+else
+    blipdir=1;
+end
 
-matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_up(1) = {reffunc};
-matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_dw(1) = cfg_dep('Coregister: Estimate & Reslice: Resliced Images', substruct('.','val', '{}',{rfuncpsstep}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','rfiles'));
-matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.others_up(1) = {''};
-matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.others_dw(1) = {''};
-matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.perm_dim = pedim;
-matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.dummy_fast = 1;
-matlabbatch{mbstep}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.outdir = {''};
+hyscostep = 1;
 
-mbstep = mbstep+1;
+if blipdir==1
+    matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_up(1) = {reffunc};
+    matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_dw(1) = {out_coreg.rfiles{1}};
+else
+    matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_up(1) = {out_coreg.rfiles{1}};
+    matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_dw(1) = {reffunc};
+end
+matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.others_up(1) = {''};
+matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.others_dw(1) = {''};
+matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.perm_dim = pedim;
+matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.dummy_fast = 1;
+matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.outdir = {''};
 
 delfiles{numel(delfiles)+1} = {spm_file(Vppfunc(1).fname, 'prefix','u2r')};
 delfiles{numel(delfiles)+1} = {spm_file(Vppfunc(1).fname, 'prefix','HySCov2_r')};
@@ -93,40 +137,32 @@ delfiles{numel(delfiles)+1} = {spm_file(reffunc, 'prefix','u2')};
 te = jsondat.EchoTime*1000;
 trt = jsondat.TotalReadoutTime*1000;
 
-if contains(pedir,'-')
-    blipdir=-1;
-else
-    blipdir=1;
-end
+fmstep = 2;
 
-fmstep = mbstep;
-
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.data.precalcfieldmap.precalcfieldmap = cfg_dep('HySCO: Inhomogeneity field', substruct('.','val', '{}',{hyscostep}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','fieldmap'));
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.data.precalcfieldmap.magfieldmap = {''};
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.et = [te te];
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.maskbrain = 0;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.blipdir = blipdir;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.tert = trt;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.epifm = 1;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.ajm = 0;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.uflags.method = 'Mark3D';
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.uflags.fwhm = 10;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.uflags.pad = 0;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.uflags.ws = 1;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.template = {fullfile(spm('Dir'),'toolbox','FieldMap','T1.nii')};
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.fwhm = 5;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.nerode = 2;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.ndilate = 4;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.thresh = 0.5;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.reg = 0.02;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.session.epi = {reffunc};
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.matchvdm = 1;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.sessname = 'session';
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.writeunwarped = 0;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.anat = '';
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.matchanat = 0;
-
-mbstep = mbstep+1;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.data.precalcfieldmap.precalcfieldmap = cfg_dep('HySCO: Inhomogeneity field', substruct('.','val', '{}',{hyscostep}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','fieldmap'));
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.data.precalcfieldmap.magfieldmap = {''};
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.et = [te te];
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.maskbrain = 0;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.blipdir = blipdir;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.tert = trt;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.epifm = 1;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.ajm = 0;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.uflags.method = 'Mark3D';
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.uflags.fwhm = 10;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.uflags.pad = 0;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.uflags.ws = 1;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.template = {fullfile(spm('Dir'),'toolbox','FieldMap','T1.nii')};
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.fwhm = 5;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.nerode = 2;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.ndilate = 4;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.thresh = 0.5;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.reg = 0.02;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.session.epi = {reffunc};
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.matchvdm = 1;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.sessname = 'session';
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.writeunwarped = 0;
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.anat = '';
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.matchanat = 0;
 
 d = dir(fullfile(subpath,'func'));
 ddir=[d(:).isdir];
@@ -139,13 +175,13 @@ if ~isempty(delfolders)
     end
 end
 
-[pth,name,ext] = fileparts(reffunc);
-vdm_file = fullfile(subpath,'func','derivatives','HySCO-Run',['vdm5_' name '_desc-H-HySCO-ESTIMATED-FIELDMAP_dwi.nii']);
-
-delfiles{numel(delfiles)+1} = {fullfile(subpath,'func','derivatives')}; 
-delfiles{numel(delfiles)+1} = {spm_file(reffunc, 'prefix','u')};
-
 %%Run matlabbatch
 if exist("matlabbatch",'var')
-    spm_jobman('run', matlabbatch);
+    %spm_jobman('run', matlabbatch);
 end
+
+delfiles{numel(delfiles)+1} = {fullfile(subpath,'func','derivatives')}; 
+delfiles{numel(delfiles)+1} = {spm_file(reffunc, 'prefix','u')};    
+
+[pth,name,ext] = fileparts(reffunc);
+vdm_file = fullfile(subpath,'func','derivatives','HySCO-Run',['vdm5_' name '_desc-H-HySCO-ESTIMATED-FIELDMAP_dwi.nii']);
