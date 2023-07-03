@@ -44,11 +44,11 @@ nsessions = [1]; %nsessions>0
 task ={'ME-EmoFaces'};
 
 params.meepi = true;
-params.echoes = [1,2,3]; %number of echoes for ME-fMRI. 
+params.echoes = [1,2]; %number of echoes for ME-fMRI. 
 params.combination = 'T2_weighted'; 
 %none: all echoes are preprocessed separatly
 %TE_weighted: The combination is done wi=TEi or 
-%T2_weighted: The combination is done by a T2* weighted factor (as in tedana). 
+%T2_weighted: The combinnation is done by a T2* weighted factor (as in tedana). 
 %T2_fit: dynamic T2* fitting
 %see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
 
@@ -63,7 +63,7 @@ params.do_slicetime = true;
 params.fieldmap = false;
 params.pepolar = true;
 
-params.do_realignment = true;
+params.do_realignment = false;
 
 params.do_bpfilter = false;
 params.do_mot_derivatives = false; %derivatives+squares (24 regressors)
@@ -74,14 +74,14 @@ params.do_ICA_AROMA = false;
 params.bpfilter = [0.008 Inf]; %no highpass filter is first 0, no lowpass filter is last Inf, default is [0.008 0.1]
 params.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variatiion in the signal
 
-params.do_normalization = true;
-params.do_smoothing = true;
+params.do_normalization = false;
+params.do_smoothing = false;
 
 params.normvox = [1.5 1.5 1.5];
 params.smoothfwhm = 6;
 
 use_parallel = false;
-save_intermediate_results = false;
+save_intermediate_results = true;
 
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------

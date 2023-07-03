@@ -36,7 +36,7 @@ jsondat = fileread(jsonfile{1});
 jsondat = jsondecode(jsondat);
 tr = jsondat.RepetitionTime;
 SliceTiming = jsondat.SliceTiming;
-nsl= ceil(numel(SliceTiming)/numel(find(SliceTiming(SliceTiming==SliceTiming(1)))));
+nsl= ceil(numel(SliceTiming)/numel(find(SliceTiming==SliceTiming(1))));
 
 step=step+1;
 matlabbatch{step}.spm.stats.fmri_spec.dir = {resultmap};
