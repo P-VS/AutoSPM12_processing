@@ -1,15 +1,15 @@
-function [vdm_file,delfiles,keepfiles] = my_spmbatch_pepolar(subpath,substring,task,numdummy,ne,reffunc,params,delfiles,keepfiles)
+function [ppparams,delfiles,keepfiles] = my_spmbatch_pepolar(numdummy,ne,ppparams,params,delfiles,keepfiles)
 
-fdir = fullfile(subpath,'fmap');
+fdir = fullfile(ppparams.subpath,'fmap');
 
-if params.nechoes==1
-    subfmapstring = [substring '_dir-pi_epi'];
+if ~params.meepi
+    subfmapstring = [ppparams.substring '_dir-pi_epi'];
 
     [Vppfunc,ppfuncdat] = my_spmbatch_readSEfMRI(subfmapstring,fdir,numdummy,params,1);
 
     ppfunc = fullfile(fdir,[subfmapstring '.nii']);
 else
-    subfmapstring = [substring '_dir-pi_epi_e' num2str(ne)];
+    subfmapstring = [ppparams.substring '_dir-pi_epi_e' num2str(ne)];
 
     [Vppfunc,ppfuncdat] = my_spmbatch_readSEfMRI(subfmapstring,fdir,numdummy,params,1);
 
@@ -26,9 +26,9 @@ ppfunc = spm_file(ppfunc, 'prefix','f');
 delfiles{numel(delfiles)+1} = {ppfunc};
 
 if params.reorient
-    MMfile = fullfile(fdir,[substring '_MM_dir-pi_epi_e1.mat']);
+    MMfile = fullfile(fdir,[ppparams.substring '_MM_dir-pi_epi_e' num2str(params.echoes(1)) '.mat']);
 
-    if ne==1
+    if ne==params.echoes(1)
         auto_acpc_reorient(ppfunc,'EPI');
 
         Vppfunc = spm_vol(ppfunc);
@@ -48,10 +48,10 @@ end
 
 %% coregister fmap to func
 
-CMfile = fullfile(fdir,[substring '_CM_dir-pi_epi_e1.mat']);
+CMfile = fullfile(fdir,[ppparams.substring '_CM_dir-pi_epi_e' num2str(params.echoes(1)) '.mat']);
 
-if ne==1
-    estwrite.ref(1) = {reffunc};
+if ne==params.echoes(1)
+    estwrite.ref(1) = {ppparams.reffunc{ne}};
     estwrite.source(1) = {ppfunc};
     estwrite.other = {ppfunc};
     estwrite.eoptions.cost_fun = 'nmi';
@@ -86,13 +86,8 @@ delfiles{numel(delfiles)+1} = {ppfunc};
 delfiles{numel(delfiles)+1} = {spm_file(ppfunc, 'prefix','r')};
 
 %% HYSCO fieldmap
-if params.nechoes==1
-    funcjsonfile = fullfile(subpath,'func',[substring '_task-' task '_bold.json']);
-else
-    funcjsonfile = fullfile(subpath,'func',[substring '_task-' task '_bold_e1.json']);
-end
     
-jsondat = fileread(funcjsonfile);
+jsondat = fileread(ppparams.funcjsonfile);
 jsondat = jsondecode(jsondat);
 pedir = jsondat.PhaseEncodingDirection;
 
@@ -116,11 +111,11 @@ end
 hyscostep = 1;
 
 if blipdir==1
-    matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_up(1) = {reffunc};
+    matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_up(1) = {ppparams.reffunc{ne}};
     matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_dw(1) = {out_coreg.rfiles{1}};
 else
     matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_up(1) = {out_coreg.rfiles{1}};
-    matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_dw(1) = {reffunc};
+    matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.source_dw(1) = {ppparams.reffunc{ne}};
 end
 matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.others_up(1) = {''};
 matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.others_dw(1) = {''};
@@ -130,7 +125,7 @@ matlabbatch{1}.spm.tools.dti.prepro_choice.hysco_choice.hysco2.outdir = {''};
 
 delfiles{numel(delfiles)+1} = {spm_file(Vppfunc(1).fname, 'prefix','u2r')};
 delfiles{numel(delfiles)+1} = {spm_file(Vppfunc(1).fname, 'prefix','HySCov2_r')};
-delfiles{numel(delfiles)+1} = {spm_file(reffunc, 'prefix','u2')};
+delfiles{numel(delfiles)+1} = {spm_file(ppparams.reffunc{ne}, 'prefix','u2')};
 
 %% Convert fieldmap into vdm
 
@@ -157,21 +152,21 @@ matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.
 matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.ndilate = 4;
 matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.thresh = 0.5;
 matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.reg = 0.02;
-matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.session.epi = {reffunc};
+matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.session.epi = {ppparams.reffunc{ne}};
 matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.matchvdm = 1;
 matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.sessname = 'session';
 matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.writeunwarped = 0;
 matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.anat = '';
 matlabbatch{2}.spm.tools.fieldmap.calculatevdm.subj.matchanat = 0;
 
-d = dir(fullfile(subpath,'func'));
+d = dir(fullfile(ppparams.subpath,'func'));
 ddir=[d(:).isdir];
 dfolders = {d(ddir).name};
 delfolders = find(contains(dfolders,'derivatives'));
 
 if ~isempty(delfolders)
     for delf=1:numel(delfolders)
-        rmdir(fullfile(subpath,'func',dfolders{delfolders(delf)}),'s');
+        rmdir(fullfile(ppparams.subpath,'func',dfolders{delfolders(delf)}),'s');
     end
 end
 
@@ -180,8 +175,8 @@ if exist("matlabbatch",'var')
     %spm_jobman('run', matlabbatch);
 end
 
-delfiles{numel(delfiles)+1} = {fullfile(subpath,'func','derivatives')}; 
-delfiles{numel(delfiles)+1} = {spm_file(reffunc, 'prefix','u')};    
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subpath,'func','derivatives')}; 
+delfiles{numel(delfiles)+1} = {spm_file(ppparams.reffunc{ne}, 'prefix','u')};    
 
-[pth,name,ext] = fileparts(reffunc);
-vdm_file = fullfile(subpath,'func','derivatives','HySCO-Run',['vdm5_' name '_desc-H-HySCO-ESTIMATED-FIELDMAP_dwi.nii']);
+[pth,name,ext] = fileparts(ppparams.reffunc{ne});
+ppparams.vdm_file = fullfile(ppparams.subpath,'func','derivatives','HySCO-Run',['vdm5_' name '_desc-H-HySCO-ESTIMATED-FIELDMAP_dwi.nii']);

@@ -1,16 +1,16 @@
-function [rp_file,keepfiles] = my_spmbatch_acompcor(subfmridir,substring,task,wfuncdat,funcfile,rp_file,c1im,c2im,c3im,params,keepfiles)
+function [ppparams,keepfiles] = my_spmbatch_acompcor(wfuncdat,ppparams,params,keepfiles)
 
 fprintf('Start aCompCor \n')
 
-if exist(rp_file,'file')
-    confounds = load(rp_file);
+if exist(ppparams.rp_file,'file')
+    confounds = load(ppparams.rp_file);
 else
     confounds = [];
 end
 
-GM = spm_vol(c1im);
-WM = spm_vol(c2im);
-CSF = spm_vol(c3im);
+GM = spm_vol(ppparams.rc1im);
+WM = spm_vol(ppparams.rc2im);
+CSF = spm_vol(ppparams.rc3im);
 
 gmdat = spm_read_vols(GM);
 wmdat = spm_read_vols(WM);
@@ -25,13 +25,7 @@ csfdat(csfdat<0.8)=0;
 csfdat(csfdat>0.0)=1;
 
 if params.do_bpfilter
-    if params.nechoes==1
-        funcjsonfile = fullfile(subfmridir,[substring '_task-' task '_bold.json']);
-    else
-        funcjsonfile = fullfile(subfmridir,[substring '_task-' task '_bold_e1.json']);
-    end
-
-    jsondat = fileread(funcjsonfile);
+    jsondat = fileread(ppparams.funcjsonfile);
     jsondat = jsondecode(jsondat);
 
     tr = jsondat.RepetitionTime;
@@ -43,18 +37,18 @@ end
 
 acc_confounds = fmri_acompcor(wfuncdat(:,:,:,:),{csfdat},params.Ncomponents,'confounds',confounds,'filter',bpfilter,'PolOrder',1);
 
-if exist(rp_file)
+if exist(ppparams.rp_file)
     confounds = cat(2,confounds,acc_confounds);
 
-    rp_file = spm_file(rp_file, 'prefix','acc_','ext','.txt');
+    ppparams.rp_file = spm_file(ppparams.rp_file, 'prefix','acc_','ext','.txt');
 
-    writematrix(confounds,rp_file,'Delimiter','tab');
+    writematrix(confounds,ppparams.rp_file,'Delimiter','tab');
 else
-    rp_file = spm_file(funcfile, 'prefix','acc_','ext','.txt');
+    ppparams.rp_file = spm_file(ppparams.funcfile, 'prefix','acc_','ext','.txt');
 
-    writematrix(acc_confounds,rp_file,'Delimiter','tab');
+    writematrix(acc_confounds,ppparams.rp_file,'Delimiter','tab');
 end
 
-keepfiles{numel(keepfiles)+1} = {rp_file};
+keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
 
 fprintf('Done aCompCor \n')

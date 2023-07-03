@@ -1,21 +1,15 @@
-function [wfuncdat,funcfile,keepfiles] = my_spmbatch_noiseregression(subfmridir,substring,task,funcfile,rp_file,wfuncdat,keepfiles)
+function [wfuncdat,ppparams,delfiles] = my_spmbatch_noiseregression(wfuncdat,ne,ppparams,params,delfiles)
 
 fprintf('Start noise regression \n')
 
-if exist(rp_file)
-    confounds = load(rp_file);
+if exist(ppparams.rp_file)
+    confounds = load(ppparams.rp_file);
 else
     confounds = [];
 end
 
 if params.do_bpfilter
-    if params.nechoes==1
-        funcjsonfile = fullfile(subfmridir,[substring '_task-' task '_bold.json']);
-    else
-        funcjsonfile = fullfile(subfmridir,[substring '_task-' task '_bold_e1.json']);
-    end
-
-    jsondat = fileread(funcjsonfile);
+    jsondat = fileread(ppparams.funcjsonfile);
     jsondat = jsondecode(jsondat);
 
     tr = jsondat.RepetitionTime;
@@ -31,22 +25,27 @@ if exist('wfuncdat','var')
 
     [wfuncdat,~] = fmri_cleaning(wfuncdat(:,:),1,bpfilter,confounds,[],'restoremean','on');
 else
-    [wfuncdat,~] = fmri_cleaning(funcfile,1,bpfilter,confounds,[],'restoremean','on');
+    [wfuncdat,~] = fmri_cleaning(ppparams.funcfile,1,bpfilter,confounds,[],'restoremean','on');
 end
 
 wfuncdat = reshape(wfuncdat(:,:),s);
 
-Vfunc = spm_vol(funcfile);
+Vfunc = spm_vol(ppparams.funcfile{ne});
 
 for k=1:numel(Vfunc)
-    Vfunc(k).fname = spm_file(funcfile, 'prefix','d');
+    Vfunc(k).fname = spm_file(ppparams.funcfile{ne}, 'prefix','d');
     Vfunc(k).descrip = 'my_spmbatch - denoise';
+    if k==1
+        Vfunc(k).pinfo = [];
+    else
+        Vfunc(k).pinfo = Vfunc(1).pinfo;
+    end
     Vfunc(k).n = [k 1];
     Vfunc(k) = spm_create_vol(Vfunc(k));
     Vfunc(k) = spm_write_vol(Vfunc(k),wfuncdat(:,:,:,k));
 end
 
-funcfile = spm_file(funcfile, 'prefix','d');
-keepfiles{numel(keepfiles)+1} = {funcfile};
+ppparams.funcfile{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','d');
+delfiles{numel(delfiles)+1} = {ppparams.funcfile{ne}};
 
 fprintf('Done noise regression \n')

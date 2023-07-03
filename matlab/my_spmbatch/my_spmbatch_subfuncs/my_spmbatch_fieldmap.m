@@ -1,14 +1,14 @@
-function [vdm_file,delfiles,keepfiles] = my_spmbatch_fieldmap(subpath,substring,task,reffunc,delfiles,keepfiles)
+function [ppparams,delfiles,keepfiles] = my_spmbatch_fieldmap(ne,ppparams,delfiles,keepfiles)
 
 mbstep = 1;
 
 %%Load fieldmap data per echo and coregister to func
     
-e1dat = fullfile(subpath,'fmap',[substring '_fmap_echo-1_am.nii']);
-e1json = fullfile(subpath,'fmap',[substring '_fmap_echo-1_am.json']);
+e1dat = fullfile(ppparams.subpath,'fmap',[ppparams.substring '_fmap_echo-1_am.nii']);
+e1json = fullfile(ppparams.subpath,'fmap',[ppparams.substring '_fmap_echo-1_am.json']);
 
 if isfile(e1dat)
-    e1phdat = fullfile(subpath,'fmap',[substring '_fmap_echo-1_ph.nii']);
+    e1phdat = fullfile(ppparams.subpath,'fmap',[ppparams.substring '_fmap_echo-1_ph.nii']);
 
     e1jsondat = fileread(e1json);
     e1jsondat = jsondecode(e1jsondat);
@@ -17,8 +17,8 @@ if isfile(e1dat)
     Ve1amp = spm_vol(e1dat);
     Ve1ph  = spm_vol(e1phdat);
 else
-    e1dat = fullfile(subpath,'fmap',[substring '_fmap_echo-1.nii']);
-    e1json = fullfile(subpath,'fmap',[substring '_fmap_echo-1.json']);
+    e1dat = fullfile(ppparams.subpath,'fmap',[ppparams.substring '_fmap_echo-1.nii']);
+    e1json = fullfile(ppparams.subpath,'fmap',[ppparams.substring '_fmap_echo-1.json']);
 
     e1jsondat = fileread(e1json);
     e1jsondat = jsondecode(e1jsondat);
@@ -37,7 +37,7 @@ end
 
 fme1step = mbstep;
 
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.ref(1) = {reffunc};
+matlabbatch{mbstep}.spm.spatial.coreg.estwrite.ref(1) = {ppparams.reffunc{ne}};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.source(1) = {Ve1amp(1).fname};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.other(1) = {Ve1ph(1).fname};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.eoptions.cost_fun = 'nmi';
@@ -57,11 +57,11 @@ ph1file = spm_file(Ve1ph(1).fname, 'prefix','r');
 delfiles{numel(delfiles)+1} = {amp1file};
 delfiles{numel(delfiles)+1} = {ph1file};
 
-e2dat = fullfile(subpath,'fmap',[substring '_fmap_echo-2_am.nii']);
-e2json = fullfile(subpath,'fmap',[substring '_fmap_echo-2_am.json']);
+e2dat = fullfile(ppparams.subpath,'fmap',[ppparams.substring '_fmap_echo-2_am.nii']);
+e2json = fullfile(ppparams.subpath,'fmap',[ppparams.substring '_fmap_echo-2_am.json']);
 
 if isfile(e2dat)
-    e2phdat = fullfile(subpath,'fmap',[substring '_fmap_echo-2_ph.nii']);
+    e2phdat = fullfile(ppparams.subpath,'fmap',[ppparams.substring '_fmap_echo-2_ph.nii']);
 
     e2jsondat = fileread(e2json);
     e2jsondat = jsondecode(e2jsondat);
@@ -70,8 +70,8 @@ if isfile(e2dat)
     Ve2amp = spm_vol(e2dat);
     Ve2ph  = spm_vol(e2phdat);
 else
-    e2dat = fullfile(subpath,'fmap',[substring '_fmap_echo-2.nii']);
-    e2json = fullfile(subpath,'fmap',[substring '_fmap_echo-2.json']);
+    e2dat = fullfile(ppparams.subpath,'fmap',[ppparams.substring '_fmap_echo-2.nii']);
+    e2json = fullfile(ppparams.subpath,'fmap',[ppparams.substring '_fmap_echo-2.json']);
 
     e2jsondat = fileread(e2json);
     e2jsondat = jsondecode(e2jsondat);
@@ -90,7 +90,7 @@ end
 
 fme2step = mbstep;
 
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.ref(1) = {reffunc};
+matlabbatch{mbstep}.spm.spatial.coreg.estwrite.ref(1) = {ppparams.reffunc{ne}};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.source(1) = {Ve2amp(1).fname};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.other(1) = {Ve2ph(1).fname};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.eoptions.cost_fun = 'nmi';
@@ -113,10 +113,8 @@ delfiles{numel(delfiles)+1} = {ph2file};
 %% Fieldmap
 
 fmstep = mbstep;
-
-funcjsonfile = fullfile(subpath,'func',[substring '_task-' task '_bold.json']);
-    
-jsondat = fileread(funcjsonfile);
+  
+jsondat = fileread(ppparams.funcjsonfile);
 jsondat = jsondecode(jsondat);
 pedir = jsondat.PhaseEncodingDirection;
 
@@ -152,7 +150,7 @@ matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mf
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.ndilate = 4;
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.thresh = 0.5;
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.reg = 0.02;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.session.epi(1) = {reffunc};
+matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.session.epi(1) = {ppparams.reffunc{ne}};
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.matchvdm = 1;
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.sessname = 'session';
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.writeunwarped = 0;
@@ -161,7 +159,7 @@ matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.matchanat = 0;
 
 mbstep = mbstep+1;
 
-vdm_file = spm_file(amp1file, 'prefix','vdm5_sc');
+ppparams.vdm_file = spm_file(amp1file, 'prefix','vdm5_sc');
 
 delfiles{numel(delfiles)+1} = {spm_file(ph1file, 'prefix','m')};
 delfiles{numel(delfiles)+1} = {spm_file(ph1file, 'prefix','bmask')};
@@ -169,7 +167,7 @@ delfiles{numel(delfiles)+1} = {spm_file(amp1file, 'prefix','sc')};
 delfiles{numel(delfiles)+1} = {spm_file(amp2file, 'prefix','sc')};
 delfiles{numel(delfiles)+1} = {spm_file(amp1file, 'prefix','fpm_sc')};
 delfiles{numel(delfiles)+1} = {spm_file(amp1file, 'prefix','vdm5_sc')};
-delfiles{numel(delfiles)+1} = {spm_file(reffunc, 'prefix','u')};
+delfiles{numel(delfiles)+1} = {spm_file(ppparams.reffunc, 'prefix','u')};
 
 %%Run matlabbatch
 if exist("matlabbatch",'var')

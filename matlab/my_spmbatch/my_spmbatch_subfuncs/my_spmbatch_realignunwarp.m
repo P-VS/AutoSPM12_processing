@@ -1,15 +1,9 @@
-function [reffunc,funcfile,rp_file,keepfiles,delfiles] = my_spmbatch_realignunwarp(subpath,substring,task,funcfile,vdm_file,params,keepfiles,delfiles)
+function [ppparams,funcdat,keepfiles,delfiles] = my_spmbatch_realignunwarp(ne,ppparams,params,keepfiles,delfiles)
 
 if params.pepolar || params.fieldmap
     %% Realign and unwarp the func series
-
-    if params.nechoes==1
-        funcjsonfile = fullfile(subpath,'func',[substring '_task-' task '_bold.json']);
-    else
-        funcjsonfile = fullfile(subpath,'func',[substring '_task-' task '_bold_e1.json']);
-    end
         
-    jsondat = fileread(funcjsonfile);
+    jsondat = fileread(ppparams.funcjsonfile);
     jsondat = jsondecode(jsondat);
     pedir = jsondat.PhaseEncodingDirection;
     
@@ -24,68 +18,119 @@ if params.pepolar || params.fieldmap
         WrapD = [0 0 1];
     end
     
-    realignunwarp.data.scans = {funcfile};
-    realignunwarp.data.pmscan(1) = {vdm_file};
-    realignunwarp.eoptions.quality = 0.9;
-    realignunwarp.eoptions.sep = 4;
-    realignunwarp.eoptions.fwhm = 5;
-    realignunwarp.eoptions.rtm = 0;
-    realignunwarp.eoptions.einterp = 2;
-    realignunwarp.eoptions.ewrap = [0 0 0];
-    realignunwarp.eoptions.weight = '';
-    realignunwarp.uweoptions.basfcn = [12 12];
-    realignunwarp.uweoptions.regorder = 1;
-    realignunwarp.uweoptions.lambda = 100000;
-    realignunwarp.uweoptions.jm = 0;
-    realignunwarp.uweoptions.fot = [4 5];
-    realignunwarp.uweoptions.sot = [];
-    realignunwarp.uweoptions.uwfwhm = 4;
-    realignunwarp.uweoptions.rem = 1;
-    realignunwarp.uweoptions.noi = 5;
-    realignunwarp.uweoptions.expround = 'Average';
-    realignunwarp.uwroptions.uwwhich = [2 1];
-    realignunwarp.uwroptions.rinterp = 4;
-    realignunwarp.uwroptions.wrap = WrapD;
-    realignunwarp.uwroptions.mask = 1;
-    realignunwarp.uwroptions.prefix = 'u';
+    %-Realign
+    %--------------------------------------------------------------------------
     
-    spm_run_realignunwarp(realignunwarp);
+    if ne==params.echoes(1)
+        eoptions.quality = 0.9;
+        eoptions.sep = 4;
+        eoptions.fwhm = 5;
+        eoptions.rtm = 0;
+        eoptions.interp = 2;
+        eoptions.wrap = [0 0 0];
+        eoptions.PW = '';
 
-    rp_file = spm_file(funcfile, 'prefix','rp_','ext','.txt');
+        spm_realign(ppparams.funcfile,eoptions);
 
-    keepfiles{numel(keepfiles)+1} = {spm_file(funcfile, 'prefix','rp_','ext','.txt')};
+        ppparams.rp_file = spm_file(ppparams.funcfile{ne}, 'prefix','rp_','ext','.txt');
 
-    reffunc = spm_file(funcfile, 'prefix','meanu');
-    funcfile = spm_file(funcfile, 'prefix','u');
+        if params.meepi
+            [rppath,rpname,~] = fileparts(ppparams.rp_file);
+            nrpname = split(rpname,'bold_e');
+            nrp_file = fullfile(rppath,[nrpname{1} 'bold.txt']);
 
-    delfiles{numel(delfiles)+1} = {reffunc};
-    delfiles{numel(delfiles)+1} = {funcfile};
+            movefile(ppparams.rp_file,nrp_file);
+
+            ppparams.rp_file = nrp_file;
+        end
+
+        keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
+    end
+
+    [fpath,fname,~] = fileparts(ppparams.funcfile{ne});
+    realign_mat = fullfile(fpath,[fname '.mat']);
+
+    if params.meepi && ne>params.echoes(1)
+        nrmname = split(realign_mat,'bold_e');
+        orealign_mat = [nrmname{1} 'bold_e' num2str(params.echoes(1)) '.mat'];
+
+        copyfile(orealign_mat,realign_mat);
+    end
+
+    delfiles{numel(delfiles)+1} = {realign_mat};
+
+    %-Unwarp Estimate
+    %--------------------------------------------------------------------------
+
+    uweoptions.basfcn = [12 12];
+    uweoptions.regorder = 1;
+    uweoptions.lambda = 100000;
+    uweoptions.jm = 0;
+    uweoptions.fot = [4 5];
+    uweoptions.sot = [];
+    uweoptions.uwfwhm = 4;
+    uweoptions.rem = 1;
+    uweoptions.noi = 5;
+    uweoptions.expround = 'Average';
+    
+    uweflags.sfP = ppparams.vdm_file;
+    P1 = deblank(ppparams.funcfile{ne});
+    if isempty(spm_file(P1,'number'))
+        P1 = spm_file(P1,'number',1);
+    end
+    VP1 = spm_vol(P1);
+    uweflags.M = VP1.mat;
+    ds = spm_uw_estimate(ppparams.funcfile{ne},uweoptions);
+    sess(1).ds = ds;
+    dsfile = spm_file(ppparams.funcfile{ne}, 'suffix','_uw', 'ext','.mat');
+    save(dsfile,'ds', spm_get_defaults('mat.format'));
+
+    delfiles{numel(delfiles)+1} = {dsfile};
+    
+    %-Unwarp Write - Sessions should be within subjects
+    %--------------------------------------------------------------------------
+
+    uwroptions.uwwhich = [2 1];
+    uwroptions.rinterp = 4;
+    uwroptions.wrap = WrapD;
+    uwroptions.mask = 1;
+    uwroptions.prefix = 'u';
+    
+    funcdat = my_spmbatch_uw_apply(cat(2,sess.ds),uwroptions);
+
+    ppparams.reffunc{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','meanu');
+    ppparams.funcfile{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','u');
+
+    delfiles{numel(delfiles)+1} = {ppparams.reffunc{ne}};
+    delfiles{numel(delfiles)+1} = {ppparams.funcfile{ne}};
 else
     %% Reslice the func series
     
-    realignestwrite.data{1} = {funcfile};
-    realignestwrite.eoptions.quality = 0.9;
-    realignestwrite.eoptions.sep = 4;
-    realignestwrite.eoptions.fwhm = 5;
-    realignestwrite.eoptions.rtm = 1;
-    realignestwrite.eoptions.interp = 2;
-    realignestwrite.eoptions.wrap = [0 0 0];
-    realignestwrite.eoptions.weight = '';
-    realignestwrite.roptions.which = [2 1];
-    realignestwrite.roptions.interp = 4;
-    realignestwrite.roptions.wrap = [0 0 0];
-    realignestwrite.roptions.mask = 1;
-    realignestwrite.roptions.prefix = 'r';
+    eoptions.quality = 0.9;
+    eoptions.sep = 4;
+    eoptions.fwhm = 5;
+    eoptions.rtm = 1;
+    eoptions.interp = 2;
+    eoptions.wrap = [0 0 0];
+    eoptions.weight = '';
+
+    spm_realign(ppparams.funcfile,eoptions);
+
+    roptions.which = [2 1];
+    roptions.interp = 4;
+    roptions.wrap = [0 0 0];
+    roptions.mask = 1;
+    roptions.prefix = 'r';
     
-    spm_run_realign(realignestwrite);
+    funcdat = my_spmbatch_reslice(ppparams.funcfile{ne},roptions);
 
-    rp_file = spm_file(funcfile, 'prefix','rp_','ext','.txt');
+    ppparams.rp_file = spm_file(ppparams.funcfile{ne}, 'prefix','rp_','ext','.txt');
 
-    keepfiles{numel(keepfiles)+1} = {spm_file(funcfile, 'prefix','rp_','ext','.txt')};
+    keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
 
-    reffunc = spm_file(funcfile, 'prefix','mean');
-    funcfile = spm_file(funcfile, 'prefix','r');
+    ppparams.reffunc{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','mean');
+    ppparams.funcfile{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','r');
 
-    delfiles{numel(delfiles)+1} = {reffunc};
-    delfiles{numel(delfiles)+1} = {funcfile};
+    delfiles{numel(delfiles)+1} = {ppparams.reffunc{ne}};
+    delfiles{numel(delfiles)+1} = {ppparams.funcfile{ne}};
 end

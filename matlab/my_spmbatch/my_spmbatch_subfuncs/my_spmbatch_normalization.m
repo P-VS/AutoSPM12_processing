@@ -1,9 +1,9 @@
-function [wfuncdat,funcfile,keepfiles] = my_spmbatch_normalization(subanat,reffunc,funcfile,deffile,params,keepfiles)
+function [wfuncdat,ppparams,keepfiles] = my_spmbatch_normalization(ne,ppparams,params,keepfiles)
 
 %% Coregistration func to anat
 
-funccorestimate.ref = {subanat};
-funccorestimate.source = {reffunc};
+funccorestimate.ref = {ppparams.subanat};
+funccorestimate.source = {ppparams.reffunc{ne}};
 funccorestimate.other = {''};
 funccorestimate.eoptions.cost_fun = 'nmi';
 funccorestimate.eoptions.sep = [4 2];
@@ -14,7 +14,7 @@ funccorestimate.eoptions.fwhm = [7 7];
 x  = spm_coreg(char(funccorestimate.ref), char(funccorestimate.source), funccorestimate.eoptions);
 M  = spm_matrix(x);
 
-Vfunc = spm_vol(funcfile);
+Vfunc = spm_vol(ppparams.funcfile{ne});
 
 if ~isempty(Vfunc(1).private.extras) && isstruct(Vfunc(1).private.extras) && isfield(Vfunc(1).private.extras,'mat')
     for i=1:size(Vfunc(1).private.dat,4)
@@ -36,7 +36,7 @@ end
 %% Normalise func
 
 for i=1:numel(Vfunc)
-    wfuncfiles{i,1} = [funcfile ',' num2str(i)];
+    wfuncfiles{i,1} = [ppparams.funcfile{ne} ',' num2str(i)];
 end
 
 %Write the spatially normalised data
@@ -46,7 +46,7 @@ woptions.vox = params.normvox;
 woptions.interp = 4;
 woptions.prefix = 'w';
 
-defs.comp{1}.def         = {deffile};
+defs.comp{1}.def         = {ppparams.deffile};
 defs.comp{2}.idbbvox.vox = woptions.vox;
 defs.comp{2}.idbbvox.bb  = woptions.bb;
 defs.out{1}.pull.fnames  = '';
@@ -74,5 +74,5 @@ defs.comp{2}.idbbvox.bb(~isfinite(defs.comp{2}.idbbvox.bb)) = bb(~isfinite(defs.
 
 [~,wfuncdat] = my_spmbatch_deformations(defs);
 
-funcfile = spm_file(funcfile, 'prefix','w');
-keepfiles{numel(keepfiles)+1} = {funcfile};
+ppparams.funcfile{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','w');
+keepfiles{numel(keepfiles)+1} = {ppparams.funcfile{ne}};
