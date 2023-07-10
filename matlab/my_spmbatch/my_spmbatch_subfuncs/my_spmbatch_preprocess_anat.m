@@ -140,6 +140,7 @@ if params.do_segmentation
         ppparams.wc1im = spm_file(ppparams.subanat, 'prefix','wc1');
         ppparams.wc2im = spm_file(ppparams.subanat, 'prefix','wc2');
         ppparams.wc3im = spm_file(ppparams.subanat, 'prefix','wc3');
+        ppparams.wsubanat = spm_file(ppparams.subanat, 'prefix','w');
     else
         keepfiles{numel(keepfiles)+1} = {ppparams.c1im};
         keepfiles{numel(keepfiles)+1} = {ppparams.c2im};
@@ -167,4 +168,6 @@ elseif params.do_normalization
     ppparams.deffile = spm_file(ppparams.subanat, 'prefix','y_');
     delfiles{numel(delfiles)+1} = {ppparams.deffile};
     keepfiles{numel(keepfiles)+1} = {spm_file(ppparams.subanat, 'prefix','w')};
+
+    ppparams.wsubanat = spm_file(ppparams.subanat, 'prefix','w');
 end

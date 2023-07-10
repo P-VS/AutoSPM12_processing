@@ -8,9 +8,9 @@ else
     confounds = [];
 end
 
-GM = spm_vol(ppparams.rc1im);
-WM = spm_vol(ppparams.rc2im);
-CSF = spm_vol(ppparams.rc3im);
+GM = spm_vol(ppparams.wc1im);
+WM = spm_vol(ppparams.wc2im);
+CSF = spm_vol(ppparams.wc3im);
 
 gmdat = spm_read_vols(GM);
 wmdat = spm_read_vols(WM);

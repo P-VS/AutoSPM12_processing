@@ -24,9 +24,11 @@ if ppparams.testscript
 else
     readvols = Inf;
 end
+ppparams.echoes = params.echoes;
+ppparams.meepi = params.meepi;
 
-for ie=params.echoes
-    if params.meepi
+for ie=ppparams.echoes
+    if ppparams.meepi
         nsubfuncstring = [ppparams.subfuncstring num2str(ie)];
     else
         nsubfuncstring = ppparams.subfuncstring;
@@ -34,53 +36,26 @@ for ie=params.echoes
 
     [Vfunc,funcdat,ppparams.funcfile{ie}] = my_spmbatch_readSEfMRI(nsubfuncstring,ppparams.subfmridir,numdummy,params,readvols);
 
-    if params.do_slicetime    
-        %% Slice time correction
+    fprintf('Write data without dummys\n')
     
-        fprintf('Do slice time correction\n')
-        
-        SliceTimes = jsondat.SliceTiming;
-        nsl= numel(jsondat.SliceTiming);
-        
-        funcdat=my_spmbatch_st(funcdat,Vfunc,SliceTimes,tr);
-    
-        for k=1:numel(Vfunc)
-            Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix','ae');
-            Vfunc(k).descrip = 'my_spmbatch - slice time correction';
-            if k==1
-                Vfunc(k).pinfo = [];
-            else
-                Vfunc(k).pinfo = Vfunc(1).pinfo;
-            end
-            Vfunc(k).n = [k 1];
-            Vfunc(k) = spm_create_vol(Vfunc(k));
-            Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
+    for k=1:numel(Vfunc)
+        Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix','e');
+        Vfunc(k).descrip = 'my_spmbatch - remove dummys';
+        if k==1
+            Vfunc(k).pinfo = [];
+        else
+            Vfunc(k).pinfo = Vfunc(1).pinfo;
         end
-    
-        ppparams.funcfile{ie} = spm_file(ppparams.funcfile{ie}, 'prefix','ae');
-        delfiles{numel(delfiles)+1} = {ppparams.funcfile{ie}};
-    else
-        fprintf('Write data without dummys\n')
-        
-        for k=1:numel(Vfunc)
-            Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix','e');
-            Vfunc(k).descrip = 'my_spmbatch - remove dummys';
-            if k==1
-                Vfunc(k).pinfo = [];
-            else
-                Vfunc(k).pinfo = Vfunc(1).pinfo;
-            end
-            Vfunc(k).n = [k 1];
-            Vfunc(k) = spm_create_vol(Vfunc(k));
-            Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
-        end
-    
-        ppparams.funcfile{ie} = spm_file(ppparams.funcfile{ie}, 'prefix','e');
-        delfiles{numel(delfiles)+1} = {ppparams.funcfile{ie}};
+        Vfunc(k).n = [k 1];
+        Vfunc(k) = spm_create_vol(Vfunc(k));
+        Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
     end
+
+    ppparams.funcfile{ie} = spm_file(ppparams.funcfile{ie}, 'prefix','e');
+    delfiles{numel(delfiles)+1} = {ppparams.funcfile{ie}};
     
     if params.reorient   
-        if ie==params.echoes(1)
+        if ie==ppparams.echoes(1)
             auto_acpc_reorient([ppparams.funcfile{ie} ',1'],'EPI');
     
             Vfunc = spm_vol(ppparams.funcfile{ie});
@@ -92,7 +67,7 @@ for ie=params.echoes
             Vfunc(k) = spm_create_vol(Vfunc(k));
         end
     end
-
+    
     Rfunc = Vfunc(1);
     rdat = spm_read_vols(Rfunc);
     
@@ -106,21 +81,78 @@ for ie=params.echoes
     delfiles{numel(delfiles)+1} = {ppparams.reffunc{ie}};
     
     %%
-    if params.pepolar
-        [ppparams,delfiles,keepfiles] = my_spmbatch_pepolar(numdummy,ie,ppparams,params,delfiles,keepfiles);
-    elseif params.fieldmap
+    if params.fieldmap
         [ppparams,delfiles,keepfiles] = my_spmbatch_fieldmap(ie,ppparams,delfiles,keepfiles);
     else
         ppparams.vdm_file = '';
     end
-    
+
+    ppparams.prefix = '';
     %%
     if params.do_realignment 
-        [ppparams,funcdat,keepfiles,delfiles] = my_spmbatch_realignunwarp(ie,ppparams,params,keepfiles,delfiles);
+        [funcdat,ppparams,keepfiles,delfiles] = my_spmbatch_realignunwarp(ie,ppparams,params,keepfiles,delfiles);
+        
+        Vfunc = spm_vol(ppparams.funcfile{ie});
     end
 
-    if params.meepi & ~contains(params.combination,'none')
+    %%
+    if params.pepolar
+        [funcdat,ppparams,delfiles,keepfiles] = my_spmbatch_pepolar(funcdat,numdummy,ie,ppparams,params,delfiles,keepfiles);
+        ppparams.prefix = ['u' ppparams.prefix];
+    end
+    
+    if params.do_slicetime    
+        %% Slice time correction
+    
+        fprintf('Do slice time correction\n')
+        
+        SliceTimes = jsondat.SliceTiming;
+        nsl= numel(jsondat.SliceTiming);
+        
+        funcdat=my_spmbatch_st(funcdat,Vfunc,SliceTimes,tr);
+    
+        if ~params.meepi || contains(params.combination,'none')
+            for k=1:numel(Vfunc)
+                Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix',['a' ppparams.prefix]);
+                Vfunc(k).descrip = 'my_spmbatch - slice time correction';
+                if k==1
+                    Vfunc(k).pinfo = [];
+                else
+                    Vfunc(k).pinfo = Vfunc(1).pinfo;
+                end
+                Vfunc(k).n = [k 1];
+                Vfunc(k) = spm_create_vol(Vfunc(k));
+                Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
+            end
+        else
+            ppparams.prefix = ['a' ppparams.prefix];
+        end
+    
+        ppparams.funcfile{ie} = spm_file(ppparams.funcfile{ie}, 'prefix',['a' ppparams.prefix]);
+        delfiles{numel(delfiles)+1} = {ppparams.funcfile{ie}};
+    else
+        if ~params.meepi || contains(params.combination,'none')
+            for k=1:numel(Vfunc)
+                Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix',ppparams.prefix);
+                Vfunc(k).descrip = 'my_spmbatch';
+                if k==1
+                    Vfunc(k).pinfo = [];
+                else
+                    Vfunc(k).pinfo = Vfunc(1).pinfo;
+                end
+                Vfunc(k).n = [k 1];
+                Vfunc(k) = spm_create_vol(Vfunc(k));
+                Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
+            end
+        end
+    
+        ppparams.funcfile{ie} = spm_file(ppparams.funcfile{ie}, 'prefix',ppparams.prefix);
+        delfiles{numel(delfiles)+1} = {ppparams.funcfile{ie}};
+    end
+    
+    if params.meepi
         tefuncdata{ie}.data = funcdat;
+        tefuncdata{ie}.Vfunc = Vfunc;
     end
 end
     
@@ -128,8 +160,9 @@ end
 if params.meepi & ~contains(params.combination,'none')
     fprintf('Combine echoes\n')
 
-    [Vfunc,ppparams] = my_spmbatch_combineMEfMRI(tefuncdata,ppparams,params);
+    [~,Vfunc] = my_spmbatch_combineMEfMRI(tefuncdata,ppparams,params);
 
+    ppparams.funcfile{1} = Vfunc(1).fname;
     delfiles{numel(delfiles)+1} = {ppparams.funcfile{1}};
 
     Rfunc = Vfunc(1);
@@ -144,56 +177,34 @@ if params.meepi & ~contains(params.combination,'none')
     ppparams.reffunc{1} = spm_file(ppparams.funcfile{1}, 'prefix','f');
     delfiles{numel(delfiles)+1} = {ppparams.reffunc{1}};
 
-    params.meepi = false; 
-    params.echoes = [1];
+    ppparams.echoes = [1];
+    ppparams.meepi = false;
 end  
 
-%%
-%%Denoising with motion derivatives and squared regressors (24 regressors)
-if params.do_mot_derivatives
-    fprintf('Start motion derivatives \n')
-
-    confounds = load(ppparams.rp_file);
-    confounds = cat(2,confounds,cat(1,zeros(1,6),diff(confounds)));
-    confounds = cat(2,confounds,power(confounds,2));
-
-    ppparams.rp_file = spm_file(ppparams.rp_file, 'prefix','der_','ext','.txt');
-
-    writematrix(confounds,ppparams.rp_file,'Delimiter','tab');
-
-    keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
-end
- 
-for ie=params.echoes
+for ie=ppparams.echoes    
     %%
     if params.do_normalization
         [wfuncdat,ppparams,keepfiles] = my_spmbatch_normalization(ie,ppparams,params,keepfiles);
     end
-         
+       
+    %%
+    %%Denoising with motion derivatives and squared regressors (24 regressors)
+    if params.do_mot_derivatives
+        fprintf('Start motion derivatives \n')
+    
+        confounds = load(ppparams.rp_file);
+        confounds = cat(2,confounds,cat(1,zeros(1,6),diff(confounds)));
+        confounds = cat(2,confounds,power(confounds,2));
+    
+        ppparams.rp_file = spm_file(ppparams.rp_file, 'prefix','der_','ext','.txt');
+    
+        writematrix(confounds,ppparams.rp_file,'Delimiter','tab');
+    
+        keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
+    end
+ 
     %%Denoising with aCompCor covariates
-    if params.do_aCompCor  && ie==params.echoes(1)
-        estwrite.ref(1) = {ppparams.reffunc{params.echoes(1)}};
-        estwrite.source(1) = {ppparams.subanat};
-        estwrite.other = {ppparams.c1im,ppparams.c2im,ppparams.c3im};
-        estwrite.eoptions.cost_fun = 'nmi';
-        estwrite.eoptions.sep = [4 2];
-        estwrite.eoptions.tol = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
-        estwrite.eoptions.fwhm = [7 7];
-        estwrite.roptions.interp = 4;
-        estwrite.roptions.wrap = [0 0 0];
-        estwrite.roptions.mask = 0;
-        estwrite.roptions.prefix = 'r';
-        
-        out_coreg = spm_run_coreg(estwrite);
-    
-        ppparams.rc1im = spm_file(ppparams.wc1im, 'prefix','r');
-        ppparams.rc2im = spm_file(ppparams.wc2im, 'prefix','r');
-        ppparams.rc3im = spm_file(ppparams.wc3im, 'prefix','r');
-    
-        delfiles{numel(delfiles)+1} = {ppparams.rc1im};
-        delfiles{numel(delfiles)+1} = {ppparams.rc2im};
-        dellfiles{numel(delfiles)+1} = {ppparams.rc3im};
-    
+    if params.do_aCompCor  && ie==ppparams.echoes(1)
         fprintf('Start aCompCor \n')
     
         [ppparams,keepfiles] = my_spmbatch_acompcor(wfuncdat,ppparams,params,keepfiles);

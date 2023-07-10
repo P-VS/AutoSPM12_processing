@@ -1,6 +1,47 @@
-function [ppparams,funcdat,keepfiles,delfiles] = my_spmbatch_realignunwarp(ne,ppparams,params,keepfiles,delfiles)
+function [funcdat,ppparams,keepfiles,delfiles] = my_spmbatch_realignunwarp(ne,ppparams,params,keepfiles,delfiles)
 
-if params.pepolar || params.fieldmap
+%-Realign
+%--------------------------------------------------------------------------
+
+if ne==ppparams.echoes(1)
+    eoptions.quality = 0.9;
+    eoptions.sep = 4;
+    eoptions.fwhm = 5;
+    eoptions.rtm = 0;
+    eoptions.interp = 2;
+    eoptions.wrap = [0 0 0];
+    eoptions.PW = '';
+
+    spm_realign(ppparams.funcfile{ne},eoptions);
+
+    ppparams.rp_file = spm_file(ppparams.funcfile{ne}, 'prefix','rp_','ext','.txt');
+
+    if ppparams.meepi
+        [rppath,rpname,~] = fileparts(ppparams.rp_file);
+        nrpname = split(rpname,'bold_e');
+        nrp_file = fullfile(rppath,[nrpname{1} 'bold.txt']);
+
+        movefile(ppparams.rp_file,nrp_file);
+
+        ppparams.rp_file = nrp_file;
+    end
+
+    keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
+end
+
+[fpath,fname,~] = fileparts(ppparams.funcfile{ne});
+realign_mat = fullfile(fpath,[fname '.mat']);
+
+if ppparams.meepi && ne>ppparams.echoes(1)
+    nrmname = split(realign_mat,'bold_e');
+    orealign_mat = [nrmname{1} 'bold_e' num2str(params.echoes(1)) '.mat'];
+
+    copyfile(orealign_mat,realign_mat);
+end
+
+delfiles{numel(delfiles)+1} = {realign_mat};
+
+if params.fieldmap
     %% Realign and unwarp the func series
         
     jsondat = fileread(ppparams.funcjsonfile);
@@ -18,47 +59,6 @@ if params.pepolar || params.fieldmap
         WrapD = [0 0 1];
     end
     
-    %-Realign
-    %--------------------------------------------------------------------------
-    
-    if ne==params.echoes(1)
-        eoptions.quality = 0.9;
-        eoptions.sep = 4;
-        eoptions.fwhm = 5;
-        eoptions.rtm = 0;
-        eoptions.interp = 2;
-        eoptions.wrap = [0 0 0];
-        eoptions.PW = '';
-
-        spm_realign(ppparams.funcfile,eoptions);
-
-        ppparams.rp_file = spm_file(ppparams.funcfile{ne}, 'prefix','rp_','ext','.txt');
-
-        if params.meepi
-            [rppath,rpname,~] = fileparts(ppparams.rp_file);
-            nrpname = split(rpname,'bold_e');
-            nrp_file = fullfile(rppath,[nrpname{1} 'bold.txt']);
-
-            movefile(ppparams.rp_file,nrp_file);
-
-            ppparams.rp_file = nrp_file;
-        end
-
-        keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
-    end
-
-    [fpath,fname,~] = fileparts(ppparams.funcfile{ne});
-    realign_mat = fullfile(fpath,[fname '.mat']);
-
-    if params.meepi && ne>params.echoes(1)
-        nrmname = split(realign_mat,'bold_e');
-        orealign_mat = [nrmname{1} 'bold_e' num2str(params.echoes(1)) '.mat'];
-
-        copyfile(orealign_mat,realign_mat);
-    end
-
-    delfiles{numel(delfiles)+1} = {realign_mat};
-
     %-Unwarp Estimate
     %--------------------------------------------------------------------------
 
@@ -106,23 +106,13 @@ if params.pepolar || params.fieldmap
 else
     %% Reslice the func series
     
-    eoptions.quality = 0.9;
-    eoptions.sep = 4;
-    eoptions.fwhm = 5;
-    eoptions.rtm = 1;
-    eoptions.interp = 2;
-    eoptions.wrap = [0 0 0];
-    eoptions.weight = '';
-
-    spm_realign(ppparams.funcfile,eoptions);
-
     roptions.which = [2 1];
     roptions.interp = 4;
     roptions.wrap = [0 0 0];
     roptions.mask = 1;
     roptions.prefix = 'r';
     
-    funcdat = my_spmbatch_reslice(ppparams.funcfile{ne},roptions);
+    my_spmbatch_reslice(ppparams.funcfile{ne},roptions);
 
     ppparams.rp_file = spm_file(ppparams.funcfile{ne}, 'prefix','rp_','ext','.txt');
 
@@ -130,6 +120,9 @@ else
 
     ppparams.reffunc{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','mean');
     ppparams.funcfile{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','r');
+
+    V = spm_vol(ppparams.funcfile{ne});
+    funcdat = spm_read_vols(V);
 
     delfiles{numel(delfiles)+1} = {ppparams.reffunc{ne}};
     delfiles{numel(delfiles)+1} = {ppparams.funcfile{ne}};
