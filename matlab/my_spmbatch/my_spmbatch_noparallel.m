@@ -10,10 +10,10 @@ for i = 1:numel(sublist)
             [delfiles,keepfiles] = my_spmbatch(sublist(i),nsessions(j),task{k},datpath,params);
 
             %% Clean up unnecessary files
-            cleanup_intermediate_files(sublist(i),nsessions(j),datpath,delfiles,keepfiles,save_intermediate_results);
+            cleanup_intermediate_files(sublist(i),nsessions(j),datpath,delfiles,keepfiles,save_intermediate_results,params);
 
             %% Print and save realignment paramers  
-            save_rp_plot(sublist(i),nsessions(j),task{k},datpath);
+            save_rp_plot(sublist(i),nsessions(j),task{k},datpath,params);
 
             itstop = toc(itstart);
 

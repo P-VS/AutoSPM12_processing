@@ -21,7 +21,7 @@ for k = 1:numel(task)
             [delfiles,keepfiles] = my_spmbatch(datlist(i,1),datlist(i,2),task{k},datpath,params);
             
             %% Clean up unnecessary files
-            cleanup_intermediate_files(datlist(i,1),datlist(i,2),datpath,delfiles,keepfiles,save_intermediate_results);
+            cleanup_intermediate_files(datlist(i,1),datlist(i,2),datpath,delfiles,keepfiles,save_intermediate_results,params);
     
         catch
             fprintf(['\nError for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' task ' task{k} '\n'])
@@ -31,6 +31,6 @@ for k = 1:numel(task)
 
     for i = 1:numel(datlist(:,1))
         %% Print and save realignment paramers  
-        save_rp_plot(datlist(i,1),datlist(i,2),task{k},datpath);
+        save_rp_plot(datlist(i,1),datlist(i,2),task{k},datpath,params);
     end
 end

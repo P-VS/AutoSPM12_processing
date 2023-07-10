@@ -1,6 +1,6 @@
 function [delfiles,keepfiles] = my_spmbatch(sub,ses,task,datpath,params)
 
-ppparams.testscript = true;
+ppparams.testscript = false;
 
 if ~params.meepi
     params.echoes = [1];

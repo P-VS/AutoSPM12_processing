@@ -1,4 +1,4 @@
-function out=save_rp_plot(sub,ses,task,datpath)
+function out=save_rp_plot(sub,ses,task,datpath,params)
 
 if sub<10
     substring = ['sub-0' num2str(sub)];
@@ -8,7 +8,7 @@ end
 
 subpath = fullfile(datpath,substring,['ses-00' num2str(ses)]);
 
-preproc_func = fullfile(subpath,'preproc_func');
+preproc_func = fullfile(subpath,params.save_folder);
 
 rpdir = dir([preproc_func filesep 'rp_*' task '_bold.txt']);
 if ~isempty(rpdir)

@@ -1,4 +1,4 @@
-function cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,save_intermediate_results)
+function cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,save_intermediate_results,params)
 
 if sub<10
     substring = ['sub-0' num2str(sub)];
@@ -12,7 +12,7 @@ subanatdir = fullfile(subpath,'anat');
 subfmridir = fullfile(subpath,'func');
 
 preproc_anat = fullfile(subpath,'preproc_anat');
-preproc_func = fullfile(subpath,'preproc_func');
+preproc_func = fullfile(subpath,params.save_folder);
 
 if ~exist(preproc_anat, 'dir')
     mkdir(preproc_anat);

@@ -38,18 +38,18 @@ SPMid                 = spm('FnBanner',mfilename,'2.10');
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [10];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1,2,4,5,6,7,8,9,10];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-task ={'ME-EmoFaces'};
+task ={'SE-EmoFaces'};
 
-params.meepi = true;
-params.echoes = [1,2,3]; %number of echoes for ME-fMRI. 
-params.combination = 'T2_weighted'; 
+params.meepi = false;
+params.echoes = [1]; %number of echoes for ME-fMRI. 
+params.combination = 'none'; 
 %none: all echoes are preprocessed separatly
+%average: The combination is the average of the multiple echo images
 %TE_weighted: The combination is done wi=TEi or 
-%T2_weighted: The combination is done by a T2* weighted factor (as in tedana). 
-%T2_fit: dynamic T2* fitting
+%T2_fit: dynamic T2* weighted combination
 %see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
 
 params.dummytime = 8; %time in seconds
@@ -80,7 +80,9 @@ params.do_smoothing = true;
 params.normvox = [1.5 1.5 1.5];
 params.smoothfwhm = 6;
 
-use_parallel = false;
+params.save_folder = 'preproc_func_se';
+
+use_parallel = true;
 save_intermediate_results = false;
 
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
@@ -96,6 +98,8 @@ if use_parallel
 else
     my_spmbatch_noparallel(sublist,nsessions,task,datpath,params,save_intermediate_results)
 end
+
+cd(curdir)
 
 fprintf('\nDone\n')
 
