@@ -35,15 +35,12 @@ Vfunc = spm_vol(ppparams.funcfile{ne});
 for k=1:numel(Vfunc)
     Vfunc(k).fname = spm_file(ppparams.funcfile{ne}, 'prefix','d');
     Vfunc(k).descrip = 'my_spmbatch - denoise';
-    if k==1
-        Vfunc(k).pinfo = [];
-    else
-        Vfunc(k).pinfo = Vfunc(1).pinfo;
-    end
+    Vfunc(k).pinfo = [1,0,0];
+    Vfunc(k).dt = [512,0];
     Vfunc(k).n = [k 1];
-    Vfunc(k) = spm_create_vol(Vfunc(k));
-    Vfunc(k) = spm_write_vol(Vfunc(k),wfuncdat(:,:,:,k));
 end
+
+Vfunc = myspm_write_vol_4d(Vfunc,wfuncdat);
 
 ppparams.funcfile{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','d');
 delfiles{numel(delfiles)+1} = {ppparams.funcfile{ne}};

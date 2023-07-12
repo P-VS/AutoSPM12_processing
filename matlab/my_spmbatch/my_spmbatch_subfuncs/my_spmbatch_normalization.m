@@ -12,25 +12,12 @@ funccorestimate.eoptions.fwhm = [7 7];
 
 %spm_run_coreg(funccorestimate);
 x  = spm_coreg(char(funccorestimate.ref), char(funccorestimate.source), funccorestimate.eoptions);
-M  = spm_matrix(x);
 
 Vfunc = spm_vol(ppparams.funcfile{ne});
+Rfunc= spm_vol(ppparams.reffunc{ne});
 
-if ~isempty(Vfunc(1).private.extras) && isstruct(Vfunc(1).private.extras) && isfield(Vfunc(1).private.extras,'mat')
-    for i=1:size(Vfunc(1).private.dat,4)
-        omat = Vfunc(1).private.extras.mat;
-        mat(:,:,i) = M\omat(:,:,i);
-    end
-end
 for k=1:numel(Vfunc)
-    MM = Vfunc(k).mat;
-    Vfunc(k).mat = M\MM;
-    Vfunc(k).private.mat = Vfunc(k).mat;
-    if ~isempty(Vfunc(k).private.extras) && isstruct(Vfunc(k).private.extras) && isfield(Vfunc(k).private.extras,'mat')
-        Vfunc(k).private.extras.mat = mat;
-    end
-
-    Vfunc(k) = spm_create_vol(Vfunc(k));
+    spm_get_space([Vfunc(k).fname ',' num2str(k)],Rfunc.mat);
 end
 
 %% Normalise func

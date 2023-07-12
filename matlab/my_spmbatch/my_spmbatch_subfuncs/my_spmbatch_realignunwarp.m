@@ -27,19 +27,24 @@ if ne==ppparams.echoes(1)
     end
 
     keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
+    
 end
 
 [fpath,fname,~] = fileparts(ppparams.funcfile{ne});
 realign_mat = fullfile(fpath,[fname '.mat']);
 
-if ppparams.meepi && ne>ppparams.echoes(1)
-    nrmname = split(realign_mat,'bold_e');
-    orealign_mat = [nrmname{1} 'bold_e' num2str(params.echoes(1)) '.mat'];
-
-    copyfile(orealign_mat,realign_mat);
-end
-
 delfiles{numel(delfiles)+1} = {realign_mat};
+
+if ppparams.meepi && ne>ppparams.echoes(1)
+    nrmname = split(ppparams.funcfile{ne},'bold_e');
+    orealign_nii = [nrmname{1} 'bold_e' num2str(params.echoes(1)) '.nii'];
+
+    Vtemp1 = spm_vol(orealign_nii);
+    Vtemp2 = spm_vol(ppparams.funcfile{ne});
+    for ti=1:numel(Vtemp2)
+        spm_get_space([Vtemp2(ti).fname ',' num2str(ti)],Vtemp1(ti).mat);
+    end
+end
 
 if params.fieldmap
     %% Realign and unwarp the func series

@@ -41,15 +41,12 @@ for ie=ppparams.echoes
     for k=1:numel(Vfunc)
         Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix','e');
         Vfunc(k).descrip = 'my_spmbatch - remove dummys';
-        if k==1
-            Vfunc(k).pinfo = [];
-        else
-            Vfunc(k).pinfo = Vfunc(1).pinfo;
-        end
+        Vfunc(k).pinfo = [1,0,0];
+        Vfunc(k).dt = [512,0];
         Vfunc(k).n = [k 1];
-        Vfunc(k) = spm_create_vol(Vfunc(k));
-        Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
     end
+
+    Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
 
     ppparams.funcfile{ie} = spm_file(ppparams.funcfile{ie}, 'prefix','e');
     delfiles{numel(delfiles)+1} = {ppparams.funcfile{ie}};
@@ -115,15 +112,12 @@ for ie=ppparams.echoes
             for k=1:numel(Vfunc)
                 Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix',['a' ppparams.prefix]);
                 Vfunc(k).descrip = 'my_spmbatch - slice time correction';
-                if k==1
-                    Vfunc(k).pinfo = [];
-                else
-                    Vfunc(k).pinfo = Vfunc(1).pinfo;
-                end
+                Vfunc(k).pinfo = [1,0,0];
+                Vfunc(k).dt = [512,0];
                 Vfunc(k).n = [k 1];
-                Vfunc(k) = spm_create_vol(Vfunc(k));
-                Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
             end
+
+            Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
         else
             ppparams.prefix = ['a' ppparams.prefix];
         end
@@ -135,15 +129,12 @@ for ie=ppparams.echoes
             for k=1:numel(Vfunc)
                 Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix',ppparams.prefix);
                 Vfunc(k).descrip = 'my_spmbatch';
-                if k==1
-                    Vfunc(k).pinfo = [];
-                else
-                    Vfunc(k).pinfo = Vfunc(1).pinfo;
-                end
+                Vfunc(k).pinfo = [1,0,0];
+                Vfunc(k).dt = [512,0];
                 Vfunc(k).n = [k 1];
-                Vfunc(k) = spm_create_vol(Vfunc(k));
-                Vfunc(k) = spm_write_vol(Vfunc(k),funcdat(:,:,:,k));
             end
+
+            Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
         end
     
         ppparams.funcfile{ie} = spm_file(ppparams.funcfile{ie}, 'prefix',ppparams.prefix);
