@@ -44,12 +44,12 @@ def set_denoising_parameters():
     
     first_sub = 2
     last_sub = 20
-    an_params['sublist'] = [2,3,4,5,6,7,8,9,10] #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
+    an_params['sublist'] = [2,4,5,6,7,8,9,10] #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
     
     an_params['nsessions'] = [1] #nsessions>0 data should be in sub-ii/ses-00j
     an_params['ME_fMRI'] = False
     
-    an_params['task'] = ['SE-EmoFaces'] #text string that is in between task- and _bold in your fMRI nifti filename
+    an_params['task'] = ['SE-EFT'] #text string that is in between task- and _bold in your fMRI nifti filename
     
     an_params['preproc_folder'] = 'preproc_func'
     
