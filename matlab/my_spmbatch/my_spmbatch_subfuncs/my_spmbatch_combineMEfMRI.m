@@ -34,14 +34,14 @@ switch params.combination
         for ti=1:numel(Vfunc)
             for ne=1:nechoes
                 functidat = tefuncdat(:,:,:,ti,ne);
-                functidat = functidat * te(ne);
-                functidat = functidat / sum_weights;
+                functidat = functidat .* te(ne);
+                functidat = functidat ./ sum_weights;
         
                 funcdat(:,:,:,ti) = funcdat(:,:,:,ti)+functidat; 
             end
         end
 
-    case'T2_fit'
+    case'T2_weighted'
     
         mask = my_spmbatch_mask(tefuncdat(:,:,:,:,1));
         mask_ind = find(mask>0);
