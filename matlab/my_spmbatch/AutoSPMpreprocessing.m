@@ -38,18 +38,21 @@ SPMid                 = spm('FnBanner',mfilename,'2.10');
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [1,2,4,5,6,7,8,9,10];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1,2,4:9];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-task ={'SE-EmoFaces'};
+params.save_folder = 'preproc_func_dyn-t2star';
 
-params.meepi = false;
-params.echoes = [1]; %number of echoes for ME-fMRI. 
-params.combination = 'none'; 
+task ={'ME-EmoFaces'};
+
+params.meepi = true;
+params.echoes = [1,2,3]; %number of echoes for ME-fMRI. 
+params.combination = 'dyn_T2star'; 
 %none: all echoes are preprocessed separatly
 %average: The combination is the average of the multiple echo images
 %TE_weighted: The combination is done wi=TEi or 
 %T2_fit: dynamic T2* weighted combination
+%dyn_T2star: dynamic T2* mapping
 %see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
 
 params.dummytime = 8; %time in seconds
@@ -65,6 +68,12 @@ params.pepolar = true;
 
 params.do_realignment = true;
 
+params.do_normalization = true;
+params.do_smoothing = true;
+
+params.normvox = [1.5 1.5 1.5];
+params.smoothfwhm = 6;
+
 params.do_bpfilter = false;
 params.do_mot_derivatives = false; %derivatives+squares (24 regressors)
 params.do_aCompCor = false;
@@ -73,14 +82,6 @@ params.do_ICA_AROMA = false;
 
 params.bpfilter = [0.008 Inf]; %no highpass filter is first 0, no lowpass filter is last Inf, default is [0.008 0.1]
 params.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variatiion in the signal
-
-params.do_normalization = true;
-params.do_smoothing = true;
-
-params.normvox = [1.5 1.5 1.5];
-params.smoothfwhm = 6;
-
-params.save_folder = 'preproc_func_se';
 
 use_parallel = true;
 save_intermediate_results = false;

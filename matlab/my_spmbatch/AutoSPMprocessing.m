@@ -20,21 +20,21 @@ function AutoSPMprocessing
 %﻿Give the basic input information of your data
 
 params.datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
-params.analysisname = 'default';
+params.analysisname = 'dyn-t2star_default';
 
 first_sub = 1;
 last_sub = 1;
-sublist = [1,2,4,5,6,7,8,9,10]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [10]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-task = {'SE-EmoFaces'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
+task = {'ME-EmoFaces'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
 
-params.preprocfmridir = 'preproc_func_se';
-params.fmri_prefix = 'swaure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
+params.preprocfmridir = 'preproc_func_dyn-t2star';
+params.fmri_prefix = 'swcaure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
 params.fmri_endfix = 'bold';
 
 params.dummytime = 0;
-params.multi_echo=false;
+params.multi_echo=true;
 
 params.confounds_prefix = 'rp_e'; %confounds file of form [confounds_prefix 'sub-ii_task-... .txt']
 params.add_regressors = true;
