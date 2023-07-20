@@ -41,8 +41,6 @@ for ie=ppparams.echoes
     for k=1:numel(Vfunc)
         Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix','e');
         Vfunc(k).descrip = 'my_spmbatch - remove dummys';
-        Vfunc(k).pinfo = [1,0,0];
-        Vfunc(k).dt = [512,0];
         Vfunc(k).n = [k 1];
     end
 
@@ -112,8 +110,6 @@ for ie=ppparams.echoes
             for k=1:numel(Vfunc)
                 Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix',['a' ppparams.prefix]);
                 Vfunc(k).descrip = 'my_spmbatch - slice time correction';
-                Vfunc(k).pinfo = [1,0,0];
-                Vfunc(k).dt = [512,0];
                 Vfunc(k).n = [k 1];
             end
 
@@ -129,8 +125,6 @@ for ie=ppparams.echoes
             for k=1:numel(Vfunc)
                 Vfunc(k).fname = spm_file(ppparams.funcfile{ie}, 'prefix',ppparams.prefix);
                 Vfunc(k).descrip = 'my_spmbatch';
-                Vfunc(k).pinfo = [1,0,0];
-                Vfunc(k).dt = [512,0];
                 Vfunc(k).n = [k 1];
             end
 

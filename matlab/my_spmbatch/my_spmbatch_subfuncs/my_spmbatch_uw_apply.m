@@ -359,7 +359,7 @@ if flags.mean
     PO.fname   = spm_file(ds(1).P(1).fname,'prefix',['mean' flags.prefix]);
     PO.pinfo   = [max(max(max(Integral)))/32767 0 0]';
     PO.descrip = 'spm - mean undeformed image';
-    PO.dt      = [spm_type('int16') spm_platform('bigend')];
+    PO.dt      = [spm_type('uint16'),spm_platform('bigend')];
     PO.n       = [1 1];
     ivol       = reshape(Integral,PO.dim);
     spm_write_vol(PO,ivol);

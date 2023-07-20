@@ -36,7 +36,6 @@ for k=1:numel(Vfunc)
     Vfunc(k).fname = spm_file(ppparams.funcfile{ne}, 'prefix','d');
     Vfunc(k).descrip = 'my_spmbatch - denoise';
     Vfunc(k).pinfo = [1,0,0];
-    Vfunc(k).dt = [512,0];
     Vfunc(k).n = [k 1];
 end
 

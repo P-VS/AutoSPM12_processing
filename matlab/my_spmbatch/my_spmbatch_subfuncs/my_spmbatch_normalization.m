@@ -30,7 +30,13 @@ end
 
 woptions.bb = [-78 -112 -70;78 76 85];
 woptions.vox = params.normvox;
-woptions.interp = 4;
+
+dt = Vfunc(1).dt;
+if dt(1)==spm_type('uint16')
+    woptions.interp = 4;
+else
+    woptions.interp = 1;
+end
 woptions.prefix = 'w';
 
 defs.comp{1}.def         = {ppparams.deffile};

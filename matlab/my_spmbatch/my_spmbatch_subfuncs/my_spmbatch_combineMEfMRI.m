@@ -148,7 +148,7 @@ for j=1:numel(Vout)
     Vout(j).fname = fullfile(fpath,['c' ppparams.prefix nfname{1} 'bold.nii']);
     Vout(j).descrip = 'my_spmbatch - combine echoes';
     Vout(j).pinfo = [1,0,0];
-    Vout(j).dt = [512,0];
+    Vout(j).dt = [spm_type('float32'),spm_platform('bigend')];
     Vout(j).n = [j 1];
 end
 
