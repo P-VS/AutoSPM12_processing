@@ -41,17 +41,17 @@ datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 sublist = [1,2,4:9];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-params.save_folder = 'preproc_func_dyn-t2star';
+params.save_folder = 'preproc_func_me-t2f';
 
 task ={'ME-EmoFaces'};
 
 params.meepi = true;
 params.echoes = [1,2,3]; %number of echoes for ME-fMRI. 
-params.combination = 'dyn_T2star'; 
+params.combination = 'T2_weighted'; 
 %none: all echoes are preprocessed separatly
 %average: The combination is the average of the multiple echo images
 %TE_weighted: The combination is done wi=TEi or 
-%T2_fit: dynamic T2* weighted combination
+%T2_weighted: dynamic T2* weighted combination
 %dyn_T2star: dynamic T2* mapping
 %see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
 
