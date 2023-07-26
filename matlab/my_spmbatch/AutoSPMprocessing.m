@@ -35,7 +35,7 @@ params.fmri_endfix = 'bold';
 
 params.dummytime = 0;
 
-params.multi_echo=true;
+params.multi_echo = true;
 params.echoes = [1,2,3]; %list of echoes for ME-fMRI used as sessions in SPM
 params.use_echoes_as_sessions = true; %use each echo series as a session in SPM
 

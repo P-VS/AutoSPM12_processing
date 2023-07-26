@@ -5,7 +5,7 @@ subpath = fullfile(params.datpath,substring,['ses-' num2str(ses,'%03d')]);
 
 subfmridir = fullfile(subpath,'func');
 
-if params.use_echoes_as_sessions
+if params.multi_echo && params.use_echoes_as_sessions
     nechoes = numel(params.echoes);
 else
     nechoes = 1;
@@ -22,7 +22,7 @@ for k=1:numel(task)
     end
 
     for ne=1:nechoes
-        if params.use_echoes_as_sessions
+        if params.multi_echo && params.use_echoes_as_sessions
             endfix = [params.fmri_endfix '_e' num2str(params.echoes(ne))];
         else
             endfix = params.fmri_endfix;
@@ -178,7 +178,7 @@ for ic=1:numel(params.contrast)
     matlabbatch{step}.spm.stats.con.consess{ic}.tcon.name = contrastname;
     matlabbatch{step}.spm.stats.con.consess{ic}.tcon.weights = weights;
 
-    if params.use_echoes_as_sessions
+    if params.multi_echo && params.use_echoes_as_sessions
         matlabbatch{step}.spm.stats.con.consess{ic}.tcon.sessrep = 'replsc';
     else
         matlabbatch{step}.spm.stats.con.consess{ic}.tcon.sessrep = 'none';
