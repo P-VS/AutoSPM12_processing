@@ -20,21 +20,24 @@ function AutoSPMprocessing
 %﻿Give the basic input information of your data
 
 params.datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
-params.analysisname = 'dyn-t2star_default';
+params.analysisname = '3te_default';
 
 first_sub = 1;
 last_sub = 1;
-sublist = [10]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1,2,4:9]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
 task = {'ME-EmoFaces'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
 
-params.preprocfmridir = 'preproc_func_dyn-t2star';
-params.fmri_prefix = 'swcaure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
+params.preprocfmridir = 'preproc_func_me-perTE';
+params.fmri_prefix = 'swaure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
 params.fmri_endfix = 'bold';
 
 params.dummytime = 0;
+
 params.multi_echo=true;
+params.echoes = [1,2,3]; %list of echoes for ME-fMRI used as sessions in SPM
+params.use_echoes_as_sessions = true; %use each echo series as a session in SPM
 
 params.confounds_prefix = 'rp_e'; %confounds file of form [confounds_prefix 'sub-ii_task-... .txt']
 params.add_regressors = true;
@@ -73,7 +76,7 @@ params.contrast(5).vector = [1,-1];
 params.contrast(6).conditions = {'sad','happy'};
 params.contrast(6).vector = [-1,1];
 
-use_parallel = false;
+use_parallel = true; %only possible when parallel toolbox is installed
 
 %Be careful with changing the code below this line!
 %--------------------------------------------------------------------------------
@@ -84,38 +87,17 @@ spm('defaults', 'FMRI');
 curdir = pwd;
 
 if use_parallel
-    datlist = zeros(numel(sublist)*numel(nsessions),2);
 
-    dpos = 1;
-    for i = 1:numel(sublist)
-        for j = 1:numel(nsessions)
-            datlist(dpos,1) = sublist(i);
-            datlist(dpos,2) = nsessions(j);
+    my_spmbatch_parallelprocessing(sublist,nsessions,task,params)
 
-            dpos = dpos+1;
-        end
-    end
-
-    pa=parpool(min([5,numel(datlist(:,1))])); %25 is the maximum number of workers allowed in the 'local' profile while 10 is set to avoid memory issues on my computer
-    parfor i = 1:numel(datlist(:,1))
-                
-        %% make batch
-        matlabbatch = my_spmprocessingbatch(datlist(i,1),datlist(i,2),task,params);
-    
-        spm_jobman('run', matlabbatch);
-    end
-    delete(pa)
 else
-    for i = sublist
-        for j = nsessions
-            matlabbatch = my_spmprocessingbatch(i,j,task,params);
 
-            spm_jobman('run', matlabbatch);
-        end
-    end
+    my_spmbatch_noparallelprocessing(sublist,nsessions,task,params)
+
 end
 
+cd(curdir)
+
 fprintf('\nDone with processing the data\n')
-close all
 
 end

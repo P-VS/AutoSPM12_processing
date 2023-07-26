@@ -5,6 +5,12 @@ subpath = fullfile(params.datpath,substring,['ses-' num2str(ses,'%03d')]);
 
 subfmridir = fullfile(subpath,'func');
 
+if params.use_echoes_as_sessions
+    nechoes = numel(params.echoes);
+else
+    nechoes = 1;
+end
+
 step = 0;
 for k=1:numel(task)
     eventsdat{k} = fullfile(subfmridir,[substring '_task-' task{k} '_events.tsv']);
@@ -15,11 +21,19 @@ for k=1:numel(task)
         jsonfile{k} = fullfile(subfmridir,[substring '_task-' task{k} '_bold.json']);
     end
 
-    funcfile = fullfile(subpath,params.preprocfmridir,[params.fmri_prefix substring '_task-' task{k} '_' params.fmri_endfix '.nii']);
-    Vfunc = spm_vol(funcfile);
+    for ne=1:nechoes
+        if params.use_echoes_as_sessions
+            endfix = [params.fmri_endfix '_e' num2str(params.echoes(ne))];
+        else
+            endfix = params.fmri_endfix;
+        end
 
-    for i=1:numel(Vfunc)
-        ppfmridat{k}.func{i,1} = [Vfunc(i).fname ',' num2str(i)];
+        funcfile = fullfile(subpath,params.preprocfmridir,[params.fmri_prefix substring '_task-' task{k} '_' endfix '.nii']);
+        Vfunc = spm_vol(funcfile);
+    
+        for i=1:numel(Vfunc)
+            ppfmridat{k}.sess{ne}.func{i,1} = [Vfunc(i).fname ',' num2str(i)];
+        end
     end
 
     if params.add_regressors
@@ -91,26 +105,30 @@ for k=1:numel(task)
         end
     end
 
-    matlabbatch{step}.spm.stats.fmri_spec.sess(k).scans = ppfmridat{k}.func(:,1);
+    for ne=1:nechoes
+        nsess = (k-1)*nechoes+ne;
 
-    for nc=1:numel(edat{k}.conditions)
-        matlabbatch{step}.spm.stats.fmri_spec.sess(k).cond(nc).name = char(edat{k}.conditions{nc}.name);
-        matlabbatch{step}.spm.stats.fmri_spec.sess(k).cond(nc).onset = edat{k}.conditions{nc}.onsets;
-        matlabbatch{step}.spm.stats.fmri_spec.sess(k).cond(nc).duration = edat{k}.conditions{nc}.durations;
-        matlabbatch{step}.spm.stats.fmri_spec.sess(k).cond(nc).tmod = 0;
-        matlabbatch{step}.spm.stats.fmri_spec.sess(k).cond(nc).pmod = struct('name', {}, 'param', {}, 'poly', {});
-        matlabbatch{step}.spm.stats.fmri_spec.sess(k).cond(nc).orth = 1;
+        matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).scans = ppfmridat{k}.sess{ne}.func(:,1);
+
+        for nc=1:numel(edat{k}.conditions)
+            matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).cond(nc).name = char(edat{k}.conditions{nc}.name);
+            matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).cond(nc).onset = edat{k}.conditions{nc}.onsets;
+            matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).cond(nc).duration = edat{k}.conditions{nc}.durations;
+            matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).cond(nc).tmod = 0;
+            matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).cond(nc).pmod = struct('name', {}, 'param', {}, 'poly', {});
+            matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).cond(nc).orth = 1;
+        end
+
+        matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).multi = {''};
+        matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).regress = struct('name', {}, 'val', {});
+    
+        if params.add_regressors
+            matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).multi_reg = {confound_file{k}};
+        else
+            matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).multi_reg = {''};
+        end
+        matlabbatch{step}.spm.stats.fmri_spec.sess(nsess).hpf = params.hpf;
     end
-
-    matlabbatch{step}.spm.stats.fmri_spec.sess(k).multi = {''};
-    matlabbatch{step}.spm.stats.fmri_spec.sess(k).regress = struct('name', {}, 'val', {});
-
-    if params.add_regressors
-        matlabbatch{step}.spm.stats.fmri_spec.sess(k).multi_reg = {confound_file{k}};
-    else
-        matlabbatch{step}.spm.stats.fmri_spec.sess(k).multi_reg = {''};
-    end
-    matlabbatch{step}.spm.stats.fmri_spec.sess(k).hpf = params.hpf;
 end
 
 matlabbatch{step}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
@@ -159,7 +177,12 @@ for ic=1:numel(params.contrast)
 
     matlabbatch{step}.spm.stats.con.consess{ic}.tcon.name = contrastname;
     matlabbatch{step}.spm.stats.con.consess{ic}.tcon.weights = weights;
-    matlabbatch{step}.spm.stats.con.consess{ic}.tcon.sessrep = 'none';
+
+    if params.use_echoes_as_sessions
+        matlabbatch{step}.spm.stats.con.consess{ic}.tcon.sessrep = 'replsc';
+    else
+        matlabbatch{step}.spm.stats.con.consess{ic}.tcon.sessrep = 'none';
+    end
 end
 matlabbatch{step}.spm.stats.con.delete = 0;
 
