@@ -28,6 +28,9 @@ ppparams.echoes = params.echoes;
 ppparams.meepi = params.meepi;
 
 for ie=ppparams.echoes
+
+    %% Load func data without dummy scans
+
     if ppparams.meepi
         nsubfuncstring = [ppparams.subfuncstring num2str(ie)];
     else
@@ -75,7 +78,7 @@ for ie=ppparams.echoes
     ppparams.reffunc{ie} = spm_file(ppparams.funcfile{ie}, 'prefix','f');
     delfiles{numel(delfiles)+1} = {ppparams.reffunc{ie}};
     
-    %%
+    %% Fieldmap geometric correction
     if params.fieldmap
         [ppparams,delfiles,keepfiles] = my_spmbatch_fieldmap(ie,ppparams,delfiles,keepfiles);
     else
@@ -83,21 +86,22 @@ for ie=ppparams.echoes
     end
 
     ppparams.prefix = '';
-    %%
+
+    %% Realignment
     if params.do_realignment 
         [funcdat,ppparams,keepfiles,delfiles] = my_spmbatch_realignunwarp(ie,ppparams,params,keepfiles,delfiles);
         
         Vfunc = spm_vol(ppparams.funcfile{ie});
     end
 
-    %%
+    %% Topup geometric correction
     if params.pepolar
         [funcdat,ppparams,delfiles,keepfiles] = my_spmbatch_pepolar(funcdat,numdummy,ie,ppparams,params,delfiles,keepfiles);
         ppparams.prefix = ['u' ppparams.prefix];
     end
     
+    %% Slice time correction
     if params.do_slicetime    
-        %% Slice time correction
     
         fprintf('Do slice time correction\n')
         
@@ -141,7 +145,7 @@ for ie=ppparams.echoes
     end
 end
     
-%%
+%% Combine multiple TE timeseries for ME-fMRI
 if params.meepi & ~contains(params.combination,'none')
     fprintf('Combine echoes\n')
 
@@ -166,14 +170,14 @@ if params.meepi & ~contains(params.combination,'none')
     ppparams.meepi = false;
 end  
 
-for ie=ppparams.echoes    
-    %%
+for ie=ppparams.echoes
+
+    %% Normalization of func data
     if params.do_normalization
         [wfuncdat,ppparams,keepfiles] = my_spmbatch_normalization(ie,ppparams,params,keepfiles);
     end
-       
-    %%
-    %%Denoising with motion derivatives and squared regressors (24 regressors)
+      
+    %% Extend motion regressos with derivatives and squared regressors (24 regressors) for denoising
     if params.do_mot_derivatives
         fprintf('Start motion derivatives \n')
     
@@ -188,24 +192,72 @@ for ie=ppparams.echoes
         keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
     end
  
-    %%Denoising with aCompCor covariates
+    %% Determine aCompCor covariates in CSF
     if params.do_aCompCor  && ie==ppparams.echoes(1)
-        fprintf('Start aCompCor \n')
-    
-        [ppparams,keepfiles] = my_spmbatch_acompcor(wfuncdat,ppparams,params,keepfiles);
-    end  
+                
+        %% Do segmentation of func data
 
-    if params.do_noiseregression || params.do_bpfilter
-        fprintf('Do noise regression \n')
+        [sfpath,sfname,~] = fileparts(ppparams.funcfile{ie});
+       
+        segfuncfile = fullfile(sfpath,[sfname '.nii,1']);
     
-        [wfuncdat,ppparams,delfiles] = my_spmbatch_noiseregression(wfuncdat,ie,ppparams,params,delfiles);
-    end
-    
+        preproc.channel.vols = {segfuncfile};
+        preproc.channel.biasreg = 0.001;
+        preproc.channel.biasfwhm = 60;
+        preproc.channel.write = [0 0];
+        preproc.tissue(1).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,1')};
+        preproc.tissue(1).ngaus = 1;
+        preproc.tissue(1).native = [1 0];
+        preproc.tissue(1).warped = [0 0];
+        preproc.tissue(2).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,2')};
+        preproc.tissue(2).ngaus = 1;
+        preproc.tissue(2).native = [1 0];
+        preproc.tissue(2).warped = [1 0];
+        preproc.tissue(3).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,3')};
+        preproc.tissue(3).ngaus = 2;
+        preproc.tissue(3).native = [1 0];
+        preproc.tissue(3).warped = [0 0];
+        preproc.tissue(4).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,4')};
+        preproc.tissue(4).ngaus = 3;
+        preproc.tissue(4).native = [0 0];
+        preproc.tissue(4).warped = [0 0];
+        preproc.tissue(5).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,5')};
+        preproc.tissue(5).ngaus = 4;
+        preproc.tissue(5).native = [0 0];
+        preproc.tissue(5).warped = [0 0];
+        preproc.tissue(6).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,6')};
+        preproc.tissue(6).ngaus = 2;
+        preproc.tissue(6).native = [0 0];
+        preproc.tissue(6).warped = [0 0];
+        preproc.warp.mrf = 1;
+        preproc.warp.cleanup = 1;
+        preproc.warp.reg = [0 0.001 0.5 0.05 0.2];
+        preproc.warp.affreg = 'mni';
+        preproc.warp.fwhm = 0;
+        preproc.warp.samp = 3;
+        preproc.warp.write = [0 1];
+        preproc.warp.vox = NaN;
+        preproc.warp.bb = [NaN NaN NaN;NaN NaN NaN];
+        
+        spm_preproc_run(preproc);
+        
+        ppparams.wc1im = spm_file(ppparams.funcfile{ie}, 'prefix','c1');
+        ppparams.wc2im = spm_file(ppparams.funcfile{ie}, 'prefix','c2');
+        ppparams.wc3im = spm_file(ppparams.funcfile{ie}, 'prefix','c3');
+
+        delfiles{numel(delfiles)+1} = {ppparams.wc1im};  
+        delfiles{numel(delfiles)+1} = {ppparams.wc2im}; 
+        delfiles{numel(delfiles)+1} = {ppparams.wc3im}; 
+        delfiles{numel(delfiles)+1} = {fullfile(sfpath,[sfname '._seg8.mat'])};
+        delfiles{numel(delfiles)+1} = {fullfile(sfpath,['y_' sfname '.nii'])};
+
+        [ppparams,keepfiles] = my_spmbatch_acompcor(wfuncdat,ppparams,params,keepfiles);
+    end 
+
+    %% Smooth func        
     if params.do_smoothing
         fprintf('Start smoothing \n')
     
-        %% Smooth func
-        
         if ~exist('wfuncdat','var')
     
             for i=1:numel(Vfunc)
@@ -230,7 +282,11 @@ for ie=ppparams.echoes
                 [pth,nm,~] = fileparts(Vfunc(i).fname);
     
                 Q = fullfile(pth, ['s' nm  '.nii,' num2str(Vfunc(i).n)]);
-                my_spmbatch_smooth(wfuncdat(:,:,:,i),Vfunc(i),Q,[params.smoothfwhm params.smoothfwhm params.smoothfwhm],0);
+                swfuncdat = my_spmbatch_smooth(wfuncdat(:,:,:,i),Vfunc(i),Q,[params.smoothfwhm params.smoothfwhm params.smoothfwhm],0);
+
+                wfuncdat(:,:,:,i) = swfuncdat;
+
+                clear swfuncdat
     
                 spm_progress_bar('Set',i);
             end
@@ -243,4 +299,11 @@ for ie=ppparams.echoes
     
         fprintf('Done smoothing \n')
     end
+
+    if params.do_noiseregression || params.do_bpfilter
+        fprintf('Do noise regression \n')
+    
+        [wfuncdat,ppparams,keepfiles] = my_spmbatch_noiseregression(wfuncdat,ie,ppparams,params,keepfiles);    
+    end
+    
 end

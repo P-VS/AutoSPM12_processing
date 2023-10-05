@@ -21,7 +21,7 @@ braindat(braindat<0.2)=0;
 braindat(braindat>0.0)=1;
 
 csfdat(braindat>0.0)=0;
-csfdat(csfdat<0.8)=0;
+csfdat(csfdat<0.2)=0;
 csfdat(csfdat>0.0)=1;
 
 if params.do_bpfilter

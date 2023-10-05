@@ -119,10 +119,6 @@ else
     
     my_spmbatch_reslice(ppparams.funcfile{ne},roptions);
 
-    ppparams.rp_file = spm_file(ppparams.funcfile{ne}, 'prefix','rp_','ext','.txt');
-
-    keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
-
     ppparams.reffunc{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','mean');
     ppparams.funcfile{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','r');
 

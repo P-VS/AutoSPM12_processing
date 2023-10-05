@@ -1,4 +1,4 @@
-function [wfuncdat,ppparams,delfiles] = my_spmbatch_noiseregression(wfuncdat,ne,ppparams,params,delfiles)
+function [wfuncdat,ppparams,keepfiles] = my_spmbatch_noiseregression(wfuncdat,ne,ppparams,params,keepfiles)
 
 fprintf('Start noise regression \n')
 
@@ -42,6 +42,6 @@ end
 Vfunc = myspm_write_vol_4d(Vfunc,wfuncdat);
 
 ppparams.funcfile{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','d');
-delfiles{numel(delfiles)+1} = {ppparams.funcfile{ne}};
+keepfiles{numel(keepfiles)+1} = {ppparams.funcfile{ne}};
 
 fprintf('Done noise regression \n')

@@ -1,4 +1,4 @@
-function my_spmbatch_smooth(V,P,Q,s,dtype)
+function sout = my_spmbatch_smooth(V,P,Q,s,dtype)
 % 3 dimensional convolution of an image
 % FORMAT spm_smooth(P,Q,s,dtype)
 % P     - image(s) to be smoothed (or 3D array)
@@ -32,13 +32,13 @@ if nargin < 4, dtype = 0; end
 
 if ischar(P), P = spm_vol(P); end
 
-smooth1(V,P,Q,s,dtype);
+sout = smooth1(V,P,Q,s,dtype);
 
 
 %==========================================================================
 % function smooth1(P,Q,s,dtype)
 %==========================================================================
-function smooth1(V,P,Q,s,dtype)
+function sV = smooth1(V,P,Q,s,dtype)
 
 if isstruct(P)
     VOX = sqrt(sum(P.mat(1:3,1:3).^2));
