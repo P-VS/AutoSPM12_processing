@@ -171,7 +171,7 @@ if params.meepi & ~contains(params.combination,'none')
 end  
 
 for ie=ppparams.echoes
-
+ie
     %% Normalization of func data
     if params.do_normalization
         [wfuncdat,ppparams,keepfiles] = my_spmbatch_normalization(ie,ppparams,params,keepfiles);
@@ -197,9 +197,9 @@ for ie=ppparams.echoes
                 
         %% Do segmentation of func data
 
-        [sfpath,sfname,~] = fileparts(ppparams.funcfile{ie});
+        [sfpath,sfname,~] = fileparts(ppparams.funcfile{ie})
        
-        segfuncfile = fullfile(sfpath,[sfname '.nii,1']);
+        segfuncfile = fullfile(sfpath,[sfname '.nii,1'])
     
         preproc.channel.vols = {segfuncfile};
         preproc.channel.biasreg = 0.001;
@@ -212,7 +212,7 @@ for ie=ppparams.echoes
         preproc.tissue(2).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,2')};
         preproc.tissue(2).ngaus = 1;
         preproc.tissue(2).native = [1 0];
-        preproc.tissue(2).warped = [1 0];
+        preproc.tissue(2).warped = [0 0];
         preproc.tissue(3).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,3')};
         preproc.tissue(3).ngaus = 2;
         preproc.tissue(3).native = [1 0];
