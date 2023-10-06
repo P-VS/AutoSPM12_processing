@@ -171,7 +171,7 @@ if params.meepi & ~contains(params.combination,'none')
 end  
 
 for ie=ppparams.echoes
-ie
+
     %% Normalization of func data
     if params.do_normalization
         [wfuncdat,ppparams,keepfiles] = my_spmbatch_normalization(ie,ppparams,params,keepfiles);
@@ -197,9 +197,9 @@ ie
                 
         %% Do segmentation of func data
 
-        [sfpath,sfname,~] = fileparts(ppparams.funcfile{ie})
+        [sfpath,sfname,~] = fileparts(ppparams.funcfile{ie});
        
-        segfuncfile = fullfile(sfpath,[sfname '.nii,1'])
+        segfuncfile = fullfile(sfpath,[sfname '.nii,1']);
     
         preproc.channel.vols = {segfuncfile};
         preproc.channel.biasreg = 0.001;
