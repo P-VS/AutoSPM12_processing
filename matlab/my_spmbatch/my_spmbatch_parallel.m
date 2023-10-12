@@ -5,10 +5,10 @@ datlist = zeros(numel(sublist)*numel(nsessions),2);
 dpos = 1;
 for i = 1:numel(sublist)
     for j = 1:numel(nsessions)
-            datlist(dpos,1) = sublist(i);
-            datlist(dpos,2) = nsessions(j);
+        datlist(dpos,1) = sublist(i);
+        datlist(dpos,2) = nsessions(j);
 
-            dpos = dpos+1;
+        dpos = dpos+1;
     end
 end
 
@@ -18,11 +18,15 @@ for k = 1:numel(task)
         try
             %% make and run batch
             
-            [delfiles,keepfiles] = my_spmbatch(datlist(i,1),datlist(i,2),task{k},datpath,params);
-            
-            %% Clean up unnecessary files
-            cleanup_intermediate_files(datlist(i,1),datlist(i,2),datpath,delfiles,keepfiles,save_intermediate_results,params);
-    
+            if ~params.do_onlydenoise
+                [delfiles,keepfiles] = my_spmbatch(datlist(i,1),datlist(i,2),task{k},datpath,params);
+                
+                %% Clean up unnecessary files
+                cleanup_intermediate_files(datlist(i,1),datlist(i,2),datpath,delfiles,keepfiles,save_intermediate_results,params);
+        
+            else
+                my_spmbatch_onlydenoise(sublist(i),nsessions(j),task{k},datpath,params);
+            end
         catch
             fprintf(['\nError for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' task ' task{k} '\n'])
         end
