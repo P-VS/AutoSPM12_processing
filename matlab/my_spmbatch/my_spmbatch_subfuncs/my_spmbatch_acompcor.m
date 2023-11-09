@@ -1,7 +1,5 @@
 function [ppparams,keepfiles] = my_spmbatch_acompcor(wfuncdat,ppparams,params,keepfiles)
 
-fprintf('Start aCompCor \n')
-
 if exist(ppparams.rp_file,'file')
     confounds = load(ppparams.rp_file);
 else
@@ -50,5 +48,3 @@ else
 end
 
 keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
-
-fprintf('Done aCompCor \n')
