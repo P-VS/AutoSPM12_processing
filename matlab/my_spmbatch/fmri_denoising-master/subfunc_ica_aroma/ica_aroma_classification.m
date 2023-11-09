@@ -41,18 +41,6 @@ Vcsf.descrip = 'nobraindata';
 Vcsf = rmfield(Vcsf, 'pinfo'); %remove pixel info so that there is no scaling factor applied so the values
 spm_write_vol(Vcsf, nobrain);
 
-edgedat = edge3(braindat,"approxcanny",0.2);
-edgethn = ones(2,2,2);
-edgedat = convn(edgedat,edgethn,'same');
-edgedat = edgedat>0;
-edgedat(braindat > 0.0) = 0; 
-
-Vedge = spm_vol(funcmask);
-Vedge.fname = fullfile(aroma_dir, 'edgedata.nii'); 
-Vedge.descrip = 'edgedata';
-Vedge = rmfield(Vedge, 'pinfo'); %remove pixel info so that there is no scaling factor applied so the values
-spm_write_vol(Vedge, edgedat);
-
 icaparams_file = fullfile(ica_dir,'ica_aroma_ica_parameter_info.mat');
 
 load(icaparams_file);
@@ -108,7 +96,6 @@ compData = reshape(compData, [prod(dim(1:3)),numComp]);
 
 nobrainFract = zeros(numComp,1);
 brainFract = zeros(numComp,1);
-edgeFract = zeros(numComp,1);
 
 for i = 1:numComp       
     
@@ -129,15 +116,6 @@ for i = 1:numComp
 
     [comparison, ~, ~, ~] = icatb_correlateFunctions(brainmaskdat, brainCompdat);
     brainFract(i) = comparison;
-
-    edgemaskdat = edgedat;
-    edgeCompdat = compData(:,i);
-
-    edgemaskdat = reshape(edgemaskdat,[numel(edgemaskdat),1]);
-    edgeCompdat = reshape(edgeCompdat,[numel(edgemaskdat),1]);
-
-    [comparison, ~, ~, ~] = icatb_correlateFunctions(edgemaskdat, edgeCompdat);
-    edgeFract(i) = comparison;
 end
 
 FT = abs(fft(icaTimecourse, [], 1));% FT of each IC along the firt dimension (time) 
@@ -199,14 +177,14 @@ FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric
 
 %   Classify the ICs
 
-    noiseICs = find((nobrainFract > brainFract) | (edgeFract > brainFract) | (HFC > thr_HFC) | (maxRPcorr > thr_corr));
+    noiseICs = find((nobrainFract > brainFract) | (HFC > thr_HFC) | (maxRPcorr > thr_corr));
 
     noiseICdata = icaTimecourse(:,noiseICs);
     
 %   Save results
 
-    varnames = {'NoBrain_fraction','Edge-fraction','Brain_fraction','high_frequency_content','max_correlations'};
-    T = table(nobrainFract,edgeFract,brainFract,HFC,maxRPcorr,'VariableNames',varnames);
+    varnames = {'NoBrain_fraction','Brain_fraction','high_frequency_content','max_correlations'};
+    T = table(nobrainFract,brainFract,HFC,maxRPcorr,'VariableNames',varnames);
 
     aroma_file = fullfile(aroma_dir,'AROMA_desission.csv');
 
@@ -218,11 +196,15 @@ FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric
 
     for icomp=1:numComp
         spm_figure('Clear','Graphics');
+        figure(fg);
+
         plot([0:t_r:t_r*(tdim(1)-1)],icaTimecourse(:,icomp))
         
         saveas(fg,fullfile(aroma_dir,['comp-' num2str(icomp,'%03d') '_time.png']));
 
         spm_figure('Clear','Graphics');
+        figure(fg);
+        
         plot(f,FT(:,icomp)./max(FT(:,icomp),[],'all'),f,fcumsum_fract(:,icomp))
         xline(thr_HFC*Ny)
         
