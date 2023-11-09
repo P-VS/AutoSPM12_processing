@@ -46,7 +46,7 @@ ppparams.subfuncstring = [params.prefix ppparams.subfuncstring];
 if params.do_ICA_AROMA || params.do_DENN
     %% Make masks
     
-    if ~ppparams.mecombined
+    if params.meepi && ~ppparams.mecombined
         nsubfuncstring = ['s' ppparams.subfuncstring '_e' num2str(ppparams.echoes(1))];
     else
         nsubfuncstring = ['s' ppparams.subfuncstring];
@@ -71,7 +71,7 @@ end
 %% Do segmentation of func data
 
 if params.do_aCompCor || params.do_ICA_AROMA || params.do_DENN
-    if ~ppparams.mecombined
+    if params.meepi && ~ppparams.mecombined
         nsubfuncstring = [ppparams.subfuncstring '_e1'];
     else
         nsubfuncstring = ppparams.subfuncstring;
@@ -151,7 +151,7 @@ end
 if params.do_aCompCor
     
     for ie=ppparams.echoes
-        if ~ppparams.mecombined
+        if params.meepi && ~ppparams.mecombined
             nsubfuncstring = [ppparams.subfuncstring '_e' num2str(ie)];
         else
             nsubfuncstring = ppparams.subfuncstring;
@@ -162,7 +162,7 @@ if params.do_aCompCor
 
     fprintf('Start aCompCor \n')
 
-    if ~ppparams.mecombined
+    if params.meepi && ~ppparams.mecombined
         nechoes = numel(ppparams.echoes);
 
         for i=1:nechoes
@@ -188,7 +188,7 @@ end
 if params.do_ICA_AROMA
 
     for ie=ppparams.echoes
-        if ~ppparams.mecombined
+        if params.meepi && ~ppparams.mecombined
             nsubfuncstring = ['s' ppparams.subfuncstring '_e' num2str(ie)];
         else
             nsubfuncstring = ['s' ppparams.subfuncstring];
@@ -210,7 +210,7 @@ if params.do_noiseregression || params.do_bpfilter
 
     for ie=ppparams.echoes
         if ~params.do_ICA_AROMA
-            if ~ppparams.mecombined
+            if params.meepi && ~ppparams.mecombined
                 nsubfuncstring = ['s' ppparams.subfuncstring '_e' num2str(ie)];
             else
                 nsubfuncstring = ['s' ppparams.subfuncstring];

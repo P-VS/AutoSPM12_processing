@@ -7,13 +7,17 @@ for i = 1:numel(sublist)
 
             %% make and run batch
 
-            [delfiles,keepfiles] = my_spmbatch(sublist(i),nsessions(j),task{k},datpath,params);
-
-            %% Clean up unnecessary files
-            cleanup_intermediate_files(sublist(i),nsessions(j),datpath,delfiles,keepfiles,save_intermediate_results,params);
-
-            %% Print and save realignment paramers  
-            save_rp_plot(sublist(i),nsessions(j),task{k},datpath,params);
+            if ~params.do_onlydenoise
+                [delfiles,keepfiles] = my_spmbatch(sublist(i),nsessions(j),task{k},datpath,params);
+            
+                %% Clean up unnecessary files
+                cleanup_intermediate_files(sublist(i),nsessions(j),datpath,delfiles,keepfiles,save_intermediate_results,params);
+    
+                %% Print and save realignment paramers  
+                save_rp_plot(sublist(i),nsessions(j),task{k},datpath,params);
+            else
+                my_spmbatch_onlydenoise(sublist(i),nsessions(j),task{k},datpath,params);
+            end
 
             itstop = toc(itstart);
 

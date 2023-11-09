@@ -41,13 +41,13 @@ datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 sublist = [2];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-params.save_folder = 'preproc_func_me-ave_acompcor_test';
+params.save_folder = 'preproc_func_me-test';
 
 task ={'ME-EFT'};
 
 params.meepi = true;
-params.echoes = [1,2,3]; %number of echoes for ME-fMRI. 
-params.combination = 'average'; 
+params.echoes = [1]; %number of echoes for ME-fMRI. 
+params.combination = 'none'; 
 %none: all echoes are preprocessed separatly
 %average: The combination is the average of the multiple echo images
 %TE_weighted: The combination is done wi=TEi or 
@@ -60,11 +60,11 @@ params.dummytime = 8; %time in seconds
 params.reorient = true;
 
 params.do_segmentation = false;
-params.do_slicetime = true;
+params.do_slicetime = false;
 
 %fieldmap or pepolar should be true, the other should be false
 params.fieldmap = false;
-params.pepolar = true;
+params.pepolar = false;
 
 params.do_realignment = true;
 
@@ -78,14 +78,15 @@ params.do_onlydenoise = false; %only denoising and smoothing
 params.prefix = 'wcaure';
 params.mecombined = true;
 
-params.do_bpfilter = true;
-params.do_mot_derivatives = true; %derivatives+squares (24 regressors)
-params.do_aCompCor = true;
-params.do_ICA_AROMA = false;
-params.do_noiseregression = true;
+params.do_bpfilter = false;
+params.do_mot_derivatives = false; %derivatives+squares (24 regressors)
+params.do_aCompCor = false;
+params.do_ICA_AROMA = true;
+params.do_noiseregression = false;
+params.do_DENN = false; %preparing the data for DENN in python
 
 params.bpfilter = [0.008 Inf]; %no highpass filter is first 0, no lowpass filter is last Inf, default is [0.008 0.1]
-params.Ncomponents = 0.5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal
+params.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal
 
 params.use_parallel = false;
 save_intermediate_results = false; %only possible when parallel toolbox is installed
