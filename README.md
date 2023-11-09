@@ -42,6 +42,7 @@ Required software installed:
 - SPM12 (https://www.fil.ion.ucl.ac.uk/spm/)
 	- make sure SPM and its subfolders are added to the Matlab Path
 - MRIcroGL (https://www.mccauslandcenter.sc.edu/mricrogl/) for dicom to nifti conversion
+- GIFT (https://trendscenter.org/software/gift/) to use ICA-AROMA denoising
 
 To fasten up the preprocessing and processing of multiple fMRI data sets, Matlab's Parallel toolbox can be used.
 
