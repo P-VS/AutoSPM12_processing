@@ -1,30 +1,30 @@
-function [wfuncdat,ppparams,delfiles,keepfiles] = my_spmbatch_normalization(ne,ppparams,params,delfiles,keepfiles)
+function [wfuncdat,ppparams,keepfiles] = archive_my_spmbatch_normalization(ne,ppparams,params,keepfiles)
+
+%% Coregistration func to anat
+
+funccorestimate.ref = {ppparams.subanat};
+funccorestimate.source = {ppparams.reffunc{ne}};
+funccorestimate.other = {''};
+funccorestimate.eoptions.cost_fun = 'nmi';
+funccorestimate.eoptions.sep = [4 2];
+funccorestimate.eoptions.tol = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
+funccorestimate.eoptions.fwhm = [7 7];
+
+spm_run_coreg(funccorestimate);
+x  = spm_coreg(char(funccorestimate.ref), char(funccorestimate.source), funccorestimate.eoptions);
 
 Vfunc = spm_vol(ppparams.funcfile{ne});
 Rfunc= spm_vol(ppparams.reffunc{ne});
 
-for i=1:numel(Vfunc)
-    wfuncfiles{i,1} = [ppparams.funcfile{ne} ',' num2str(i)];
-end
-
-%% Normalization of the functional scan
-if ne==ppparams.echoes(1)
-    funcnormest.subj.vol = {wfuncfiles{1,1}};
-    funcnormest.eoptions.biasreg = 0.0001;
-    funcnormest.eoptions.biasfwhm = 60;
-    funcnormest.eoptions.tpm = {fullfile(spm('Dir'),'tpm','TPM.nii')};
-    funcnormest.eoptions.affreg = 'mni';
-    funcnormest.eoptions.reg = [0 0.001 0.5 0.05 0.2];
-    funcnormest.eoptions.fwhm = 0;
-    funcnormest.eoptions.samp = 3;
-
-    spm_run_norm(funcnormest);
-
-    ppparams.deffile = spm_file(ppparams.funcfile{ne}, 'prefix','y_');
-    delfiles{numel(delfiles)+1} = {ppparams.deffile};
+for k=1:numel(Vfunc)
+    spm_get_space([Vfunc(k).fname ',' num2str(k)],Rfunc.mat);
 end
 
 %% Normalise func
+
+for i=1:numel(Vfunc)
+    wfuncfiles{i,1} = [ppparams.funcfile{ne} ',' num2str(i)];
+end
 
 %Write the spatially normalised data
 

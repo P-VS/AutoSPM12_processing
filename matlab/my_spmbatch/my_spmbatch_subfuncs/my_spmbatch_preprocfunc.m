@@ -174,7 +174,7 @@ for ie=ppparams.echoes
 
     %% Normalization of func data
     if params.do_normalization
-        [wfuncdat,ppparams,keepfiles] = my_spmbatch_normalization(ie,ppparams,params,keepfiles);
+        [wfuncdat,ppparams,delfiles,keepfiles] = my_spmbatch_normalization(ie,ppparams,params,delfiles,keepfiles);
     end
      
     if ie==ppparams.echoes(1)
@@ -316,7 +316,7 @@ if params.do_ICA_AROMA || params.do_DENN
     func_mask = my_spmbatch_mask(fmaskdat);
     
     Vfuncmask = tedata{ppparams.echoes(1)}.Vfunc(1);
-    Vfuncmask.fname = spm_file(ppparams.funcfile{ppparams.echoes(1)}, 'prefix','fmask'); 
+    Vfuncmask.fname = spm_file(ppparams.funcfile{ppparams.echoes(1)}, 'prefix','fmask_'); 
     Vfuncmask.descrip = 'funcmask';
     Vfuncmask = rmfield(Vfuncmask, 'pinfo'); %remove pixel info so that there is no scaling factor applied so the values
     spm_write_vol(Vfuncmask, func_mask);
