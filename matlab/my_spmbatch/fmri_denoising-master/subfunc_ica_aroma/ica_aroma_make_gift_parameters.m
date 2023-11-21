@@ -92,7 +92,7 @@ fprintf(fid,'\n%s',['numOfSess = ' num2str(n_sessions) ';']);
 % You can provide the file numbers ([1:220]) to include as a vector. If you want to
 % select all the files then leave empty.
 
-for i=1:numel(ppparams.funcfile)
+for i=1:numel(ppparams.echoes)
     Vfunc = spm_vol(ppparams.funcfile{ppparams.echoes(i)});
     [fpth,fnm,~] = fileparts(ppparams.funcfile{ppparams.echoes(i)});
     
