@@ -5,9 +5,15 @@ keepfiles = {};
 
 ppparams = params;
 
+if contains(params.prefix(1),'s') && numel(params.prefix)>1
+    params.prefix = params.prefix(2:end);
+end
+
 ppparams.sub = sub;
 ppparams.ses = ses;
 ppparams.task = task;
+ppparams.use_parallel = params.use_parallel;
+ppparams.save_intermediate_results = params.save_intermediate_results;
 
 ppparams.substring = ['sub-' num2str(sub,'%02d')];
 
@@ -189,17 +195,17 @@ if params.do_ICA_AROMA
 
     for ie=ppparams.echoes
         if params.meepi && ~ppparams.mecombined
-            nsubfuncstring = ['s' ppparams.subfuncstring '_e' num2str(ie)];
+            nsubfuncstring = ['s' ppparams.subfuncstring '_e' num2str(ie) '.nii'];
         else
-            nsubfuncstring = ['s' ppparams.subfuncstring];
+            nsubfuncstring = ['s' ppparams.subfuncstring '.nii'];
         end
         
-        [tedata{ie}.Vfunc,tedata{ie}.wfuncdat,ppparams.funcfile{ie}] = my_spmbatch_readSEfMRI(nsubfuncstring,ppparams.ppfuncdir,0,params,Inf);
+        ppparams.funcfile{ie} = fullfile(ppparams.ppfuncdir,nsubfuncstring);
     end
 
     fprintf('Start ICA-AROMA \n')
 
-    [ppparams,keepfiles,delfiles] = fmri_ica_aroma(tedata,ppparams,keepfiles,delfiles);
+    [ppparams,keepfiles,delfiles] = fmri_ica_aroma(ppparams,keepfiles,delfiles);
 
     fprintf('Done ICA-AROMA \n')
 end
@@ -209,20 +215,15 @@ if params.do_noiseregression || params.do_bpfilter
     fprintf('Do noise regression \n')
 
     for ie=ppparams.echoes
-        if ~params.do_ICA_AROMA
-            if params.meepi && ~ppparams.mecombined
-                nsubfuncstring = ['s' ppparams.subfuncstring '_e' num2str(ie)];
-            else
-                nsubfuncstring = ['s' ppparams.subfuncstring];
-            end
-
-            [tedata{ie}.Vfunc,tedata{ie}.wfuncdat,ppparams.funcfile{ie}] = my_spmbatch_readSEfMRI(nsubfuncstring,ppparams.ppfuncdir,0,params,Inf);
+        if params.meepi && ~ppparams.mecombined
+            nsubfuncstring = ['s' ppparams.subfuncstring '_e' num2str(ie)];
+        else
+            nsubfuncstring = ['s' ppparams.subfuncstring];
         end
 
-        [tedata{ie}.wfuncdat,ppparams,delfiles] = my_spmbatch_noiseregression(tedata{ie}.wfuncdat,1,ppparams,params,delfiles);
+        [tedata{ie}.Vfunc,tedata{ie}.wfuncdat,ppparams.funcfile{ie}] = my_spmbatch_readSEfMRI(nsubfuncstring,ppparams.ppfuncdir,0,params,Inf);
 
-        ppparams.funcfile{ie} = spm_file(ppparams.funcfile{ie}, 'prefix','d');
-        keepfiles{numel(keepfiles)+1} = {ppparams.funcfile{ie}};  
+        [tedata{ie}.wfuncdat,ppparams,keepfiles] = my_spmbatch_noiseregression(tedata{ie}.wfuncdat,ie,ppparams,params,keepfiles);
     end
 
     fprintf('Done noise regresion \n')

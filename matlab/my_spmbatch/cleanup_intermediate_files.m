@@ -21,7 +21,6 @@ if ~exist(preproc_func, 'dir')
     mkdir(preproc_func);
 end
 
-
 %% Delete intermediate files
 if ~save_intermediate_results
     for i=1:numel(delfiles)

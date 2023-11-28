@@ -41,12 +41,12 @@ datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 sublist = [2];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-params.save_folder = 'preproc_func_me-test';
+params.save_folder = 'preproc_func_me-perTE';
 
 task ={'ME-EFT'};
 
 params.meepi = true;
-params.echoes = [1]; %number of echoes for ME-fMRI. 
+params.echoes = [1:3]; %number of echoes for ME-fMRI. 
 params.combination = 'none'; 
 %none: all echoes are preprocessed separatly
 %average: The combination is the average of the multiple echo images
@@ -55,41 +55,40 @@ params.combination = 'none';
 %dyn_T2star: dynamic T2* mapping
 %see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
 
+params.do_segmentation = false;
+
 params.dummytime = 8; %time in seconds
 
 params.reorient = true;
-
-params.do_segmentation = false;
-params.do_slicetime = false;
+params.do_realignment = true;
 
 %fieldmap or pepolar should be true, the other should be false
 params.fieldmap = false;
-params.pepolar = false;
+params.pepolar = true;
 
-params.do_realignment = true;
-
+params.do_slicetime = true;
 params.do_normalization = true;
 params.do_smoothing = true;
 
 params.normvox = [1.5 1.5 1.5];
 params.smoothfwhm = 6;
 
-params.do_onlydenoise = false; %only denoising and smoothing
-params.prefix = 'wcaure';
-params.mecombined = true;
+params.do_onlydenoise = true; %only denoising and smoothing
+params.prefix = 'swaure'; %without leading s
+params.mecombined = false;
 
 params.do_bpfilter = false;
-params.do_mot_derivatives = false; %derivatives+squares (24 regressors)
-params.do_aCompCor = false;
+params.do_mot_derivatives = true; %derivatives+squares (24 regressors)
+params.do_aCompCor = true;
 params.do_ICA_AROMA = true;
-params.do_noiseregression = false;
+params.do_noiseregression = true;
 params.do_DENN = false; %preparing the data for DENN in python
 
 params.bpfilter = [0.008 Inf]; %no highpass filter is first 0, no lowpass filter is last Inf, default is [0.008 0.1]
 params.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal
 
 params.use_parallel = false;
-save_intermediate_results = false; %only possible when parallel toolbox is installed
+params.save_intermediate_results = false; %only possible when parallel toolbox is installed
 
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------
@@ -100,9 +99,9 @@ curdir = pwd;
 spm('defaults', 'FMRI');
 
 if params.use_parallel
-    my_spmbatch_parallel(sublist,nsessions,task,datpath,params,save_intermediate_results)
+    my_spmbatch_parallel(sublist,nsessions,task,datpath,params,params.save_intermediate_results)
 else
-    my_spmbatch_noparallel(sublist,nsessions,task,datpath,params,save_intermediate_results)
+    my_spmbatch_noparallel(sublist,nsessions,task,datpath,params,params.save_intermediate_results)
 end
 
 cd(curdir)

@@ -20,16 +20,16 @@ function AutoSPMprocessing
 %﻿Give the basic input information of your data
 
 params.datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
-params.analysisname = 'me-ave_denn';
+params.analysisname = 'ica-aroma';
 
 first_sub = 1;
 last_sub = 1;
-sublist = [2]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [2,4:10]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-task = {'ME-EmoFaces'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
+task = {'ME-EFT'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
 
-params.preprocfmridir = 'preproc_func_me-ave_denn';
+params.preprocfmridir = 'preproc_func_me-ave';
 params.fmri_prefix = 'dswcaure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
 params.fmri_endfix = 'bold';
 
@@ -40,7 +40,7 @@ params.echoes = [1,2,3]; %list of echoes for ME-fMRI used as sessions in SPM
 params.use_echoes_as_sessions = false; %use each echo series as a session in SPM
 
 params.confounds_prefix = 'rp_e'; %confounds file of form [confounds_prefix 'sub-ii_task-... .txt']
-params.add_regressors = false;
+params.add_regressors = falseog;
 params.use_ownmask = false;
 params.model_serial_correlations = 'AR(1)';
 params.hpf = 128; %default 128
@@ -52,29 +52,35 @@ params.hpf = 128; %default 128
 %   contrast(i).conditions={'condition 1','condition 2'};
 %   contrast(i).vector=[1 -1];
 
-%params.contrast(1).conditions = {'episodic','semantic'};
-%params.contrast(1).vector = [1,-1];
+%params.contrast(1).conditions = {'semantic'};
+%params.contrast(1).vector = [1];
 
-%params.contrast(2).conditions = {'episodic','semantic'};
-%params.contrast(2).vector = [-1,1];
+%params.contrast(2).conditions = {'semantic'};
+%params.contrast(2).vector = [-1];
 
-params.contrast(1).conditions = {'sad','neutral'};
+params.contrast(1).conditions = {'episodic','semantic'};
 params.contrast(1).vector = [1,-1];
 
-params.contrast(2).conditions = {'sad','neutral'};
+params.contrast(2).conditions = {'episodic','semantic'};
 params.contrast(2).vector = [-1,1];
 
-params.contrast(3).conditions = {'happy','neutral'};
-params.contrast(3).vector = [1,-1];
+%params.contrast(1).conditions = {'sad','neutral'};
+%params.contrast(1).vector = [1,-1];
 
-params.contrast(4).conditions = {'happy','neutral'};
-params.contrast(4).vector = [-1,1];
+%params.contrast(2).conditions = {'sad','neutral'};
+%params.contrast(2).vector = [-1,1];
 
-params.contrast(5).conditions = {'sad','happy'};
-params.contrast(5).vector = [1,-1];
+%params.contrast(3).conditions = {'happy','neutral'};
+%params.contrast(3).vector = [1,-1];
 
-params.contrast(6).conditions = {'sad','happy'};
-params.contrast(6).vector = [-1,1];
+%params.contrast(4).conditions = {'happy','neutral'};
+%params.contrast(4).vector = [-1,1];
+
+%params.contrast(5).conditions = {'sad','happy'};
+%params.contrast(5).vector = [1,-1];
+
+%params.contrast(6).conditions = {'sad','happy'};
+%params.contrast(6).vector = [-1,1];
 
 use_parallel = true; %only possible when parallel toolbox is installed
 

@@ -9,6 +9,7 @@ end
 ppparams.sub = sub;
 ppparams.ses = ses;
 ppparams.task = task;
+ppparams.use_parallel = params.use_parallel;
 
 ppparams.substring = ['sub-' num2str(sub,'%02d')];
 
