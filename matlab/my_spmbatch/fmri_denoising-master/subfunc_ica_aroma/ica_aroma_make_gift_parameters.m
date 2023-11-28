@@ -33,7 +33,7 @@ fprintf(fid,'\n%s','group_ica_type = ''spatial'';');
 % enter mode serial or parallel. If parallel, enter number of
 % sessions/workers to do job in parallel
 v = ver;
-if any(strcmp('Parallel Computing Toolbox', {v.Name}))
+if any(strcmp('Parallel Computing Toolbox', {v.Name})) && ~ppparams.use_parallel
     fprintf(fid,'\n%s','parallel_info.mode = ''parallel'';');
     fprintf(fid,'\n%s','parallel_info.num_workers = 4;');
 else
@@ -97,7 +97,7 @@ for i=1:numel(ppparams.echoes)
     [fpth,fnm,~] = fileparts(ppparams.funcfile{ppparams.echoes(i)});
     
     fprintf(fid,'\n%s',['s1_s' num2str(i) ' = {']);
-    fprintf(fid,'%s',['''' fpth ''',''' fnm '*.nii'', (1:' num2str(numel(Vfunc)) ')']); % subject 1 session 1
+    fprintf(fid,'%s',['''' fpth ''',''' fnm '.nii''']); % ',(1:' num2str(numel(Vfunc)) ')']); % subject 1 session 1
     fprintf(fid,'%s','};');
 end
 

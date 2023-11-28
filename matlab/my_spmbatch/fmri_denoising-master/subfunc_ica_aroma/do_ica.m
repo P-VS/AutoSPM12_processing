@@ -1,4 +1,4 @@
-function do_ica(mask, tedata, n_sessions, t_r, ppparams)
+function do_ica(mask, t_r, ppparams)
 % DO_ICA Creates the parameter file necessary to run ICA with the GIFT toolbox
 % and performs ICA
 
@@ -6,18 +6,24 @@ function do_ica(mask, tedata, n_sessions, t_r, ppparams)
 % funcdata = func data
 % t_r = repetition time (read from json file)
 
+if numel(ppparams.echoes)>1 && ~ppparams.mecombined
+    n_sessions = numel(ppparams.echoes);
+else
+    n_sessions = 1;
+end
+
 %% Estimate number of components (MDL - FWHM)
 dim_est_opts.method = 2; %MDL
 dim_est_opts.fwhm = [5,5,5]; %FWHM
 comp_est = 0;
 
 for ie=ppparams.echoes
-    [tcomp_est, mdl, aic, kic] = icatb_estimate_dimension(tedata{ie}.wfuncdat, mask, 'double', dim_est_opts);  
+    [tcomp_est, mdl, aic, kic] = icatb_estimate_dimension(ppparams.funcfile{ie}, mask, 'double', dim_est_opts);  
 
     comp_est = comp_est + tcomp_est;
 end
 
-comp_est = comp_est / numel(tedata);
+comp_est = round(comp_est / n_sessions);
 
 %% Adapt template parameter to specific subject data
 

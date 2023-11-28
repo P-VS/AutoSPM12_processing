@@ -183,46 +183,47 @@ FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric
     
 %   Save results
 
-    varnames = {'NoBrain_fraction','Brain_fraction','high_frequency_content','max_correlations'};
-    T = table(nobrainFract,brainFract,HFC,maxRPcorr,'VariableNames',varnames);
-
-    aroma_file = fullfile(aroma_dir,'AROMA_desission.csv');
-
-    writetable(T,aroma_file,'WriteRowNames',false);
-           
-    [funcpath,funcfname,~] = fileparts(ppparams.funcfile{1});
-
-    fg = spm_figure('FindWin','Graphics');
-
-    for icomp=1:numComp
-        spm_figure('Clear','Graphics');
-        figure(fg);
-
-        plot([0:t_r:t_r*(tdim(1)-1)],icaTimecourse(:,icomp))
-        
-        saveas(fg,fullfile(aroma_dir,['comp-' num2str(icomp,'%03d') '_time.png']));
-
-        spm_figure('Clear','Graphics');
-        figure(fg);
-        
-        plot(f,FT(:,icomp)./max(FT(:,icomp),[],'all'),f,fcumsum_fract(:,icomp))
-        xline(thr_HFC*Ny)
-        
-        saveas(fg,fullfile(aroma_dir,['comp-' num2str(icomp,'%03d') '_frequency.png']));
-    end
+    if ppparams.save_intermediate_results
+        varnames = {'NoBrain_fraction','Brain_fraction','high_frequency_content','max_correlations'};
+        T = table(nobrainFract,brainFract,HFC,maxRPcorr,'VariableNames',varnames);
     
-    % Path to noise ICs (might want to change path)
-    noise_ICs_dir = fullfile(aroma_dir, strcat('ICA-AROMA_ICs_noise_',funcfname,'.txt'));
+        aroma_file = fullfile(aroma_dir,'AROMA_desission.csv');
     
-    if ~isempty(noiseICs) 
-        if length(size(noiseICs)) > 0
-            dlmwrite(noise_ICs_dir, noiseICs(:), 'precision', "%i"); %write matrix to text file with values separated by a ',' as a delimiter
-        else
-            dlmwrite(noise_ICs_dir, int64(noiseICs), 'precision', "%i");
+        writetable(T,aroma_file,'WriteRowNames',false);
+               
+        [funcpath,funcfname,~] = fileparts(ppparams.funcfile{1});
+    
+        fg = spm_figure('FindWin','Graphics');
+    
+        for icomp=1:numComp
+            spm_figure('Clear','Graphics');
+            figure(fg);
+    
+            plot([0:t_r:t_r*(tdim(1)-1)],icaTimecourse(:,icomp))
+            
+            saveas(fg,fullfile(aroma_dir,['comp-' num2str(icomp,'%03d') '_time.png']));
+    
+            spm_figure('Clear','Graphics');
+            figure(fg);
+            
+            plot(f,FT(:,icomp)./max(FT(:,icomp),[],'all'),f,fcumsum_fract(:,icomp))
+            xline(thr_HFC*Ny)
+            
+            saveas(fg,fullfile(aroma_dir,['comp-' num2str(icomp,'%03d') '_frequency.png']));
         end
-    else
-        f = open(confounds_ICs,'w');
-        fclose(f);
+        
+        % Path to noise ICs (might want to change path)
+        noise_ICs_dir = fullfile(aroma_dir, strcat('ICA-AROMA_ICs_noise_',funcfname,'.txt'));
+        
+        if ~isempty(noiseICs) 
+            if length(size(noiseICs)) > 0
+                dlmwrite(noise_ICs_dir, noiseICs(:), 'precision', "%i"); %write matrix to text file with values separated by a ',' as a delimiter
+            else
+                dlmwrite(noise_ICs_dir, int64(noiseICs), 'precision', "%i");
+            end
+        else
+            f = open(confounds_ICs,'w');
+            fclose(f);
+        end
     end
-
 end

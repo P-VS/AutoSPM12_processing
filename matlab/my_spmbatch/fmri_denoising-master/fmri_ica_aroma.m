@@ -1,19 +1,5 @@
-function [ppparams,keepfiles,delfiles] = fmri_ica_aroma(tedata,ppparams,keepfiles,delfiles)
+function [ppparams,keepfiles,delfiles] = fmri_ica_aroma(ppparams,keepfiles,delfiles)
 %FMRI_ICA_AROMA Performs ICA-AROMA
-
-%% Make masks
-
-% Functional mask
-func_mask = my_spmbatch_mask(tedata{ppparams.echoes(1)}.wfuncdat);
-
-Vfunc = tedata{ppparams.echoes(1)}.Vfunc;
-Vfuncmask = Vfunc(1);
-Vfuncmask.fname = fullfile(ppparams.ppfuncdir, 'funcmask.nii'); % Change name to contain subjectID
-Vfuncmask.descrip = 'funcmask';
-Vfuncmask = rmfield(Vfuncmask, 'pinfo'); %remove pixel info so that there is no scaling factor applied so the values
-spm_write_vol(Vfuncmask, func_mask);
-
-delfiles{numel(delfiles)+1} = {Vfuncmask.fname};   
 
 %% ICA step
 
@@ -25,7 +11,7 @@ t_r = jsondat.("RepetitionTime");
 
 curdir = pwd;
 
-do_ica(Vfuncmask.fname, tedata, numel(tedata), t_r, ppparams);
+do_ica(ppparams.fmask, t_r, ppparams);
 
 delfiles{numel(delfiles)+1} = {fullfile(ppparams.ppfuncdir, 'input_spatial_ica.m')};
 delfiles{numel(delfiles)+1} = {fullfile(ppparams.ppfuncdir, 'ica_dir')};
@@ -36,7 +22,7 @@ cd(curdir)
 
 ica_dir = fullfile(ppparams.ppfuncdir, 'ica_dir'); % path to ICs computed at previous step
 
-noiseICdata = ica_aroma_classification(ppparams, Vfuncmask.fname, ica_dir, t_r);
+noiseICdata = ica_aroma_classification(ppparams, ppparams.fmask, ica_dir, t_r);
 
 delfiles{numel(delfiles)+1} = {fullfile(ppparams.ppfuncdir, 'headdata.nii')};
 
