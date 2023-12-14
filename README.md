@@ -1,6 +1,8 @@
 # UZB-fmr-processing-scripts
 
-This repository contains some scripts used at UZ Brussel to standardise, optimise and automate the processing single echo and multi-echo fMRI data. The python and Matlab scripts can be used independently from each other.
+This repository contains some scripts used at UZ Brussel to standardise, optimise and automate the processing single echo and multi-echo fMRI data. Additionally, a batch script is provided to do the segmentation in CAT12 for VBM.
+
+The python and Matlab scripts can be used independently from each other.
 
 The scripts comes without any warrant for the results. You may use them at your own responsibility. I only share them to help and inspire others with their own processing scripts.
 
@@ -9,30 +11,26 @@ The folders contains following tools:
 1. Python
 
 -AutoCropBET_T1w: FSL based cropping (RobustFOV), brain extraction (BET) and segmentation (FAST) of T1 weighted head scans
--AutofMRI_denoising: Denoising of fMRI timeseries. 
-
-One can choose between noise regression, aCompCor, ICA-AROMA and combined aCompCor-ICA-AROMA (Van Schuerbeek et al. 2022, The optimized combination of aCompCor and ICA-AROMA to reduce motion and physiologic noise in task fMRI data. Biomed Phys Eng Express 1;8(5). doi: 10.1088/2057-1976/ac63f0)
-
--convertdcm2nii: Convert dicom to nifty format using dcm2niix (included in nipype). The resulting files are organised in BIDS format.
 
 2. Matlab
 
 -spm_read_vols: alternative version of spm_read_vols that loads nifty data per volume rather than per slice to fasten up data loading. This script used the scripts in the my_spmbatch/NIFTI folder (copied from https://nl.mathworks.com/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image). To use it, you have to replace or rename the original spm_read_vols.m file in the SPM12 folder.
 
--my_spmbatch/AutoSPMpreprocessing: initiating the automatic preprocessing of fMRI data in SPM12.
+-my_spmbatch/AutoSPMpreprocessing_fmri: initiating the automatic preprocessing of fMRI data in SPM12.
 
-To improve the coregistration and normalisation steps, it is advisable to set the origin and orientation of all T1w, fMRI and field map scans according to the AC-PC line.
-Since some SPM preprocessing steps were found to be extremely slow with current fMRI datasets (70 sliced and 600 dynamics), I made my own faster copy of these scripts.
+-my_spmbatch/AutoSPMprocessing_fmri: initiating the automatic processing of fMRI data in SPM12.
 
--my_spmbatch/AutoSPMprocessing: initiating the automatic processing of fMRI data in SPM12.
+-my_spmbatch/AutoSPMpreprocessing_vbm: initiating the automatic preprocessing of VBM data (T1 anatomical high resolution scans) in CAT12.
 
-The onsets and timings of the task events/blocks are read in a events.tsv file.
+The onsets and timings of the task events/blocks are read from an events.tsv file.
 
-If no dummy scans at the start of the fMRI scan were added, you see a decrease in the image contrast in the first few dynamics. In that case, it is advisable to delete these first dynamics from the fMRI time series. In the AutoSPMpreprocessing script a step to delete these first "dummy" scans is included and the AutoSPMprocessing script will correct the onset timings in the event.tsv file with the start of the first dynamic in the remaining fMRI data. The number of dynamics that has to be deleted is calculated based on the 'dummytime' parameter (in seconds) and the TR. If your fMRI task started after the dummy scans at the scanner, you have to set the 'dummytime' as 0.
+If no dummy scans at the start of the fMRI scan were added, you see a decrease in the image contrast in the first few dynamics. In that case, it is advisable to delete these first dynamics from the fMRI time series. In the AutoSPMpreprocessing_fmri script a step to delete these first "dummy" scans is included and the AutoSPMprocessing_fmri script will correct the onset timings in the event.tsv file with the start of the first dynamic in the remaining fMRI data. The number of dynamics that has to be deleted is calculated based on the 'dummytime' parameter (in seconds) and the TR. If your fMRI task started after the dummy scans at the scanner, you have to set the 'dummytime' as 0.
 
--my_spmnatch/my_spmbatch_normfslsegmets: normalisation of the segmentation maps made in SPM (see python/AutoCropBET_T1w)
+Although a Matlab convertion tool to convert dicom images into nifti format is included, dcm2niix (https://github.com/rordenlab/dcm2niix) as implemented in Python is advised. In the 'python_scripts' folder a batch script (convert_dcm2niix.py) is provided.
 
-To my experience, the segmentation done in FSL FAST seems to be less dependent on the alignment (setting the origin and orientation according to AC-PC) between the T1w scan and the MNI template than SPM. However, according to Tudorascu et al. 2016 (Reproducibility and Bias in Healthy Brain Segmentation: Comparison of Two Popular Neuroimaging Platforms. Front. Neurosci., Sec. Brain Imaging Methods https://doi.org/10.3389/fnins.2016.00503) both SPM and FSL segmentation perform well, but does not give exact the same results.
+3. fMRI_Class
+
+The slides of my fMRI classes are provided. During these classes, a demo dataset is analysed manualy in the same way as is done by my scripts.
 
 --------------------------------------------------------------------------------------
 
@@ -42,9 +40,8 @@ Required software installed:
 - SPM12 (https://www.fil.ion.ucl.ac.uk/spm/)
 	- make sure SPM and its subfolders are added to the Matlab Path
 - MRIcroGL (https://www.mccauslandcenter.sc.edu/mricrogl/) for dicom to nifti conversion
+- CAT12 (https://neuro-jena.github.io/cat/) for VBM
 - GIFT (https://trendscenter.org/software/gift/) to use ICA-AROMA denoising
-
-To fasten up the preprocessing and processing of multiple fMRI data sets, Matlab's Parallel toolbox can be used.
 
 To use the Matlab script within SPM:
 
@@ -72,10 +69,10 @@ To use the Python script:
 
 Prior to using this script to process your data:
 
-Convert the DICOM files into nifti using dcm2niix in MROCroGL
+Convert the DICOM files into nifti using dcm2niix (e.g. manual in MROCroGL or by using 'convert_dcm2niix.py')
 For the anatomical scans, set 'Crop 3D Images' on
 
-In SPM, set the origin and orientation of all scans according to the anterior-posterior comissura
+Optional but advisable, in SPM, set the origin and orientation of all scans according to the anterior-posterior comissura. It is best not to apply the transformation to the 4D data (it will nly be applied on the first dynamic), but to save the parameters in a .mat-file. The script will use the saved transformation for all dynamics.
 
 Organise the data in BIDS format
     - datpath
