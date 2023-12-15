@@ -42,49 +42,49 @@ if params.use_parallel
                 system_cmd = sprintf([fullfile(matlabroot,'bin') '/matlab -nosplash -r ' mtlb_cmd ' -logfile ' logfile{i} ' & ']);
             end
             [status,result]=system(system_cmd);
+        end
         
-            %% wait for all processing to be finnished
-            isrunning = true;
-            pfinnished = 0;
-            while isrunning
-                for is = 1:maxruns
-                    i = (j-1)*params.maxprocesses+is;
-    
-                    if exist(logfile{i},'file')
-                        FID     = fopen(logfile{i},'r');
-                        txt     = textscan(FID,'%s');
-                        txt     = txt{1}; 
-                        test=find(cellfun('isempty',strfind(txt,'PP_Completed'))==0,1,'first');
-                        errortest=find(cellfun('isempty',strfind(txt,'PP_Error'))==0,1,'first');
-                        fclose(FID);
-    
-                        if ~isempty(errortest)
-                            pfinnished = pfinnished+1;
-    
-                            nlogfname = fullfile(datpath,['error_fmri_process_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
+        %% wait for all processing to be finnished
+        isrunning = true;
+        pfinnished = 0;
+        while isrunning
+            for is = 1:maxruns
+                i = (j-1)*params.maxprocesses+is;
+
+                if exist(logfile{i},'file')
+                    FID     = fopen(logfile{i},'r');
+                    txt     = textscan(FID,'%s');
+                    txt     = txt{1}; 
+                    test=find(cellfun('isempty',strfind(txt,'PP_Completed'))==0,1,'first');
+                    errortest=find(cellfun('isempty',strfind(txt,'PP_Error'))==0,1,'first');
+                    fclose(FID);
+
+                    if ~isempty(errortest)
+                        pfinnished = pfinnished+1;
+
+                        nlogfname = fullfile(datpath,['error_fmri_process_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
+                        movefile(logfile{i},nlogfname);
+
+                        fprintf(['\nError during processing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
+                    elseif ~isempty(test)
+                        pfinnished = pfinnished+1;
+
+                        if ~params.keeplogs
+                            delete(logfile{i}); 
+                        else
+                            nlogfname = fullfile(datpath,['done_fmri_process_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
                             movefile(logfile{i},nlogfname);
-    
-                            fprintf(['\nError during processing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
-                        elseif ~isempty(test)
-                            pfinnished = pfinnished+1;
-    
-                            if ~params.keeplogs
-                                delete(logfile{i}); 
-                            else
-                                nlogfname = fullfile(datpath,['done_fmri_process_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
-                                movefile(logfile{i},nlogfname);
-                            end
-    
-                            fprintf(['\nDone processing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
                         end
+
+                        fprintf(['\nDone processing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
                     end
                 end
-        
-                if pfinnished==maxruns 
-                    isrunning = false; 
-                else
-                    pause(60);
-                end
+            end
+    
+            if pfinnished==maxruns 
+                isrunning = false; 
+            else
+                pause(60);
             end
         end
     end
