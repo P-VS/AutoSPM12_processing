@@ -28,7 +28,7 @@ function AutoSPMpreprocessing_vbm
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [3];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
 params.save_folder = 'preproc_anat_vbm';
@@ -67,7 +67,7 @@ SPMid                 = spm('FnBanner',mfilename,'2.10');
 
 spm('defaults', 'FMRI');
 
-my_spmbatch_start_vbmprocessing(sublist,nsessions,params);
+my_spmbatch_start_vbmprocessing(sublist,nsessions,datpath,params);
 
 spm_figure('close',allchild(0));
 

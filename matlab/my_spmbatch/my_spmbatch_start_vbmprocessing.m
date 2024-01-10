@@ -1,4 +1,4 @@
-function my_spmbatch_start_vbmprocessing(sublist,nsessions,params)
+function my_spmbatch_start_vbmprocessing(sublist,nsessions,datpath,params)
 
 save(fullfile(datpath,'params.mat'),'params')
 
