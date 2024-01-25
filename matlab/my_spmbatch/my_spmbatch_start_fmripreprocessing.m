@@ -50,7 +50,7 @@ for k = 1:numel(task)
     
                 fprintf(['\nStart preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' task ' task{k} '\n'])
         
-                mtlb_cmd = sprintf('"my_spmbatch_run_fmripreprocessing(%d,%d,''%s'',''%s'',''%s'');"', datlist(i,1),datlist(i,2),task{k},datpath,fullfile(datpath,'params.mat'));
+                mtlb_cmd = sprintf('"addpath(genpath(''%s''));addpath(genpath(''%s''));addpath(genpath(''%s''));my_spmbatch_run_fmripreprocessing(%d,%d,''%s'',''%s'',''%s'');"', params.GroupICAT_path;params.spm_path,params.my_spmbatch_path,datlist(i,1),datlist(i,2),task{k},datpath,fullfile(datpath,'params.mat'));
                 logfile{i} = fullfile(datpath,['fmri_preprocess_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' task{k} '.txt']);
         
                 if exist(logfile{i},'file'), delete(logfile{i}); end

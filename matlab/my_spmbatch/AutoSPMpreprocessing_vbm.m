@@ -24,6 +24,10 @@ function AutoSPMpreprocessing_vbm
 
 %Script written by dr. Peter Van Schuerbeek (Radiology UZ Brussel)
 
+%% Give path to SPM12
+
+params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/spm12';
+
 %% Give the basic input information of your data
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
@@ -54,6 +58,14 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------
+
+restoredefaultpath
+
+[params.my_spmbatch_path,~,~] = fileparts(mfilename('fullpath'));
+
+if exist(params.spm_path,'dir'), addpath(genpath(params.spm_path)); end
+if exist(params.my_spmbatch_path,'dir'), addpath(genpath(params.my_spmbatch_path)); end
+
 fprintf('Start with preprocessing \n')
 
 curdir = pwd;

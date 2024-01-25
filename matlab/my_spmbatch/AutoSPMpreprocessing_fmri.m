@@ -24,18 +24,23 @@ function AutoSPMpreprocessing_fmri
 
 %Script written by dr. Peter Van Schuerbeek (Radiology UZ Brussel)
 
+%% Give path to SPM12 and GroupICA
+
+params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/spm12';
+params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/GroupICATv40c';
+
 %% Give the basic input information of your data
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [3];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-params.save_folder = 'preproc_test';
+params.save_folder = 'preproc_func_se';
 
-task ={'ME-EFT'};
+task ={'SE-EFT'};
 
-params.use_parallel = false; 
+params.use_parallel = true; 
 params.maxprocesses = 4; %Best not too high to avoid memory problems
 params.keeplogs = false;
 
@@ -45,7 +50,7 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
 %% Preprocessing anatomical data
 
-    params.preprocess_anatomical = false;
+    params.preprocess_anatomical = true;
 
     % Normalization
     params.anat.do_normalization = true;
@@ -94,12 +99,12 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
 %% Denoising
 
-    params.do_denoising = true; 
+    params.do_denoising = false; 
 
         %if do_denoising = true and preprocess_functional = false -> only denoising, other preprocessing already done
         params.denoise.prefix = 'swaure';
 
-    params.denoise.meepi = true;
+    params.denoise.meepi = false;
     params.denoise.echoes = [1]; %the numbers of the echoes in ME-fMRI. 
     params.denoise.mecombined = false; %if ME-fMRI, where the echoes combined?
     
@@ -111,11 +116,11 @@ params.reorient = true; % align data with MNI template to improve normalization 
     params.denoise.do_mot_derivatives = true; %derivatives+squares (24 regressors)
 
     % aCompCor
-    params.denoise.do_aCompCor = false;
+    params.denoise.do_aCompCor = true;
     params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal
 
     % ICA-AROMA
-    params.denoise.do_ICA_AROMA = false;
+    params.denoise.do_ICA_AROMA = true;
 
     % Noise regression / remove ICA-AROMA noise components
     params.denoise.do_noiseregression = true;
@@ -125,6 +130,15 @@ params.reorient = true; % align data with MNI template to improve normalization 
     
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------
+
+restoredefaultpath
+
+[params.my_spmbatch_path,~,~] = fileparts(mfilename('fullpath'));
+
+if exist(params.GroupICAT_path,'dir'), addpath(genpath(params.GroupICAT_path)); end
+if exist(params.spm_path,'dir'), addpath(genpath(params.spm_path)); end
+if exist(params.my_spmbatch_path,'dir'), addpath(genpath(params.my_spmbatch_path)); end
+
 fprintf('Start with preprocessing \n')
 
 curdir = pwd;
