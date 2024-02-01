@@ -98,6 +98,10 @@ for ie=ppparams.echoes
         ppparams.prefix = ['u' ppparams.prefix];
     end
     
+    funcmask = my_spmbatch_mask(funcdat);
+    funcmask(funcmask>0) = 1;
+    funcdat = repmat(funcmask,[1,1,1,numel(funcmask(1,1,1,:))]) .* funcdat;
+    
     %% Slice time correction
     if params.func.do_slicetime    
     
@@ -136,7 +140,7 @@ for ie=ppparams.echoes
         ppparams.funcfile{ie} = spm_file(ppparams.funcfile{ie}, 'prefix',ppparams.prefix);
         delfiles{numel(delfiles)+1} = {ppparams.funcfile{ie}};
     end
-    
+
     if params.func.meepi
         tefuncdata{ie}.data = funcdat;
         tefuncdata{ie}.Vfunc = Vfunc;

@@ -116,6 +116,21 @@ if params.anat.do_segmentation
     ppparams.c2im = spm_file(ppparams.subanat, 'prefix','c2');
     ppparams.c3im = spm_file(ppparams.subanat, 'prefix','c3');
 
+    c1dat = spm_read_vols(spm_vol(ppparams.c1im));
+    c2dat = spm_read_vols(spm_vol(ppparams.c2im));
+    c3dat = spm_read_vols(spm_vol(ppparams.c3im));
+
+    anatmask = c1dat + c2dat + c3dat;
+    anatmask(anatmask>0.02) = 1;
+    anatmask(anatmask<1) = 0;
+
+    Vanat = spm_vol(ppparams.subanat);
+
+    anatdat =spm_read_vols(Vanat);
+    anatdat(anatmask<1) = 0;
+
+    Vanat = spm_write_vol(Vanat,anatdat);
+
     if params.anat.do_normalization
         %%Normalization of the T1w anatomical scan and the segmentation maps
         ppparams.deffile = spm_file(ppparams.subanat, 'prefix','y_');
@@ -124,7 +139,7 @@ if params.anat.do_segmentation
         segnormwrite.subj.resample = {ppparams.subanat,ppparams.c1im,ppparams.c2im,ppparams.c3im};
         segnormwrite.woptions.bb = [-78 -112 -70;78 76 85];
         segnormwrite.woptions.vox = params.anat.normvox;
-        segnormwrite.woptions.interp = 4;
+        segnormwrite.woptions.interp = 1;
         segnormwrite.woptions.prefix = 'w';
 
         spm_run_norm(segnormwrite);
