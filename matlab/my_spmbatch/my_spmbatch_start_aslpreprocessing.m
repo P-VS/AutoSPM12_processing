@@ -1,4 +1,4 @@
-function my_spmbatch_start_vbmprocessing(sublist,nsessions,datpath,params)
+function my_spmbatch_start_aslpreprocessing(sublist,nsessions,datpath,params)
 
 save(fullfile(datpath,'params.mat'),'params')
 
@@ -14,9 +14,9 @@ for i = 1:numel(sublist)
     end
 end
 
-if params.use_parallel
-    numpacks = ceil(numel(datlist(:,1))/params.maxprocesses);
+numpacks = ceil(numel(datlist(:,1))/params.maxprocesses);
 
+if params.use_parallel
     for j=1:numpacks
         if (j*params.maxprocesses)<=numel(datlist(:,1))
             maxruns = params.maxprocesses;
@@ -27,11 +27,11 @@ if params.use_parallel
         for is = 1:maxruns
             i = (j-1)*params.maxprocesses+is;
 
-            fprintf(['\nStart VBM preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
+            fprintf(['\nStart preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
     
-            mtlb_cmd = sprintf('"restoredefaultpath;addpath(genpath(''%s''));addpath(genpath(''%s''));my_spmbatch_run_vbmpreprocessing(%d,%d,''%s'',''%s'');"', ...
-                                    params.spm_path,params.my_spmbatch_path,datlist(i,1),datlist(i,2),datpath,fullfile(datpath,'params.mat'));
-            logfile{i} = fullfile(datpath,['logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
+            mtlb_cmd = sprintf('"restoredefaultpath;addpath(genpath(''%s''));addpath(genpath(''%s''));my_spmbatch_run_aslpreprocessing(%d,%d,''%s'',''%s'');"', ...
+                                        params.spm_path,params.my_spmbatch_path,datlist(i,1),datlist(i,2),datpath,fullfile(datpath,'params.mat'));
+            logfile{i} = fullfile(datpath,['asl_preprocess_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
     
             if exist(logfile{i},'file'), delete(logfile{i}); end
             
@@ -63,21 +63,21 @@ if params.use_parallel
                     if ~isempty(errortest)
                         pfinnished = pfinnished+1;
 
-                        nlogfname = fullfile(datpath,['error_vbm_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
+                        nlogfname = fullfile(datpath,['error_asl_preprocess_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
                         movefile(logfile{i},nlogfname);
 
-                        fprintf(['\nError during VBM processing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
+                        fprintf(['\nError during preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
                     elseif ~isempty(test)
                         pfinnished = pfinnished+1;
 
                         if ~params.keeplogs
                             delete(logfile{i}); 
                         else
-                            nlogfname = fullfile(datpath,['done_vbm_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
+                            nlogfname = fullfile(datpath,['done_asl_preprocess_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
                             movefile(logfile{i},nlogfname);
                         end
 
-                        fprintf(['\nDone VBM preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
+                        fprintf(['\nDone preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
                     end
                 end
             end
@@ -93,7 +93,7 @@ else
     for i=1:numel(datlist(:,1))
         itstart = tic;
 
-        my_spmbatch_run_vbmpreprocessing(datlist(i,1),datlist(i,2),datpath,fullfile(datpath,'params.mat'));
+        my_spmbatch_run_aslpreprocessing(datlist(i,1),datlist(i,2),datpath,fullfile(datpath,'params.mat'));
 
         itstop = toc(itstart);
 

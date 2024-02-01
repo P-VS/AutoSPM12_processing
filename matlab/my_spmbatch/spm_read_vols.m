@@ -38,8 +38,11 @@ for i=1:n
     Range(i) = ni(1);
 end
 
-Nii = load_untouch_nii(V(i).fname,Range);
+Nii = load_untouch_nii(V(1).fname,Range);
 Y = Nii.img;
+for i=1:n
+    Y(:,:,:,i) = Y(:,:,:,i) * V(i).pinfo(1,1) + V(i).pinfo(2,1);
+end
 
 %-Apply implicit zero mask for image datatypes without a NaNrep
 %--------------------------------------------------------------------------

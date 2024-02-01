@@ -26,21 +26,22 @@ function AutoSPMpreprocessing_fmri
 
 %% Give path to SPM12 and GroupICA
 
-params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/spm12';
-params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/GroupICATv40c';
+spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/spm12';
+GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/GroupICATv40c';
+xASL_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/ExploreASL-ExploreASL';
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/rTMS-fMRI_Interleaved/Data';
+datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [3];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-params.save_folder = 'preproc_func_test';
+params.save_folder = 'preproc_func_se';
 
-task ={'semantic'};
+task ={'SE-EFT'};
 
-params.use_parallel = false; 
+params.use_parallel = true; 
 params.maxprocesses = 4; %Best not too high to avoid memory problems
 params.keeplogs = false;
 
@@ -54,18 +55,18 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
     % Normalization
     params.anat.do_normalization = true;
-    params.anat.normvox = [1.5 1.5 1.5];
+    params.anat.normvox = [2 2 2];
 
-    %% When not doing VBM -> Use default in SPM
+    %% to apply WM/GM correction: segmentation based on CAT12
         % Segmentation
-        params.anat.do_segmentation = true;
+        params.anat.do_segmentation = false;
     
 %% Preprocessing functional data
 
     params.preprocess_functional = false;
 
     % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
-    params.func.dummytime = 6; %time in seconds
+    params.func.dummytime = 8; %time in seconds
 
     % Realignnment (motion correction)
     params.func.do_realignment = true;
@@ -73,13 +74,12 @@ params.reorient = true; % align data with MNI template to improve normalization 
     % Geometric correction
     % fieldmap or pepolar Only 1 can be true, the other should be false.
     params.func.fieldmap = false;
-    params.func.pepolar = false;
+    params.func.pepolar = true;
 
     % Slice time correction
     params.func.do_slicetime = true;
         
-    % If ME-fMRI, combine the multiple eccho images
-    params.func.meepi = false;
+    % The ASSL-BOLD sequence is ME-fMRI by default
     params.func.echoes = [1]; %the numbers of the echoes in ME-fMRI. 
     params.func.combination = 'none'; 
     %none: all echoes are preprocessed separatly
@@ -91,7 +91,7 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
     % Normalization
     params.func.do_normalization = true;
-    params.func.normvox = [1.5 1.5 1.5];
+    params.func.normvox = [2 2 2];
 
     % Smoothing
     params.func.do_smoothing = true;
@@ -133,11 +133,15 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
 restoredefaultpath
 
-[params.my_spmbatch_path,~,~] = fileparts(mfilename('fullpath'));
+[my_spmbatch_path,~,~] = fileparts(mfilename('fullpath'));
 
-if exist(params.GroupICAT_path,'dir'), addpath(genpath(params.GroupICAT_path)); end
-if exist(params.spm_path,'dir'), addpath(genpath(params.spm_path)); end
-if exist(params.my_spmbatch_path,'dir'), addpath(genpath(params.my_spmbatch_path)); end
+if exist(xASL_path,'dir'), addpath(genpath(xASL_path)); end
+
+if exist(fullfile(xASL_path,'External','SPMmodified'),'dir'), rmpath(genpath(fullfile(xASL_path,'External','SPMmodified'))); end
+
+if exist(GroupICAT_path,'dir'), addpath(genpath(GroupICAT_path)); end
+if exist(spm_path,'dir'), addpath(genpath(spm_path)); end
+if exist(my_spmbatch_path,'dir'), addpath(genpath(my_spmbatch_path)); end
 
 fprintf('Start with preprocessing \n')
 
