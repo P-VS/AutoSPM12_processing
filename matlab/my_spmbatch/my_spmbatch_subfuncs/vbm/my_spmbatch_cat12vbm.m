@@ -20,10 +20,8 @@ ppparams.preproc_anat = fullfile(ppparams.subpath,params.save_folder);
 
 if ~exist(fullfile(ppparams.subanatdir,[ppparams.substring '_T1w_Crop_1.nii']),'file')
     nsubannat = [ppparams.substring '_T1w.nii'];
-    nsubanstring = [ppparams.substring '_T1w'];
 else
     nsubannat = [ppparams.substring '_T1w_Crop_1.nii'];
-    nsubanstring = [ppparams.substring '_T1w_Crop_1'];
 end
 ppparams.subanat = fullfile(ppparams.subanatdir,nsubannat);
 
@@ -66,7 +64,7 @@ catestwrite.extopts.bb = 12;
 catestwrite.extopts.SRP = 22;
 catestwrite.extopts.ignoreErrors = 1;
 
-catestwrite.output.BIDS.BIDSno = 1;
+catestwrite.output.BIDS.BIDSno = 0;
 
 if params.vbm.do_surface
     catestwrite.output.surface = 1;
@@ -111,38 +109,36 @@ else
     catestwrite.output.ROImenu.noROI = struct([]);
 end
 
+catestwrite.output.GM.mod = 1;
+catestwrite.output.GM.dartel = 0;
+catestwrite.output.WM.mod = 1;
+catestwrite.output.WM.dartel = 0;
+catestwrite.output.CSF.mod = 1;
+catestwrite.output.CSF.dartel = 0;
+catestwrite.output.CSF.warped = 0;
+
+keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['wm' fname '.nii'])};
+keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['mwp1' fname '.nii'])};
+keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['mwp2' fname '.nii'])};
+keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['mwp3' fname '.nii'])};
+
 if params.vbm.do_normalization
     catestwrite.output.GM.native = 0;
-    catestwrite.output.GM.mod = 1;
-    catestwrite.output.GM.dartel = 0;
     catestwrite.output.WM.native = 0;
-    catestwrite.output.WM.mod = 1;
-    catestwrite.output.WM.dartel = 0;
     catestwrite.output.CSF.native = 0;
-    catestwrite.output.CSF.warped = 0;
-    catestwrite.output.CSF.mod = 1;
-    catestwrite.output.CSF.dartel = 0;
+    catestwrite.output.labelnative = 0;
 
     delfiles{numel(delfiles)+1} = {copysubanat};
 
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['wm' fname '.nii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['mwp1' fname '.nii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['mwp2' fname '.nii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['mwp3' fname '.nii'])};
 else
     catestwrite.output.GM.native = 1;
-    catestwrite.output.GM.mod = 0;
-    catestwrite.output.GM.dartel = 0;
     catestwrite.output.WM.native = 1;
-    catestwrite.output.WM.mod = 0;
-    catestwrite.output.WM.dartel = 0;
     catestwrite.output.CSF.native = 1;
-    catestwrite.output.CSF.warped = 0;
-    catestwrite.output.CSF.mod = 0;
-    catestwrite.output.CSF.dartel = 0;
+    catestwrite.output.labelnative = 1;
 
     keepfiles{numel(keepfiles)+1} = {copysubanat};
 
+    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['p0' fname '.nii'])};
     keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['p1' fname '.nii'])};
     keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['p2' fname '.nii'])};
     keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['p3' fname '.nii'])};
@@ -170,7 +166,6 @@ catestwrite.output.atlas.native = 0;
 catestwrite.output.label.native = 1;
 catestwrite.output.label.warped = 0;
 catestwrite.output.label.dartel = 0;
-catestwrite.output.labelnative = 0;
 catestwrite.output.bias.warped = 1;
 catestwrite.output.las.native = 0;
 catestwrite.output.las.warped = 0;
@@ -180,6 +175,9 @@ catestwrite.output.warps = [0 0];
 catestwrite.output.rmat = 0;
 
 cat_run(catestwrite);
+
+delfiles{numel(delfiles)+1} = {fullfile(fpath,'mri')};
+delfiles{numel(delfiles)+1} = {fullfile(fpath,['catlog_' fname '.txt'])};
 
 keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['cat_' fname '.mat'])};
 keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['catreport_' fname '.pdf'])};
