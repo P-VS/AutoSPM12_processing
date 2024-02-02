@@ -24,6 +24,8 @@ for i=params.num_scans
     end
 
     if params.reorient
+        fprintf('Start reorient \n')
+
         [pth nm ext] = fileparts(ppparams.subm0scan);
         transfile = fullfile(ppparams.subasldir,[nm '_reorient.mat']);
         if isfile(transfile)
@@ -89,6 +91,8 @@ for i=params.num_scans
     end
 
     %% Corregistration M0map to deltam
+    fprintf('Start corregistration \n')
+
     estwrite.ref(1) = {ppparams.subdeltam};
     estwrite.source(1) = {ppparams.subm0scan};
     estwrite.other = {ppparams.subm0scan};
@@ -108,16 +112,22 @@ for i=params.num_scans
 
     %% T1 correction of M0
     if params.aslge.do_cbfmapping
+        fprintf('Start M0 preprocessing \n')
+
         [ppparams,delfiles,keepfiles] = my_spmbatch_asl_M0correction(ppparams,params,delfiles,keepfiles);
     end
 
     %% Quantification of CBF
     if params.aslge.do_cbfmapping
+        fprintf('Start CBF quantification \n')
+
         [ppparams,delfiles,keepfiles] = my_spmbatch_asl_cbfquantification(ppparams,delfiles,keepfiles);
     end
 
     %% Normalization of the ASL scan
     if params.asl.do_normalization
+        fprintf('Start normalization \n')
+
         if params.aslge.cbfmap_present || params.aslge.do_cbfmapping
             resamplescans = {ppparams.subm0scan,ppparams.subdeltam,ppparams.subcbf};
         else
@@ -148,6 +158,35 @@ for i=params.num_scans
     
         if params.aslge.cbfmap_present || params.aslge.do_cbfmapping
             keepfiles{numel(keepfiles)+1} = {spm_file(ppparams.subcbf, 'prefix','w')};
+
+            ppparams.subcbf = spm_file(ppparams.subcbf, 'prefix','w');
         end
+    end
+
+    %% Smoothing of the CBF map
+    if params.asl.do_smoothing
+        fprintf('Start smoothing \n')
+
+        Vcbf = spm_vol(ppparams.subcbf);
+
+        wcbfdat = spm_read_vols(Vcbf);
+    
+        spm_progress_bar('Init',numel(Vcbf),'Smoothing','volumes completed');
+
+        for i=1:numel(Vcbf)
+            [pth,nm,~] = fileparts(Vcbf(i).fname);
+
+            Q = fullfile(pth, ['s' nm  '.nii,' num2str(Vcbf(i).n)]);
+            my_spmbatch_smooth(wcbfdat(:,:,:,i),Vcbf(i),Q,[params.asl.smoothfwhm params.asl.smoothfwhm params.asl.smoothfwhm],0);
+
+            spm_progress_bar('Set',i);
+        end
+
+        spm_progress_bar('Clear');
+
+        ppparams.subcbf = spm_file(ppparams.subcbf, 'prefix','s');
+        keepfiles{numel(keepfiles)+1} = {ppparams.subcbf};    
+
+        fprintf('Done smoothing \n')
     end
 end
