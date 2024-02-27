@@ -18,10 +18,8 @@ Organise the data in BIDS format
                 -func: containes the fmri data
                    Files: sub-##_task-..._bold.nii and sub-##_task-..._bold.json
                 -fmap: containnes the gradient pololarity (blip-up/down) filpt data or the fieldmap scans
-                   Files in case of inverted gradient polarity: sub-##_dir-pi_epi.nii and sub-##_dir-pi_epi.json
-                   Files in case of fieldmap scans: (image 1 in file is amplitude, image 2 in file is phase)
-                          sub-##_fmap_echo-1.nii and sub-##_fmap_echo-1.json
-                          sub-##_fmap_echo-2.nii and sub-##_fmap_echo-2.json
+                   Files in case of inverted gradient polarity: sub-##_dir-##_epi.nii and sub-##_dir-pi_epi.json
+                   Files in case of fieldmap scans: sub-##_phase1.nii, sub-##_phase2.nii, sub-##_magnitude1.nii and sub-##_magnitude2.nii
                 -perf: ASL data based on GE PCASL sequence which gives only the m0, deltam and CBF images
                     Files: sub-##_asl_m0scan.nii
                     Files: sub-##_asl_deltam.nii
@@ -56,25 +54,32 @@ def set_preprocessing_parameters():
     first_sub = 1
     last_sub = 1
     pp_params['sublist'] = [3] #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
+    pp_params['sub_digits'] = 2 #if 2 the result will be sub-01, if 3 the result will be sub-001
     
-    #Add per sequence to convert an extra ssequence object to the mri_data structure as (folder,seqtype,name,[session])
-    #folder: substructure starting from sub-##
-    #seqtype: (anat, func, fmap, dti, asl) will be used to organise the data in folders
-    #name: name of the sequence used in sub-##_... .nii to add series number to the name use %s, to add echo number use %e
-    #session: scan session
+    """
+    Add per sequence to convert an extra ssequence object to the mri_data structure as (folder,seqtype,name,task,[session],add_run,add_echo,add_acq)
+    0.folder: substructure starting from sub-## containing the dicom files
+    1.acqtype: (anat, func, fmap, dti, perf) will be used as foldername to write the converted nifti files
+    2.seqtype: type of sequence to make the name (T1w, fieldmap, pepolar, fmri, asl)
+    3.task: for fMRI task-string (what comes in the name as _task-...) / if seqtype not fmri, set ''
+    4.session: scan session
+    5.run: run number
+    6.add_acq: (True or False) add sequence name to nifti file name (_acq-...)  
+    7.add_dir: (True or False) add phase encoding direction to nifti file name (_dir-...)
+    8.add_run: (True or False) add run numer tag to nifti file name (_run-#)
+    9.add_echo: (True or False) add echo numer tag to nifti file name (_echo-#)
+    
+    example
+    T1w:      scan_1 = ('dicom/T1w','anat','T1w','',[1],[1],False,False,False,False)
+    fieldamp: scan_1 = ('dicom/fieldmap','fmap','fieldmap','',[1],[1],False,False,False,False) !!based on 2 GE scans TE_1 and TE_2!!
+    pepolar:  scan_1 = ('dicom/pepolar','fmap','pepolar','',[1],[1],False,True,False,False)
+    fMRI:     scan_1 = ('dicom/fMRI','func','fmri','rest',[1],[1],False,True,True,True)
+    asl:      scan_1 = ('dicom/pcasl','perf','asl','',[1],[1],False,False,False,False) !!GE PCASL based!!
+    """
     
     pp_params['mri_data'] = []
     
-    scan_1 = ('dicom/T1w','anat','T1w',[1])
-    #scan_2 = ('dicom/SEFMRI_PI','fmap','dir-pi_epi',[1])
-    #scan_3 = ('DCM/ME-fMRI_PI','fmap','dir-pi_epi',[1])
-    #scan_4 = ('DCM/SE-fMRI_EFT','func','task-SE-EFT_bold',[1])
-    #scan_5 = ('dicom/SEFMRI_EMOFACES','func','task-SE-EmoFaces_bold',[1])
-    #scan_6 = ('DCM/ME-fMRI_EFT','func','task-ME-EFT_bold_e%e',[1])
-    #scan_7 = ('dicom/voor/fmri_task','func','task-_%s',[1])
-    #scan_8 = ('dicom/voor/asl','perf','asl-1',[1])
-    #scan_9 = ('dicom/tijdens/','perf','asl-%s',[1])
-    #scan_10 = ('dicom/na/asl','perf','asl-5',[2])
+    scan_1 = ('dicom/voor/asl','perf','asl','',[1],[1],False,True,True,False)
     
     pp_params['mri_data'].append([scan_1])
     
@@ -86,19 +91,26 @@ BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 ---------------------------------------------------------------------------------------
 """
 
-def load_d2n_params(subdir,folder,seqtype,name,session):
+def load_d2n_params(subdir,folder,acqtype,seqtype,task,session,run):
     
     import os
     
     split_path = subdir.split(os.sep)
     substring = split_path[len(split_path)-1]
     
-    sesdir = 'ses-00'+str(session)
+    sesstring = 'ses-00'+str(session)
     
     source_dir = os.path.join(subdir,folder)
-    output_dir = os.path.join(subdir,sesdir,seqtype)
+    output_dir = os.path.join(subdir,sesstring,acqtype)
     
-    out_filename = substring+'_'+name
+    out_filename = substring+'_'+sesstring
+    
+    if 'fmri' in seqtype:
+        out_filename = out_filename+'_task-'+task
+        
+    out_filename = out_filename+'_acq-'+'%d'
+    out_filename = out_filename+'_run-'+str(run)
+    out_filename = out_filename+'_echo-'+'%e'
     
     crop = False
     ignore_deriv = False
@@ -106,12 +118,91 @@ def load_d2n_params(subdir,folder,seqtype,name,session):
     if 'anat' in seqtype:
         crop = True
         ignore_deriv = True
-        
-    if 'fmap' in seqtype:
-        if 'echo-' in name:
-            out_filename = out_filename+'%s'
     
     return source_dir, crop, ignore_deriv, out_filename, output_dir
+
+"""
+---------------------------------------------------------------------------------------
+"""
+def rename_file(in_files,seqtype,add_acq,add_dir,add_run,add_echo):
+    
+    import os
+    import json
+    
+    if 'pepolar' in seqtype: add_dir=True
+    
+    if len(in_files[1])==1: in_files = [in_files]
+   
+    for ifile in in_files:
+        ifile = ifile.split('.nii')[0]
+        acq_split = ifile.split('_acq-')
+        run_split = acq_split[1].split('_run-')
+        echo_split = run_split[1].split('_echo-')  
+        ph_split = echo_split[1].split('_ph')
+        new_file = acq_split[0]
+        
+        if add_acq: new_file = new_file+'_acq-'+run_split[0]
+        
+        if add_dir:
+            with open(ifile+'.json','r') as f: jsondat=json.load(f)
+            f.close()
+            
+            if "PhaseEncodingDirection" in jsondat:
+                pedir = jsondat["PhaseEncodingDirection"]
+            else: 
+                pedir = ''
+                pestring = 'NF' #Not found
+            
+            if 'i' in pedir: pestring = 'LR'
+            if 'j' in pedir: pestring = 'PA'
+            if 'k' in pedir: pestring = 'FH'
+            
+            if '-' in pedir: pestring = pestring[::-1]
+            
+            new_file = new_file+'_dir-'+pestring
+  
+        if add_run: new_file = new_file+'_run-'+echo_split[0]
+      
+        if not add_echo:
+            test_string = acq_split[0]+'_acq-'+run_split[0]+'_run-'+echo_split[0]+'_echo-2'
+            
+            test = [i for i in in_files if test_string in i]
+            if len(test)>0: add_echo=True
+            
+        if add_echo: new_file = new_file+'_echo-'+ph_split[0]
+        
+        if 'fieldmap' in seqtype: #In some older studies done on our GE scanner: 2 GE scans at different TEs (no longer used)
+            if '_ph' in echo_split[1]: #Based on sequence names
+                if 'TE_1' in acq_split[1]: new_file = new_file+'_phase1'
+                if 'TE_2' in acq_split[1]: new_file = new_file+'_phase2'
+            else:
+                if 'TE_1' in acq_split[1]: new_file = new_file+'_magnitude1'
+                if 'TE_2' in acq_split[1]: new_file = new_file+'_magnitude2'
+        
+        if 'asl' in seqtype:  
+            with open(ifile+'.json','r') as f: jsondat=json.load(f)
+            f.close()
+                        
+            ImType = jsondat["ImageType"]
+            
+            if 'ORIGINAL' in ImType[0]:
+                ftype = '_m0scan'
+            elif 'DERIVED' in ImType[0]:
+                if 'PRIMARY' in ImType[1]:
+                    ftype = '_deltam'
+                elif 'SECONDARY' in ImType[1]:
+                    ftype = '_cbf'
+                    
+            new_file = new_file+ftype
+            
+        if 'pepolar' in seqtype: new_file = new_file+'_epi'
+        if 'fmri' in seqtype: new_file = new_file+'_bold' 
+            
+        os.rename(ifile+'.nii',new_file+'.nii')
+        os.rename(ifile+'.json',new_file+'.json')
+        
+    
+    return '' #out_files
 
 """
 ---------------------------------------------------------------------------------------
@@ -124,6 +215,7 @@ def main():
     datpath = pp_params['datpath']
 
     sublist = pp_params['sublist']
+    sub_digits = pp_params['sub_digits']
     
     mri_data = pp_params['mri_data']
     
@@ -132,17 +224,21 @@ def main():
     for i in sublist:
 
         if i<10:
-            substring = 'sub-0'+str(i)
+            if sub_digits==2: substring = 'sub-0'+str(i)
+            if sub_digits==3: substring = 'sub-00'+str(i)
+        elif i<100:
+            if sub_digits==2: substring = 'sub-'+str(i)
+            if sub_digits==3: substring = 'sub-0'+str(i)
         else:
             substring = 'sub-'+str(i)
             
         substringslist.append(substring)
         
         for k in range(0,len(mri_data[0])):
-            output_dir = os.path.join(datpath,substring,'ses-00'+str(mri_data[0][k][3][0]))
+            output_dir = os.path.join(datpath,substring,'ses-00'+str(mri_data[0][k][4][0]))
             if not os.path.isdir(output_dir): os.mkdir(output_dir) 
             
-            output_dir = os.path.join(datpath,substring,'ses-00'+str(mri_data[0][k][3][0]),mri_data[0][k][1])
+            output_dir = os.path.join(datpath,substring,'ses-00'+str(mri_data[0][k][4][0]),mri_data[0][k][1])
             if not os.path.isdir(output_dir): os.mkdir(output_dir) 
             
     
@@ -166,16 +262,17 @@ def main():
     dcm2niiwf.connect(infosource, 'substring', selectfiles, 'substring')
     
     for k in range(0,len(mri_data[0])):
-        load_par_node = Node(interface=Function(input_names=['subdir','folder','seqtype','name','session'],
+        load_par_node = Node(interface=Function(input_names=['subdir','folder','acqtype','seqtype','task','session','run'],
                                                 output_names=['source_dir','crop','ignore_deriv','out_filename','output_dir'],
                                                 function=load_d2n_params),name='load_par'+str(k))
         
         load_par_node.inputs.folder = mri_data[0][k][0]
-        load_par_node.inputs.seqtype = mri_data[0][k][1]
-        load_par_node.inputs.name = mri_data[0][k][2]
-        load_par_node.inputs.session = mri_data[0][k][3][0]
-        
-        
+        load_par_node.inputs.acqtype = mri_data[0][k][1]
+        load_par_node.inputs.seqtype = mri_data[0][k][2]
+        load_par_node.inputs.task = mri_data[0][k][3]
+        load_par_node.inputs.session = mri_data[0][k][4][0]
+        load_par_node.inputs.run = mri_data[0][k][5][0]
+               
         dcm2niiwf.connect([(selectfiles,load_par_node,[('subdir','subdir')])])
         
         d2nii_node = Node(Dcm2niix(compress='n', anon_bids=True, bids_format=True), name='d2nii'+str(k))
@@ -187,6 +284,18 @@ def main():
                                                       ('output_dir','output_dir')
                                                       ])
                            ])
+        
+        renamefile_node = Node(interface=Function(input_names=['in_files','seqtype','add_acq','add_dir','add_run','add_echo'],
+                                                  output_names=['out_files'],
+                                                  function=rename_file),name='rename_file'+str(k))
+        
+        renamefile_node.inputs.seqtype = mri_data[0][k][2]
+        renamefile_node.inputs.add_acq = mri_data[0][k][6]
+        renamefile_node.inputs.add_dir = mri_data[0][k][7]
+        renamefile_node.inputs.add_run = mri_data[0][k][8]
+        renamefile_node.inputs.add_echo = mri_data[0][k][9]
+        
+        dcm2niiwf.connect([(d2nii_node,renamefile_node,[('converted_files','in_files')])])
     
     """
     Run the workflow
@@ -201,76 +310,6 @@ def main():
     print('')
 
     shutil.rmtree(os.path.join(datpath,'dcm2niiwf'), ignore_errors=True)
-    
-    for k in range(0,len(mri_data[0])):
-        if 'fmap' in mri_data[0][k][1]:
-            if 'echo-' in mri_data[0][k][2]:
-                for i in sublist:
-                    if i<10:
-                        substring = 'sub-0'+str(i)
-                    else:
-                        substring = 'sub-'+str(i)
-                        
-                    fmap_folder = os.path.join(datpath,substring,'ses-00'+str(mri_data[0][k][3][0]),'fmap')
-                    
-                    dirlist = sorted([fn for fn in os.listdir(fmap_folder) if fn.endswith('.nii')
-                                                                              and not fn.startswith('.') 
-                                                                              and os.path.isfile(os.path.join(fmap_folder,fn))
-                                      ])
-                    
-                    for file in dirlist:
-                        if not '_ph' in file:
-                            sfile = file.split('.nii')
-                            jfile = sfile[0]+'.json'
-                            nfile = sfile[0]+'_am.nii'
-                            njfile = sfile[0]+'_am.json'
-                            
-                            os.rename(os.path.join(fmap_folder,file),os.path.join(fmap_folder,nfile))
-                            os.rename(os.path.join(fmap_folder,jfile),os.path.join(fmap_folder,njfile))
-                            
-        if 'perf' in mri_data[0][k][1]:
-            for i in sublist:
-                if i<10:
-                    substring = 'sub-0'+str(i)
-                else:
-                    substring = 'sub-'+str(i)
-                    
-                perf_folder = os.path.join(datpath,substring,'ses-00'+str(mri_data[0][k][3][0]),'perf')
-                
-                dirlist = sorted([fn for fn in os.listdir(perf_folder) if fn.endswith('.nii')
-                                                                          and not fn.startswith('.') 
-                                                                          and os.path.isfile(os.path.join(perf_folder,fn))
-                                  ])
-                
-                for file in dirlist:
-                    if not '.json' in file:
-                        sfile = file.split('.nii')
-                        jfile = sfile[0]+'.json'
-                        
-                        with open(os.path.join(perf_folder,jfile),'r') as f: jsondat=json.load(f)
-                        f.close()
-                                    
-                        ImType = jsondat["ImageType"]
-                        
-                        if 'ORIGINAL' in ImType[0]:
-                            ftype = 'm0scan'
-                        elif 'DERIVED' in ImType[0]:
-                            if 'PRIMARY' in ImType[1]:
-                                ftype = 'deltam'
-                            elif 'SECONDARY' in ImType[1]:
-                                ftype = 'cbf'
-                         
-                        if '%s' in mri_data[0][k][2]:
-                            snum = '-'+str(jsondat["SeriesNumber"])+'_'
-                        else:
-                            snum = '_'    
-                                
-                        sfname = file.split('asl')
-                        nfname = sfname[0]+'asl'+snum+ftype
-                        
-                        os.rename(os.path.join(perf_folder,file),os.path.join(perf_folder,nfname+'.nii'))
-                        os.rename(os.path.join(perf_folder,jfile),os.path.join(perf_folder,nfname+'.json'))
-            
-                    
+ 
 if __name__ == '__main__':
     main()
