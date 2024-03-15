@@ -19,15 +19,7 @@ end
 if ~save_intermediate_results
     for i=1:numel(delfiles)
         if isfile(delfiles{i})
-            if contains(delfiles{i},'anat')
-                if isfile(delfiles{i}{1}); delete(delfiles{i}{1}); end
-            end
-            if contains(delfiles{i},'func')
-                if isfile(delfiles{i}{1}); delete(delfiles{i}{1}); end
-            end
-            if contains(delfiles{i},'fmap')
-                if isfile(delfiles{i}{1}); delete(delfiles{i}{1}); end
-            end
+            if isfile(delfiles{i}{1}); delete(delfiles{i}{1}); end
         elseif isfolder(delfiles{i})
             rmdir(delfiles{i}{1},'s');
         end

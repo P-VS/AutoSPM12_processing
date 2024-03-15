@@ -1,4 +1,4 @@
-function out=save_rp_plot(sub,ses,task,datpath,params)
+function out=save_rp_plot(sub,ses,run,task,datpath,params)
 
 if sub<10
     substring = ['sub-0' num2str(sub)];
