@@ -22,35 +22,40 @@ params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/rTMS-fMRI_Interleaved/Data';
+datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
 first_sub = 1;
 last_sub = 1;
 sublist = [3]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
  
-params.task = {'semantic'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
+params.task = {'ME-EFT'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
 
-params.analysisname = 'test';
+params.analysisname = 'ME-EFT-test3';
 
-params.use_parallel = true; 
+params.use_parallel = false; 
 params.maxprocesses = 4; %Best not too high to avoid memory problems
 params.keeplogs = false;
 
 %% fMRI data parameters
-    params.preprocfmridir = 'preproc_func_test'; %directory with the preprocessed fMRI data
-    params.fmri_prefix = 'sware'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
-    params.fmri_endfix = 'bold';
+    params.preprocfmridir = 'preproc_test_me'; %directory with the preprocessed fMRI data
+    params.fmri_prefix = 'swcaure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
     
     params.dummytime = 0;
     
-    params.multi_echo = false;
-    params.echoes = [1,2,3]; %list of echoes for ME-fMRI used as sessions in SPM
-    params.use_echoes_as_sessions = false; %use each echo series as a session in SPM
+    %In case of multiple runs in the same session exist
+    params.mruns = true; %true if run number is in filename
+    params.runs = [1,2]; %the index of the runs (in filenames run-(index))
+    params.use_runs = 'together'; % 'separately' or 'together' (this parameter is ignored if mruns is false)
+    %'separately': a separate analysis is done per run
+    %'together': all runs are combined in 1 analysis
+
+    params.meepi = false; % true or false for ME-fMRI (if true, _echo-... should be in the file name)
+    params.echoes = [1:2]; %list of echoes for ME-fMRI used as sessions in SPM
 
 %% SPM first level analysis parameters
     params.confounds_prefix = 'rp_e'; %confounds file of form [confounds_prefix 'sub-ii_task-... .txt']
-    params.add_regressors = false;
+    params.add_regressors = true;
     params.use_ownmask = false;
     params.model_serial_correlations = 'AR(1)';
     params.hpf = 128; %default 128
@@ -62,17 +67,11 @@ params.keeplogs = false;
     %   contrast(i).conditions={'condition 1','condition 2'};
     %   contrast(i).vector=[1 -1];
 
-    params.contrast(1).conditions = {'semantic'};
-    params.contrast(1).vector = [1];
+    params.contrast(1).conditions = {'episodic','semantic'};
+    params.contrast(1).vector = [1,-1];
     
-    params.contrast(2).conditions = {'semantic'};
-    params.contrast(2).vector = [-1];
-    
-    %params.contrast(1).conditions = {'episodic','semantic'};
-    %params.contrast(1).vector = [1,-1];
-    
-    %params.contrast(2).conditions = {'episodic','semantic'};
-    %params.contrast(2).vector = [-1,1];
+    params.contrast(2).conditions = {'episodic','semantic'};
+    params.contrast(2).vector = [-1,1];
     
     %params.contrast(1).conditions = {'sad','neutral'};
     %params.contrast(1).vector = [1,-1];

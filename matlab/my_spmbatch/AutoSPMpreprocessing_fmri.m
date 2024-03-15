@@ -31,14 +31,14 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/rTMS-fMRI_Interleaved/Data';
+datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
 sublist = [3];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-params.save_folder = 'preproc_func_test';
+params.save_folder = 'preproc_test_me';
 
-task ={'semantic'};
+task ={'ME-EFT'};
 
 params.use_parallel = false; 
 params.maxprocesses = 4; %Best not too high to avoid memory problems
@@ -56,31 +56,21 @@ params.reorient = true; % align data with MNI template to improve normalization 
     params.anat.do_normalization = true;
     params.anat.normvox = [1.5 1.5 1.5];
 
-    %% When not doing VBM -> Use default in SPM
-        % Segmentation
-        params.anat.do_segmentation = true;
+    % Segmentation ussing CAT12
+    params.anat.do_segmentation = true;
+    params.anat.roi_atlas = false;
     
 %% Preprocessing functional data
 
     params.preprocess_functional = false;
 
-    % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
-    params.func.dummytime = 6; %time in seconds
+    %In case of multiple runs in the same session exist
+    params.func.mruns = false; %true if run number is in filename
+    params.func.runs = [1]; %the index of the runs (in filenames run-(index))
 
-    % Realignnment (motion correction)
-    params.func.do_realignment = true;
-    
-    % Geometric correction
-    % fieldmap or pepolar Only 1 can be true, the other should be false.
-    params.func.fieldmap = false;
-    params.func.pepolar = false;
-
-    % Slice time correction
-    params.func.do_slicetime = true;
-        
     % If ME-fMRI, combine the multiple eccho images
-    params.func.meepi = false;
-    params.func.echoes = [1]; %the numbers of the echoes in ME-fMRI. 
+    params.func.meepi = true; %true if echo number is in filename
+    params.func.echoes = [1,2]; %the index of the echoes in ME-fMRI. (in filenames echo-(index))
     params.func.combination = 'none'; 
     %none: all echoes are preprocessed separatly
     %average: The combination is the average of the multiple echo images
@@ -88,32 +78,49 @@ params.reorient = true; % align data with MNI template to improve normalization 
     %T2_weighted: dynamic T2* weighted combination
     %dyn_T2star: dynamic T2* mapping
     %see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
+           
+    % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
+    params.func.dummytime = 8; %time in seconds
+    
+    % Realignnment (motion correction)
+    params.func.do_realignment = true;
 
+    % Geometric correction
+    % fieldmap or pepolar Only 1 can be true, the other should be false.
+    params.func.fieldmap = false;
+    params.func.pepolar = true;
+       
+    % Slice time correction
+    params.func.do_slicetime = true;
+      
     % Normalization
     params.func.do_normalization = true;
-    params.func.normvox = [1.5 1.5 1.5];
-
+    params.func.normvox = [1.5 1.5 1.5]; %default [1.5 1.5 1.5]
+    
     % Smoothing
     params.func.do_smoothing = true;
-    params.func.smoothfwhm = 6;
+    params.func.smoothfwhm = 6; %default 6
 
 %% Denoising
 
     params.do_denoising = false; 
 
         %if do_denoising = true and preprocess_functional = false -> only denoising, other preprocessing already done
-        params.denoise.prefix = 'swaure';
+        params.denoise.prefix = 'swcaure';
 
-    params.denoise.meepi = false;
-    params.denoise.echoes = [1]; %the numbers of the echoes in ME-fMRI. 
-    params.denoise.mecombined = false; %if ME-fMRI, where the echoes combined?
+    %In case of multiple runs in the same session exist
+    params.denoise.mruns = false; %true if run number is in filename
+    params.denoise.runs = [1]; %the index of the runs (in filenames run-(index))
+
+    params.denoise.meepi = true;
+    params.denoise.echoes = [1,2]; %the numbers of the echoes in ME-fMRI. 
     
+    % Extend motion regressors with derivatives and squared regressors
+    params.denoise.do_mot_derivatives = true; %derivatives+squares (24 regressors)
+
     % Band-pass filtering
     params.denoise.do_bpfilter = false;
     params.denoise.bpfilter = [0.008 Inf]; %no highpass filter is first 0, no lowpass filter is last Inf, default is [0.008 0.1]
-
-    % Extend motion regressors with derivatives and squared regressors
-    params.denoise.do_mot_derivatives = true; %derivatives+squares (24 regressors)
 
     % aCompCor
     params.denoise.do_aCompCor = true;

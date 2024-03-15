@@ -4,7 +4,7 @@ load(paramsfile)
 
 try
     %% preprocess anatomical scans
-    [delfiles,keepfiles] = my_spmbatch_cat12vbm(sub,ses,datpath,params);
+    [delfiles,keepfiles] = my_spmbatch_preprocess_anat(sub,ses,datpath,params);
 
     % Clean up unnecessary files
     cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,'anat',params.save_folder);

@@ -1,5 +1,11 @@
 function my_spmbatch_start_fmripreprocessing(sublist,nsessions,task,datpath,params)
 
+params.func.isaslbold = false;
+
+if ~params.func.mruns, params.func.runs = [1]; end
+if params.func.meepi && numel(params.func.echoes)==1, params.func.combination='none'; end
+if params.func.meepi && ~contains(params.func.combination,'none'), params.func.do_echocombination = true; else params.func.do_echocombination = false; end
+
 if params.do_denoising
     if params.preprocess_functional
         params.denoise.meepi = params.func.meepi;
@@ -22,15 +28,18 @@ end
 
 save(fullfile(datpath,'params.mat'),'params')
 
-datlist = zeros(numel(sublist)*numel(nsessions),2);
+datlist = zeros(numel(sublist)*numel(nsessions)*numel(params.func.runs),3);
 
 dpos = 1;
 for i = 1:numel(sublist)
     for j = 1:numel(nsessions)
-        datlist(dpos,1) = sublist(i);
-        datlist(dpos,2) = nsessions(j);
-
-        dpos = dpos+1;
+        for k = 1:numel(params.func.runs)
+            datlist(dpos,1) = sublist(i);
+            datlist(dpos,2) = nsessions(j);
+            datlist(dpos,3) = params.func.runs(k);
+    
+            dpos = dpos+1;
+        end
     end
 end
 
@@ -48,11 +57,11 @@ for k = 1:numel(task)
             for is = 1:maxruns
                 i = (j-1)*params.maxprocesses+is;
     
-                fprintf(['\nStart preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' task ' task{k} '\n'])
+                fprintf(['\nStart preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' run ' num2str(datlist(i,3)) ' task ' task{k} '\n'])
         
-                mtlb_cmd = sprintf('"restoredefaultpath;addpath(genpath(''%s''));addpath(genpath(''%s''));addpath(genpath(''%s''));my_spmbatch_run_fmripreprocessing(%d,%d,''%s'',''%s'',''%s'');"', ...
-                                            params.GroupICAT_path,params.spm_path,params.my_spmbatch_path,datlist(i,1),datlist(i,2),task{k},datpath,fullfile(datpath,'params.mat'));
-                logfile{i} = fullfile(datpath,['fmri_preprocess_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' task{k} '.txt']);
+                mtlb_cmd = sprintf('"restoredefaultpath;addpath(genpath(''%s''));addpath(genpath(''%s''));addpath(genpath(''%s''));my_spmbatch_run_fmripreprocessing(%d,%d,%d,''%s'',''%s'',''%s'');"', ...
+                                            params.GroupICAT_path,params.spm_path,params.my_spmbatch_path,datlist(i,1),datlist(i,2),datlist(i,3),task{k},datpath,fullfile(datpath,'params.mat'));
+                logfile{i} = fullfile(datpath,['fmri_preprocess_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
         
                 if exist(logfile{i},'file'), delete(logfile{i}); end
                 
@@ -84,21 +93,21 @@ for k = 1:numel(task)
                         if ~isempty(errortest)
                             pfinnished = pfinnished+1;
     
-                            nlogfname = fullfile(datpath,['error_fmri_preprocess_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' task{k} '.txt']);
+                            nlogfname = fullfile(datpath,['error_fmri_preprocess_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
                             movefile(logfile{i},nlogfname);
     
-                            fprintf(['\nError during preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' task ' task{k} '\n'])
+                            fprintf(['\nError during preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' run ' num2str(datlist(i,3)) ' task ' task{k} '\n'])
                         elseif ~isempty(test)
                             pfinnished = pfinnished+1;
     
                             if ~params.keeplogs
                                 delete(logfile{i}); 
                             else
-                                nlogfname = fullfile(datpath,['done_fmri_preprocess_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' task{k} '.txt']);
+                                nlogfname = fullfile(datpath,['done_fmri_preprocess_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
                                 movefile(logfile{i},nlogfname);
                             end
     
-                            fprintf(['\nDone preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' task ' task{k} '\n'])
+                            fprintf(['\nDone preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' run ' num2str(datlist(i,2)) ' task ' task{k} '\n'])
                         end
                     end
                 end
@@ -115,21 +124,21 @@ for k = 1:numel(task)
         if params.preprocess_functional && params.func.do_realignment
             for i = 1:numel(datlist(:,1))
                 % Print and save realignment paramers  
-                save_rp_plot(datlist(i,1),datlist(i,2),task{k},datpath,params);
+                save_rp_plot(datlist(i,1),datlist(i,2),datlist(i,3),task{k},datpath,params);
             end
         end
     else
         for i=1:numel(datlist(:,1))
             itstart = tic;
 
-            my_spmbatch_run_fmripreprocessing(datlist(i,1),datlist(i,2),task{k},datpath,fullfile(datpath,'params.mat'));
+            my_spmbatch_run_fmripreprocessing(datlist(i,1),datlist(i,2),datlist(i,3),task{k},datpath,fullfile(datpath,'params.mat'));
 
             % Print and save realignment paramers  
-            save_rp_plot(datlist(i,1),datlist(i,2),task{k},datpath,params);
+            save_rp_plot(datlist(i,1),datlist(i,2),datlist(i,3),task{k},datpath,params);
 
             itstop = toc(itstart);
 
-            fprintf(['subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' processed in ' datestr(duration([0,0,itstop],'InputFormat','ss'),'HH:MM:SS') '\n'])
+            fprintf(['subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' run ' num2str(datlist(i,3)) ' processed in ' datestr(duration([0,0,itstop],'InputFormat','ss'),'HH:MM:SS') '\n'])
         end
     end
 end
