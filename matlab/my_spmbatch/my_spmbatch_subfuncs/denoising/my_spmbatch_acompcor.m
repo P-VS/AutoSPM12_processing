@@ -1,6 +1,8 @@
 function [ppparams,keepfiles] = my_spmbatch_acompcor(wfuncdat,ppparams,params,keepfiles)
 
-if exist(ppparams.rp_file,'file')
+if isfield(ppparams,'der_file')
+    confounds = load(ppparams.der_file);
+elseif isfield(ppparams,'rp_file')
     confounds = load(ppparams.rp_file);
 else
     confounds = [];
@@ -35,16 +37,8 @@ end
 
 acc_confounds = fmri_acompcor(wfuncdat(:,:,:,:),{csfdat},ppparams.Ncomponents,'confounds',confounds,'filter',bpfilter,'PolOrder',1);
 
-if exist(ppparams.rp_file)
-    confounds = cat(2,confounds,acc_confounds);
+ppparams.acc_file = spm_file(fullfile(ppparams.ppfuncdir,ppparams.func(1).wfuncfile), 'prefix','acc_','ext','.txt');
 
-    ppparams.rp_file = spm_file(ppparams.rp_file, 'prefix','acc_','ext','.txt');
+writematrix(acc_confounds,ppparams.acc_file,'Delimiter','tab');
 
-    writematrix(confounds,ppparams.rp_file,'Delimiter','tab');
-else
-    ppparams.rp_file = spm_file(ppparams.funcfile, 'prefix','acc_','ext','.txt');
-
-    writematrix(acc_confounds,ppparams.rp_file,'Delimiter','tab');
-end
-
-keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
+keepfiles{numel(keepfiles)+1} = {ppparams.acc_file};

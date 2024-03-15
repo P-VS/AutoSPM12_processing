@@ -1,42 +1,11 @@
-function [delfiles,keepfiles] = my_spmbatch_cat12vbm(sub,ses,datpath,params)
+function [delfiles,keepfiles] = my_spmbatch_cat12vbm(ppparams,params,delfiles,keepfiles)
 
-ppparams.sub = sub;
-ppparams.ses = ses;
+fname = split(ppparams.subanat,'.nii');
 
-ppparams.substring = ['sub-' num2str(sub,'%02d')];
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subanatdir,['cat_' fname{1} '.xml'])};
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subanatdir,['catlog_' fname{1} '.txt'])};
 
-if ~isfolder(fullfile(datpath,ppparams.substring))
-    ppparams.substring = ['sub-' num2str(sub,'%03d')];
-end
-
-ppparams.subpath = fullfile(datpath,ppparams.substring,['ses-' num2str(ses,'%03d')]);
-
-if ~isfolder(ppparams.subpath)
-    ppparams.subpath = fullfile(datpath,ppparams.substring,['ses-' num2str(ses,'%02d')]);
-end
-
-ppparams.subanatdir = fullfile(ppparams.subpath,'anat');
-ppparams.preproc_anat = fullfile(ppparams.subpath,params.save_folder);
-
-if ~exist(fullfile(ppparams.subanatdir,[ppparams.substring '_T1w_Crop_1.nii']),'file')
-    nsubannat = [ppparams.substring '_T1w.nii'];
-else
-    nsubannat = [ppparams.substring '_T1w_Crop_1.nii'];
-end
-ppparams.subanat = fullfile(ppparams.subanatdir,nsubannat);
-
-delfiles = {};
-keepfiles = {};
-
-copysubanat = spm_file(ppparams.subanat, 'prefix','r');
-copyfile(ppparams.subanat,copysubanat);
-
-[fpath,fname,~] = fileparts(copysubanat);
-
-delfiles{numel(delfiles)+1} = {fullfile(fpath,['cat_' fname '.xml'])};
-delfiles{numel(delfiles)+1} = {fullfile(fpath,['catlog_' fname '.txt'])};
-
-catestwrite.data = {copysubanat};
+catestwrite.data = {fullfile(ppparams.subanatdir,ppparams.subanat)};
 catestwrite.data_wmh = {''};
 catestwrite.nproc = 4;
 catestwrite.useprior = '';
@@ -70,20 +39,20 @@ if params.vbm.do_surface
     catestwrite.output.surface = 1;
     catestwrite.output.surf_measures = 1;
 
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['lh.central.' fname '.gii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['rh.central.' fname '.gii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['lh.pial.' fname '.gii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['rh.pial.' fname '.gii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['lh.sphere.' fname '.gii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['rh.sphere.' fname '.gii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['lh.sphere.reg.' fname '.gii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['rh.sphere.reg.' fname '.gii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['lh.white.' fname '.gii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['rh.white.' fname '.gii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['lh.pbt.' fname])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['rh.pbt.' fname])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['lh.thickness.' fname])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['rh.thickness.' fname])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['lh.central.' fname{1} '.gii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['rh.central.' fname{1} '.gii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['lh.pial.' fname{1} '.gii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['rh.pial.' fname{1} '.gii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['lh.sphere.' fname{1} '.gii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['rh.sphere.' fname{1} '.gii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['lh.sphere.reg.' fname{1} '.gii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['rh.sphere.reg.' fname{1} '.gii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['lh.white.' fname{1} '.gii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['rh.white.' fname{1} '.gii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['lh.pbt.' fname{1}])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['rh.pbt.' fname{1}])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['lh.thickness.' fname{1}])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['rh.thickness.' fname{1}])};
 else
     catestwrite.output.surface = 0;
     catestwrite.output.surf_measures = 0;
@@ -100,11 +69,11 @@ if params.vbm.do_roi_atlas
     catestwrite.output.ROImenu.atlases.ibsr = 0;
     catestwrite.output.ROImenu.atlases.ownatlas = {''};
 
-    delfiles{numel(delfiles)+1} = {fullfile(fpath,['catROI_' fname '.xml'])};
-    delfiles{numel(delfiles)+1} = {fullfile(fpath,['catROIs_' fname '.xml'])};
+    delfiles{numel(delfiles)+1} = {fullfile(ppparams.subanatdir,['catROI_' fname{1} '.xml'])};
+    delfiles{numel(delfiles)+1} = {fullfile(ppparams.subanatdir,['catROIs_' fname{1} '.xml'])};
 
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['catROI_' fname '.mat'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['catROIs_' fname '.mat'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['catROI_' fname{1} '.mat'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['catROIs_' fname{1} '.mat'])};
 else
     catestwrite.output.ROImenu.noROI = struct([]);
 end
@@ -117,31 +86,26 @@ catestwrite.output.CSF.mod = 1;
 catestwrite.output.CSF.dartel = 0;
 catestwrite.output.CSF.warped = 0;
 
-keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['wm' fname '.nii'])};
-keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['mwp1' fname '.nii'])};
-keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['mwp2' fname '.nii'])};
-keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['mwp3' fname '.nii'])};
+keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['wm' fname{1} '.nii'])};
+keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['mwp1' fname{1} '.nii'])};
+keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['mwp2' fname{1} '.nii'])};
+keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['mwp3' fname{1} '.nii'])};
 
 if params.vbm.do_normalization
     catestwrite.output.GM.native = 0;
     catestwrite.output.WM.native = 0;
     catestwrite.output.CSF.native = 0;
     catestwrite.output.labelnative = 0;
-
-    delfiles{numel(delfiles)+1} = {copysubanat};
-
 else
     catestwrite.output.GM.native = 1;
     catestwrite.output.WM.native = 1;
     catestwrite.output.CSF.native = 1;
     catestwrite.output.labelnative = 1;
 
-    keepfiles{numel(keepfiles)+1} = {copysubanat};
-
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['p0' fname '.nii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['p1' fname '.nii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['p2' fname '.nii'])};
-    keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['p3' fname '.nii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['p0' fname{1} '.nii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['p1' fname{1} '.nii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['p2' fname{1} '.nii'])};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['p3' fname{1} '.nii'])};
 end
 
 catestwrite.output.ct.native = 0;
@@ -176,9 +140,9 @@ catestwrite.output.rmat = 0;
 
 cat_run(catestwrite);
 
-delfiles{numel(delfiles)+1} = {fullfile(fpath,'mri')};
-delfiles{numel(delfiles)+1} = {fullfile(fpath,['catlog_' fname '.txt'])};
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subanatdir,'mri')};
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subanatdir,['catlog_' fname{1} '.txt'])};
 
-keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['cat_' fname '.mat'])};
-keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['catreport_' fname '.pdf'])};
-keepfiles{numel(keepfiles)+1} = {fullfile(fpath,['catreportj_' fname '.jpg'])};
+keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['cat_' fname{1} '.mat'])};
+keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['catreport_' fname{1} '.pdf'])};
+keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['catreportj_' fname{1} '.jpg'])};

@@ -1,173 +1,176 @@
-function [delfiles,keepfiles] = my_spmbatch_preprocess_anat(ppparams,params,delfiles,keepfiles)
+function [delfiles,keepfiles] = my_spmbatch_preprocess_anat(sub,ses,datpath,params)
 
-if ~exist(fullfile(ppparams.subanatdir,[ppparams.substring '_T1w_Crop_1.nii']),'file')
-    nsubannat = [ppparams.substring '_T1w.nii'];
-    nsubanstring = [ppparams.substring '_T1w'];
-else
-    nsubannat = [ppparams.substring '_T1w_Crop_1.nii'];
-    nsubanstring = [ppparams.substring '_T1w_Crop_1'];
-end
-ppparams.subanat = fullfile(ppparams.subanatdir,nsubannat);
+delfiles = {};
+keepfiles = {};
 
-%% Segmentation and normalization of the anatomical T1w scan
+%% Search for the data folders
 
-if exist(fullfile(ppparams.preproc_anat,['wr' nsubannat]),'file')
-    if exist(fullfile(ppparams.preproc_anat,['wc1r' nsubannat]),'file')
-        if exist(fullfile(ppparams.preproc_anat,['wc2r' nsubannat]),'file')
-            if exist(fullfile(ppparams.preproc_anat,['wc3r' nsubannat]),'file')
-                params.anat.do_segmentation = 0;
+ppparams.substring = ['sub-' num2str(sub,'%02d')];
+if ~isfolder(fullfile(datpath,ppparams.substring)), ppparams.substring = ['sub-' num2str(sub,'%03d')]; end
 
-                ppparams.wc1im = fullfile(ppparams.preproc_anat,['wc1r' nsubannat]);
-                ppparams.wc2im = fullfile(ppparams.preproc_anat,['wc2r' nsubannat]);
-                ppparams.wc3im = fullfile(ppparams.preproc_anat,['wc3r' nsubannat]);
-            end
-        end
-    end
+ppparams.sesstring = ['ses-' num2str(ses,'%02d')];
+if ~isfolder(fullfile(datpath,ppparams.substring,ppparams.sesstring)), ppparams.sesstring = ['ses-' num2str(ses,'%03d')]; end
+
+ppparams.subpath = fullfile(datpath,ppparams.substring,ppparams.sesstring);
+
+if ~isfolder(ppparams.subpath), ppparams.subpath = fullfile(datpath,ppparams.substring); end
+
+if ~isfolder(ppparams.subpath)
+    fprintf(['No data folder for subject ' num2str(sub) ' session ' num2str(ses)])
+    fprintf('\nPP_Error\n');
+    return
 end
 
-if exist(fullfile(ppparams.preproc_anat,['wr' nsubanstring]),'file')
-    if exist(fullfile(ppparams.preproc_anat,['w' nsubanstring '_brain_pve_0.nii']),'file')
-        if exist(fullfile(ppparams.preproc_anat,['w' nsubanstring '_brain_pve_1.nii']),'file')
-            if exist(fullfile(ppparams.preproc_anat,['w' nsubanstring '_brain_pve_2.nii']),'file')
-                params.anat.do_segmentation = 0;
+ppparams.subanatdir = fullfile(ppparams.subpath,'anat');
 
-                ppparams.wc1im = fullfile(ppparams.preproc_anat,['w' nsubanstring '_brain_pve_1.nii']);
-                ppparams.wc2im = fullfile(ppparams.preproc_anat,['w' nsubanstring '_brain_pve_2.nii']);
-                ppparams.wc3im = fullfile(ppparams.preproc_anat,['w' nsubanstring '_brain_pve_0.nii']);
-            end
-        end
-    end
+if ~isfolder(ppparams.subanatdir)
+    fprintf(['No anat data folder found for subject ' num2str(sub) ' session ' num2str(ses)])
+    fprintf('\nPP_Error\n');
+    return
 end
+
+ppparams.preproc_anat = fullfile(ppparams.subpath,'preproc_anat');
+if ~exist(ppparams.preproc_anat,"dir"), mkdir(ppparams.preproc_anat); end
+
+%% Search for the data files
+
+namefilters(1).name = ppparams.substring;
+namefilters(1).required = true;
+
+namefilters(2).name = ppparams.sesstring;
+namefilters(2).required = false;
+
+namefilters(3).name = ['_T1w'];
+namefilters(3).required = true;
+
+% Unprocessed data
+
+anatniilist = my_spmbatch_dirfilelist(ppparams.subanatdir,'nii',namefilters,false);
+
+if isempty(anatniilist)
+    fprintf(['No nifti files found for ' ppparams.substring ' ' ppparams.sesstring '\n'])
+    fprintf('\nPP_Error\n');
+    return
+end
+
+tmp = find(contains({anatniilist.name},'_Crop_1'));
+if ~isempty(tmp), anatniilist = anatniilist(tmp); end
+
+prefixlist = split({anatniilist.name},'sub-');
+prefixlist = prefixlist(:,:,1);
+
+tmp = find(strlength(prefixlist)==0);
+if ~isempty(tmp), ppparams.subanat = anatniilist(tmp).name; end
+
+% Normalized data
+
+ppanatniilist = my_spmbatch_dirfilelist(ppparams.preproc_anat,'nii',namefilters,false);
+
+if ~isempty(ppanatniilist)
+    tmp = find(contains({ppanatniilist.name},'_Crop_1'));
+    if ~isempty(tmp), ppanatniilist = ppanatniilist(tmp); end
+    
+    prefixlist = split({anatniilist.name},'sub-');
+    prefixlist = prefixlist(:,:,1);
+end
+    
+if params.reorient, anatprefix = 'e'; else anatprefix = ''; end
+
+if ~isempty(ppanatniilist) && params.anat.do_normalization
+    tmp = find(strcmp(prefixlist,['w' anatprefix]));
+
+    if isempty(tmp), tmp = find(strcmp(prefixlist,['wm' anatprefix])); end
+
+    if ~isempty(tmp), ppparams.wsubanat = ppanatniilist(tmp).name; end
+end
+
+% Segmented data
+
+if ~isempty(ppanatniilist) && params.anat.do_segmentation
+    tmp = find(strcmp(prefixlist,['wp1' anatprefix]));
+    if isempty(tmp), tmp = find(strcmp(prefixlist,['wc1' anatprefix])); end
+
+    if ~isempty(tmp), ppparams.wc1im = panatniilist(tmp).name; end
+
+    tmp = find(strcmp(prefixlist,['wp2' anatprefix]));
+    if isempty(tmp), tmp = find(strcmp(prefixlist,['wc2' anatprefix])); end
+
+    if ~isempty(tmp), ppparams.wc2im = panatniilist(tmp).name; end
+
+    tmp = find(strcmp(prefixlist,['wp3' anatprefix]));
+    if isempty(tmp), tmp = find(strcmp(prefixlist,['wc3' anatprefix])); end
+
+    if ~isempty(tmp), ppparams.wc3im = panatniilist(tmp).name; end
+end
+
+%% Do reoriention
 
 if params.reorient
-    [pth nm ext] = fileparts(ppparams.subanat);
-    transfile = fullfile(ppparams.subanatdir,[nm '_reorient.mat']);
+    nm = split(ppparams.subanat,'.nii');
+    transfile = fullfile(ppparams.subanatdir,[nm{1} '_reorient.mat']);
     if isfile(transfile)
         load(transfile,'M')
         transM = M;
     else        
-        transM = my_spmbatch_vol_set_com(ppparams.subanat);
+        transM = my_spmbatch_vol_set_com(fullfile(ppparams.subanatdir,ppparams.subanat));
         transM(1:3,4) = -transM(1:3,4);
     end
 
-    Vanat = spm_vol(ppparams.subanat);
+    Vanat = spm_vol(fullfile(ppparams.subanatdir,ppparams.subanat));
     MM = Vanat.private.mat0;
 
     Vanat = my_reset_orientation(Vanat,transM * MM);
 
     anatdat = spm_read_vols(Vanat);
 
-    Vanat.fname = spm_file(ppparams.subanat, 'prefix','r');
+    Vanat.fname = fullfile(ppparams.subanatdir,['e' ppparams.subanat]);
     Vanat.descrip = 'reoriented';
     Vanat = spm_create_vol(Vanat);
     Vanat = spm_write_vol(Vanat,anatdat);
 
-    ppparams.subanat = spm_file(ppparams.subanat, 'prefix','r');
-    delfiles{numel(delfiles)+1} = {ppparams.subanat};
-
-    auto_acpc_reorient(ppparams.subanat,'T1');
-
+    auto_acpc_reorient(Vanat.fname,'T1');
+else
+    copyfile(fullfile(ppparams.subanatdir,ppparams.subanat),fullfile(ppparams.subanatdir,['e' ppparams.subanat]));
 end
 
-if params.anat.do_segmentation
-    %%Do segmentation
+ppparams.subanat = ['e' ppparams.subanat];
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subanatdir,ppparams.subanat)};
 
-    preproc.channel.vols = {ppparams.subanat};
-    preproc.channel.biasreg = 0.001;
-    preproc.channel.biasfwhm = 60;
-    preproc.channel.write = [0 0];
-    preproc.tissue(1).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,1')};
-    preproc.tissue(1).ngaus = 1;
-    preproc.tissue(1).native = [1 0];
-    preproc.tissue(1).warped = [0 0];
-    preproc.tissue(2).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,2')};
-    preproc.tissue(2).ngaus = 1;
-    preproc.tissue(2).native = [1 0];
-    preproc.tissue(2).warped = [1 0];
-    preproc.tissue(3).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,3')};
-    preproc.tissue(3).ngaus = 2;
-    preproc.tissue(3).native = [1 0];
-    preproc.tissue(3).warped = [0 0];
-    preproc.tissue(4).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,4')};
-    preproc.tissue(4).ngaus = 3;
-    preproc.tissue(4).native = [0 0];
-    preproc.tissue(4).warped = [0 0];
-    preproc.tissue(5).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,5')};
-    preproc.tissue(5).ngaus = 4;
-    preproc.tissue(5).native = [0 0];
-    preproc.tissue(5).warped = [0 0];
-    preproc.tissue(6).tpm = {fullfile(spm('Dir'),'tpm','TPM.nii,6')};
-    preproc.tissue(6).ngaus = 2;
-    preproc.tissue(6).native = [0 0];
-    preproc.tissue(6).warped = [0 0];
-    preproc.warp.mrf = 1;
-    preproc.warp.cleanup = 1;
-    preproc.warp.reg = [0 0.001 0.5 0.05 0.2];
-    preproc.warp.affreg = 'mni';
-    preproc.warp.fwhm = 0;
-    preproc.warp.samp = 3;
-    preproc.warp.write = [0 1];
-    preproc.warp.vox = NaN;
-    preproc.warp.bb = [NaN NaN NaN;NaN NaN NaN];
+%% Do segmentation
 
-    spm_preproc_run(preproc);
+if params.anat.do_segmentation && ~isfield(ppparams,'wc1im') && ~isfield(ppparams,'wc2im') && ~isfield(ppparams,'wc3im')
+    fprintf('Do segmentation \n')
 
-    ppparams.c1im = spm_file(ppparams.subanat, 'prefix','c1');
-    ppparams.c2im = spm_file(ppparams.subanat, 'prefix','c2');
-    ppparams.c3im = spm_file(ppparams.subanat, 'prefix','c3');
+    % Normalization
+    params.vbm.do_normalization = params.anat.do_normalization;
+    params.vbm.normvox = params.anat.normvox;
 
-    c1dat = spm_read_vols(spm_vol(ppparams.c1im));
-    c2dat = spm_read_vols(spm_vol(ppparams.c2im));
-    c3dat = spm_read_vols(spm_vol(ppparams.c3im));
+    % Segmentation
+    params.vbm.do_segmentation = true;
+    if isfield (params.anat,'roi_atlas'), params.vbm.do_roi_atlas = params.anat.roi_atlas; else params.vbm.do_roi_atlas = false;
+    if isfield (params.anat,'do_surface'), params.vbm.do_surface = params.anat.do_surface; else params.vbm.do_surface = false;
 
-    anatmask = c1dat + c2dat + c3dat;
-    anatmask(anatmask>0.02) = 1;
-    anatmask(anatmask<1) = 0;
+    [delfiles,keepfiles] = my_spmbatch_cat12vbm(ppparams,params,delfiles,keepfiles);
 
-    Vanat = spm_vol(ppparams.subanat);
+    ppparams.wc1im = ['mwp1' ppparams.subanat];
+    ppparams.wc2im = ['mwp2' ppparams.subanat];
+    ppparams.wc3im = ['mwp3' ppparams.subanat];
+    ppparams.wsubanat = ['wm1' ppparams.subanat];
 
-    anatdat =spm_read_vols(Vanat);
-    anatdat(anatmask<1) = 0;
-
-    Vanat = spm_write_vol(Vanat,anatdat);
-
-    if params.anat.do_normalization
-        %%Normalization of the T1w anatomical scan and the segmentation maps
-        ppparams.deffile = spm_file(ppparams.subanat, 'prefix','y_');
-
-        segnormwrite.subj.def(1) = {ppparams.deffile};
-        segnormwrite.subj.resample = {ppparams.subanat,ppparams.c1im,ppparams.c2im,ppparams.c3im};
-        segnormwrite.woptions.bb = [-78 -112 -70;78 76 85];
-        segnormwrite.woptions.vox = params.anat.normvox;
-        segnormwrite.woptions.interp = 1;
-        segnormwrite.woptions.prefix = 'w';
-
-        spm_run_norm(segnormwrite);
-
-        delfiles{numel(delfiles)+1} = {ppparams.deffile};
-        delfiles{numel(delfiles)+1} = {ppparams.c1im};
-        delfiles{numel(delfiles)+1} = {ppparams.c2im};
-        delfiles{numel(delfiles)+1} = {ppparams.c3im};
-
-        keepfiles{numel(keepfiles)+1} = {spm_file(ppparams.subanat, 'prefix','w')};
-        keepfiles{numel(keepfiles)+1} = {spm_file(ppparams.c1im, 'prefix','w')};
-        keepfiles{numel(keepfiles)+1} = {spm_file(ppparams.c2im, 'prefix','w')};
-        keepfiles{numel(keepfiles)+1} = {spm_file(ppparams.c3im, 'prefix','w')};
-
-        ppparams.wc1im = spm_file(ppparams.subanat, 'prefix','wc1');
-        ppparams.wc2im = spm_file(ppparams.subanat, 'prefix','wc2');
-        ppparams.wc3im = spm_file(ppparams.subanat, 'prefix','wc3');
-        ppparams.wsubanat = spm_file(ppparams.subanat, 'prefix','w');
-    else
-        keepfiles{numel(keepfiles)+1} = {ppparams.c1im};
-        keepfiles{numel(keepfiles)+1} = {ppparams.c2im};
-        keepfiles{numel(keepfiles)+1} = {ppparams.c3im};
+    if ~params.anat.do_normalization
+        ppparams.c1im = ['p1' ppparams.subanat];
+        ppparams.c2im = ['p2' ppparams.subanat];
+        ppparams.c3im = ['p3' ppparams.subanat];
     end
-elseif params.anat.do_normalization
-    %%Normalization of the T1w anatomical scan
+end
 
-    anatnormestwrite.subj.vol = {ppparams.subanat};
-    anatnormestwrite.subj.resample = {ppparams.subanat};
+%% Do Normalization
+
+if params.anat.do_normalization && ~isfield(ppparams,'wsubanat')
+    fprintf('Do normalization \n')
+
+    anatnormestwrite.subj.vol = {fullfile(ppparams.subanatdir,ppparams.subanat)};
+    anatnormestwrite.subj.resample = {fullfile(ppparams.subanatdir,ppparams.subanat)};
     anatnormestwrite.eoptions.biasreg = 0.0001;
     anatnormestwrite.eoptions.biasfwhm = 60;
     anatnormestwrite.eoptions.tpm = {fullfile(spm('Dir'),'tpm','TPM.nii')};
@@ -182,9 +185,9 @@ elseif params.anat.do_normalization
 
     spm_run_norm(anatnormestwrite);
 
-    ppparams.deffile = spm_file(ppparams.subanat, 'prefix','y_');
+    ppparams.deffile = fullfile(ppparams.subanatdir,['y_' ppparams.subanat]);
     delfiles{numel(delfiles)+1} = {ppparams.deffile};
-    keepfiles{numel(keepfiles)+1} = {spm_file(ppparams.subanat, 'prefix','w')};
+    keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['w' ppparams.subanat])};
 
-    ppparams.wsubanat = spm_file(ppparams.subanat, 'prefix','w');
+    ppparams.wsubanat = ['w' ppparams.subanat];
 end
