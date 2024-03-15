@@ -18,7 +18,7 @@ dim_est_opts.fwhm = [5,5,5]; %FWHM
 comp_est = 0;
 
 for ie=ppparams.echoes
-    [tcomp_est, mdl, aic, kic] = icatb_estimate_dimension(ppparams.funcfile{ie}, mask, 'double', dim_est_opts);  
+    [tcomp_est, mdl, aic, kic] = icatb_estimate_dimension(fullfile(ppparams.ppfuncdir,ppparams.func(ie).sfuncfile), mask, 'double', dim_est_opts);  
 
     comp_est = comp_est + tcomp_est;
 end

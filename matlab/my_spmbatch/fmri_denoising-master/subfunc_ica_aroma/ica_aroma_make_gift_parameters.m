@@ -93,11 +93,10 @@ fprintf(fid,'\n%s',['numOfSess = ' num2str(n_sessions) ';']);
 % select all the files then leave empty.
 
 for i=1:numel(ppparams.echoes)
-    Vfunc = spm_vol(ppparams.funcfile{ppparams.echoes(i)});
-    [fpth,fnm,~] = fileparts(ppparams.funcfile{ppparams.echoes(i)});
+    Vfunc = spm_vol(fullfile(ppparams.ppfuncdir,ppparams.func(ppparams.echoes(i)).sfuncfile));
     
     fprintf(fid,'\n%s',['s1_s' num2str(i) ' = {']);
-    fprintf(fid,'%s',['''' fpth ''',''' fnm '.nii''']); % ',(1:' num2str(numel(Vfunc)) ')']); % subject 1 session 1
+    fprintf(fid,'%s',['''' ppparams.ppfuncdir ''',''' ppparams.func(ppparams.echoes(i)).sfuncfile '''']); % ',(1:' num2str(numel(Vfunc)) ')']); % subject 1 session 1
     fprintf(fid,'%s','};');
 end
 

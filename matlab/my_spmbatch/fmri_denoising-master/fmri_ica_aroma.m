@@ -11,16 +11,22 @@ t_r = jsondat.("RepetitionTime");
 
 curdir = pwd;
 
-do_ica(ppparams.fmask, t_r, ppparams);
 
-delfiles{numel(delfiles)+1} = {fullfile(ppparams.ppfuncdir, 'input_spatial_ica.m')};
-delfiles{numel(delfiles)+1} = {fullfile(ppparams.ppfuncdir, 'ica_dir')};
+ica_dir = fullfile(ppparams.ppfuncdir, 'ica_dir'); % path to ICs computed at previous step
+
+if ~exist(ica_dir,"dir")
+    fprintf('Start ICA \n') 
+
+    do_ica(ppparams.fmask, t_r, ppparams); 
+
+    delfiles{numel(delfiles)+1} = {fullfile(ppparams.ppfuncdir, 'input_spatial_ica.m')};
+end
 
 cd(curdir)
 
 %% AROMA (IC classification)
 
-ica_dir = fullfile(ppparams.ppfuncdir, 'ica_dir'); % path to ICs computed at previous step
+fprintf('Start ICA classification\n')
 
 noiseICdata = ica_aroma_classification(ppparams, ppparams.fmask, ica_dir, t_r);
 
@@ -28,9 +34,9 @@ delfiles{numel(delfiles)+1} = {fullfile(ppparams.ppfuncdir, 'headdata.nii')};
 
 %% Denoising 
 
-ppparams.rp_file = spm_file(ppparams.rp_file, 'prefix','ica-aroma_','ext','.txt');
+ppparams.ica_file = spm_file(fullfile(ppparams.ppfuncdir,ppparams.func(1).sfuncfile), 'prefix','ica_','ext','.txt');
 
-writematrix(noiseICdata,ppparams.rp_file,'Delimiter','tab');
+writematrix(noiseICdata,ppparams.ica_file,'Delimiter','tab');
 
 end
 

@@ -191,7 +191,7 @@ FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric
     
         writetable(T,aroma_file,'WriteRowNames',false);
                
-        [funcpath,funcfname,~] = fileparts(ppparams.funcfile{1});
+        funcfname = split(ppparams.func(1).wfuncfile,'.nii');
     
         fg = spm_figure('FindWin','Graphics');
     
@@ -213,7 +213,7 @@ FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric
         end
         
         % Path to noise ICs (might want to change path)
-        noise_ICs_dir = fullfile(aroma_dir, strcat('ICA-AROMA_ICs_noise_',funcfname,'.txt'));
+        noise_ICs_dir = fullfile(aroma_dir, strcat('ICA-AROMA_ICs_noise_',funcfname{1},'.txt'));
         
         if ~isempty(noiseICs) 
             if length(size(noiseICs)) > 0
