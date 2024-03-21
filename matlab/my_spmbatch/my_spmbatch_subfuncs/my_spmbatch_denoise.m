@@ -140,7 +140,7 @@ for ie=ppparams.echoes
     end
 
     prefixlist = split({edirniilist.name},'sub-');
-    prefixlist = prefixlist(:,:,1);
+    if numel(edirniilist)==1, aslprefixlist=aslprefixlist{1}; else aslprefixlist = aslprefixlist(:,:,1); end
 
     tmp = find(strcmp(prefixlist,ppparams.prefix));
     if ~isempty(tmp), ppparams.func(ie).wfuncfile = edirniilist(tmp).name; end

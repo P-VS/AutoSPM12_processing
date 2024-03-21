@@ -27,7 +27,7 @@ for ie=params.func.echoes
                 [~,fname,~] = fileparts(ppparams.func(ie).funcfile);
                 fparts = split(fname,'_bold');
                 
-                M0.fname = fullfile(ppparams.subpath,'perf',['e' fparts{1} '_echo-' num2str(ie) '_m0scan.nii']);
+                M0.fname = fullfile(ppparams.subpath,'perf',['e' fparts{1} '_m0scan.nii']);
                 M0.descrip = 'my_spmbatch - m0scan';
                 M0.n = [1 1];
                 M0 = spm_create_vol(M0);
@@ -36,7 +36,7 @@ for ie=params.func.echoes
         end
             
         ppparams.func(ie).efuncfile = ['e' ppparams.func(ie).funcfile];
-        ppparams.func(ie).prefix = [ppparams.func(ie).prefix 'e'];
+        ppparams.func(ie).prefix = ['e'];
 
         for k=1:numel(Vfunc)
             Vfunc(k).fname = fullfile(ppparams.subfuncdir,ppparams.func(ie).efuncfile);
@@ -53,6 +53,11 @@ for ie=params.func.echoes
                 auto_acpc_reorient([fullfile(ppparams.subfuncdir,ppparams.func(ie).efuncfile) ',1'],'EPI');
         
                 Vfunc = spm_vol(fullfile(ppparams.subfuncdir,ppparams.func(ie).efuncfile));
+                ppparams.MM = Vfunc(1).mat;
+            end
+            
+            if ~isfield(ppparams,'MM')
+                Vfunc = spm_vol(fullfile(ppparams.subfuncdir,ppparams.func(params.func.echoes(1)).efuncfile));
                 ppparams.MM = Vfunc(1).mat;
             end
         
@@ -156,39 +161,40 @@ for ie=params.func.echoes
 
     %% Save realignd series for ASL processing
     if params.func.isaslbold
-        fparts = split([ppparams.func(ie).prefix ppparams.func(ie).funcfile],'_bold');
+        fparts = split([ppparams.func(ie).funcfile],'_bold');
 
-        Vasl = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
+        deltamfile = fullfile(ppparams.subpath,'perf',[prefix fparts{1} '_asl.nii']);
 
-        for it=1:numel(Vasl)
-            deltamfile = fullfile(ppparams.subpath,'perf',[fparts{1} '_asl.nii']);
-
-            Vasl(it).fname = deltamfile;
-            Vasl(it).descrip = 'my_spmbatch - asl';
-            Vasl(it).n = [it 1];
+        if ~exist(deltamfile,'file')
+            if exist('funcdat','var')
+                Vasl = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
+        
+                for it=1:numel(Vasl)
+                    Vasl(it).fname = deltamfile;
+                    Vasl(it).descrip = 'my_spmbatch - asl';
+                    Vasl(it).n = [it 1];
+                end
+        
+                Vasl = myspm_write_vol_4d(Vasl,funcdat);
+            else
+                copyfile(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]),deltamfile);
+            end
         end
-
-        Vasl = myspm_write_vol_4d(Vasl,funcdat);
     end
 
     %% Removing the tagging if ASL-BOLD
-    if params.func.isaslbold
+    if params.func.isaslbold && exist('funcdat','var')
         dim = size(funcdat);
 
         taglabels = ones(dim(4),1);
         if contains(params.asl.tagorder(2),'non'), taglabels(2:2:dim(4)) = -1; else taglabels(1:2:dim(4)) = -1; end
 
-        ppparams.noiseregresssor = taglabels;
+        s = size(funcdat);
+        funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
 
-        bpfilter = params.denoise.do_bpfilter;
-        params.denoise.do_bpfilter = false;
+        [funcdat,~] = fmri_cleaning(funcdat(:,:),0,[],taglabels,[],'restoremean','on');
 
-        [funcdat,ppparams,~] = my_spmbatch_noiseregression(funcdat,ie,ppparams,params,keepfiles);
-
-        rmfield(ppparams,'noiseregresssor');
-        params.denoise.do_bpfilter = bpfilter;
-
-        delfiles{numel(delfiles)+1} = {ppparams.funcfile{ie}};
+        funcdat = reshape(funcdat(:,:),s);
     end
     
     %% Slice time correction

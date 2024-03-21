@@ -43,9 +43,9 @@ if exist('wfuncdat','var')
     s = size(wfuncdat);
     wfuncdat = reshape(wfuncdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
 
-    [wfuncdat,~] = fmri_cleaning(wfuncdat(:,:),1,bpfilter,confounds,[],'restoremean','on');
+    [wfuncdat,~] = fmri_cleaning(wfuncdat(:,:),params.denoise.polort,bpfilter,confounds,[],'restoremean','on');
 else
-    [wfuncdat,~] = fmri_cleaning(fullfile(ppparams.ppfuncdir,ppparams.func(ne).sfuncfile),1,bpfilter,confounds,[],'restoremean','on');
+    [wfuncdat,~] = fmri_cleaning(fullfile(ppparams.ppfuncdir,ppparams.func(ne).sfuncfile),params.denoise.polort,bpfilter,confounds,[],'restoremean','on');
 end
 
 wfuncdat = reshape(wfuncdat(:,:),s);

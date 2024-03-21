@@ -57,7 +57,7 @@ tmp = find(contains({anatniilist.name},'_Crop_1'));
 if ~isempty(tmp), anatniilist = anatniilist(tmp); end
 
 prefixlist = split({anatniilist.name},'sub-');
-prefixlist = prefixlist(:,:,1);
+if numel(anatniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
 
 tmp = find(strlength(prefixlist)==0);
 if ~isempty(tmp), ppparams.subanat = anatniilist(tmp).name; end
@@ -147,8 +147,8 @@ if params.anat.do_segmentation && ~isfield(ppparams,'wc1im') && ~isfield(ppparam
 
     % Segmentation
     params.vbm.do_segmentation = true;
-    if isfield (params.anat,'roi_atlas'), params.vbm.do_roi_atlas = params.anat.roi_atlas; else params.vbm.do_roi_atlas = false;
-    if isfield (params.anat,'do_surface'), params.vbm.do_surface = params.anat.do_surface; else params.vbm.do_surface = false;
+    if isfield (params.anat,'roi_atlas'), params.vbm.do_roi_atlas = params.anat.roi_atlas; else params.vbm.do_roi_atlas = false; end
+    if isfield (params.anat,'do_surface'), params.vbm.do_surface = params.anat.do_surface; else params.vbm.do_surface = false; end
 
     [delfiles,keepfiles] = my_spmbatch_cat12vbm(ppparams,params,delfiles,keepfiles);
 

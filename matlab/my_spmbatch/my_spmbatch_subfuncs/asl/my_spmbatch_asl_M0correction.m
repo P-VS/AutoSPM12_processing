@@ -1,7 +1,7 @@
 function [ppparams,delfiles,keepfiles] = my_spmbatch_asl_M0correction(ppparams,params,delfiles,keepfiles)
 
-if contains(params.aslge.T1correctionM0,'tisssue_maps')
-    preproc.channel.vols = {ppparams.subm0scan};
+if contains(params.asl.T1correctionM0,'tisssue_maps')
+    preproc.channel.vols = {ppparams.rm0scan};
     preproc.channel.biasreg = 0.001;
     preproc.channel.biasfwhm = 60;
     preproc.channel.write = [0 0];
@@ -41,11 +41,11 @@ if contains(params.aslge.T1correctionM0,'tisssue_maps')
     
     spm_preproc_run(preproc);
     
-    gmmap = spm_file(ppparams.subm0scan, 'prefix','c1');
-    wmmap = spm_file(ppparams.subm0scan, 'prefix','c2');
-    csfmap = spm_file(ppparams.subm0scan, 'prefix','c3');
+    gmmap = spm_file(ppparams.rm0scan, 'prefix','c1');
+    wmmap = spm_file(ppparams.rm0scan, 'prefix','c2');
+    csfmap = spm_file(ppparams.rm0scan, 'prefix','c3');
 
-    [ppth,fname,~] = fileparts(ppparams.subm0scan);
+    [ppth,fname,~] = fileparts(ppparams.rm0scan);
      
     delfiles{numel(delfiles)+1} = {fullfile(ppth,[fname '._seg8.mat'])};
     delfiles{numel(delfiles)+1} = {fullfile(ppth,['y_' fname '.nii'])};  
@@ -62,7 +62,7 @@ T1gm = 1.459;
 T1wm = 0.974;
 T1csf = 4.190;
 
-switch params.aslge.T1correctionM0
+switch params.asl.T1correctionM0
     case 'tisssue_maps'
         
         GM = spm_vol(gmmap);
@@ -78,7 +78,7 @@ switch params.aslge.T1correctionM0
     case 'T1_map'
         % WIP: not yet implemented
     case 'average_GM'
-        M0I = spm_vol(ppparams.subm0scan);
+        M0I = spm_vol(ppparams.rm0scan);
         m0dat = spm_read_vols(M0I);
         
         m0mask = my_spmbatch_mask(m0dat);
@@ -88,28 +88,27 @@ switch params.aslge.T1correctionM0
         T1dat = m0mask*T1gm;
 
     case 'average_WM'
-        M0I = spm_vol(ppparams.subm0scan);
+        M0I = spm_vol(ppparams.rm0scan);
         m0dat = spm_read_vols(M0I);
         
         m0mask = my_spmbatch_mask(m0dat);
 
         T1dat = m0mask*T1wm;
-
 end
 
-m0dat = spm_read_vols(spm_vol(ppparams.subm0scan));
+m0dat = spm_read_vols(spm_vol(ppparams.rm0scan));
 
 corr_T1 = 1 ./ (1-exp(-2.025/T1dat)); % M0 sscan @GE is a saturation rescovery SE with ST=2.0
 m0dat = m0dat .* corr_T1;
 
-VM0 = spm_vol(ppparams.subm0scan);
+VM0 = spm_vol(ppparams.rm0scan);
 
-VM0.fname = spm_file(ppparams.subm0scan, 'prefix','t');
+VM0.fname = spm_file(ppparams.rm0scan, 'prefix','t');
 VM0.descrip = 'T1 corrected M0 scan';
 VM0 = rmfield(VM0,'pinfo');
 VM0 = spm_create_vol(VM0);
 VM0 = spm_write_vol(VM0,m0dat);
 
-delfiles{numel(delfiles)+1} = {spm_file(ppparams.subm0scan, 'prefix','t')};
+delfiles{numel(delfiles)+1} = {spm_file(ppparams.rm0scan, 'prefix','t')};
 
-ppparams.subm0scan = VM0.fname;
+ppparams.tm0scan = VM0.fname;

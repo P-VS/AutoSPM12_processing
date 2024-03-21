@@ -3,7 +3,7 @@ function [funcdat,ppparams,keepfiles,delfiles] = my_spmbatch_realignunwarp(ne,pp
 %-Realign
 %--------------------------------------------------------------------------
 
-if ne==ppparams.echoes(1)
+if ne==params.func.echoes(1)
     eoptions.quality = 0.9;
     eoptions.sep = 4;
     eoptions.fwhm = 5;
@@ -12,35 +12,36 @@ if ne==ppparams.echoes(1)
     eoptions.wrap = [0 0 0];
     eoptions.PW = '';
 
-    spm_realign(ppparams.funcfile{ne},eoptions);
-
-    ppparams.rp_file = spm_file(ppparams.funcfile{ne}, 'prefix','rp_','ext','.txt');
-
-    if ppparams.meepi
-        [rppath,rpname,~] = fileparts(ppparams.rp_file);
-        nrpname = split(rpname,'bold_e');
-        nrp_file = fullfile(rppath,[nrpname{1} 'bold.txt']);
-
-        movefile(ppparams.rp_file,nrp_file);
-
-        ppparams.rp_file = nrp_file;
+    if params.func.isaslbold
+        spm_realign_asl(fullfile(ppparams.subfuncdir,ppparams.func(ne).efuncfile),eoptions);
+    else
+        spm_realign(fullfile(ppparams.subfuncdir,ppparams.func(ne).efuncfile),eoptions);
     end
 
-    keepfiles{numel(keepfiles)+1} = {ppparams.rp_file};
+    ppparams.func(1).rp_file = spm_file(fullfile(ppparams.subfuncdir,ppparams.func(ne).efuncfile), 'prefix','rp_','ext','.txt');
+
+    if params.func.meepi
+        [rppath,rpname,~] = fileparts(ppparams.func(1).rp_file);
+        nrpname = split(rpname,'_echo-');
+        nrp_file = fullfile(rppath,[nrpname{1} '_bold.txt']);
+
+        movefile(ppparams.func(1).rp_file,nrp_file);
+
+        ppparams.func(1).rp_file = nrp_file;
+    end
+
+    keepfiles{numel(keepfiles)+1} = {ppparams.func(1).rp_file};
     
 end
 
-[fpath,fname,~] = fileparts(ppparams.funcfile{ne});
-realign_mat = fullfile(fpath,[fname '.mat']);
+fname = split(ppparams.func(ne).efuncfile,'.nii');
+realign_mat = fullfile(ppparams.subfuncdir,[fname{1} '.mat']);
 
 delfiles{numel(delfiles)+1} = {realign_mat};
 
-if ppparams.meepi && ne>ppparams.echoes(1)
-    nrmname = split(ppparams.funcfile{ne},'bold_e');
-    orealign_nii = [nrmname{1} 'bold_e' num2str(ppparams.echoes(1)) '.nii'];
-
-    Vtemp1 = spm_vol(orealign_nii);
-    Vtemp2 = spm_vol(ppparams.funcfile{ne});
+if params.func.meepi && ne>params.func.echoes(1)
+    Vtemp1 = spm_vol(fullfile(ppparams.subfuncdir,ppparams.func(params.func.echoes(1)).efuncfile));
+    Vtemp2 = spm_vol(fullfile(ppparams.subfuncdir,ppparams.func(ne).efuncfile));
     for ti=1:numel(Vtemp2)
         spm_get_space([Vtemp2(ti).fname ',' num2str(ti)],Vtemp1(ti).mat);
     end
@@ -49,7 +50,7 @@ end
 if params.func.fieldmap
     %% Realign and unwarp the func series
         
-    jsondat = fileread(ppparams.funcjsonfile);
+    jsondat = fileread(fullfile(ppparams.subfuncdir,ppparams.func(ne).jsonfile));
     jsondat = jsondecode(jsondat);
     pedir = jsondat.PhaseEncodingDirection;
     
@@ -78,16 +79,16 @@ if params.func.fieldmap
     uweoptions.noi = 5;
     uweoptions.expround = 'Average';
     
-    uweflags.sfP = ppparams.vdm_file;
-    P1 = deblank(ppparams.funcfile{ne});
+    uweflags.sfP = ppparams.func(ne).vdm_file;
+    P1 = deblank(fullfile(ppparams.subfuncdir,ppparams.func(ne).efuncfile));
     if isempty(spm_file(P1,'number'))
         P1 = spm_file(P1,'number',1);
     end
     VP1 = spm_vol(P1);
     uweflags.M = VP1.mat;
-    ds = spm_uw_estimate(ppparams.funcfile{ne},uweoptions);
+    ds = spm_uw_estimate(fullfile(ppparams.subfuncdir,ppparams.func(ne).efuncfile),uweoptions);
     sess(1).ds = ds;
-    dsfile = spm_file(ppparams.funcfile{ne}, 'suffix','_uw', 'ext','.mat');
+    dsfile = spm_file(fullfile(ppparams.subfuncdir,ppparams.func(ne).efuncfile), 'suffix','_uw', 'ext','.mat');
     save(dsfile,'ds', spm_get_defaults('mat.format'));
 
     delfiles{numel(delfiles)+1} = {dsfile};
@@ -103,11 +104,14 @@ if params.func.fieldmap
     
     funcdat = my_spmbatch_uw_apply(cat(2,sess.ds),uwroptions);
 
-    ppparams.reffunc{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','meanu');
-    ppparams.funcfile{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','u');
+    ppparams.func(ne).meanfuncfile = ['meanu' ppparams.func(ne).efuncfile];
+    ppparams.func(ne).reffunc = ppparams.func(ne).meanfuncfile;
+    
+    ppparams.func(ne).ufuncfile = ['u' ppparams.func(ne).efuncfile];
+    ppparams.func(ne).prefix = ['u' ppparams.func(ne).prefix];
 
-    delfiles{numel(delfiles)+1} = {ppparams.reffunc{ne}};
-    delfiles{numel(delfiles)+1} = {ppparams.funcfile{ne}};
+    delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,ppparams.func(ne).meanfuncfile)};
+    delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,ppparams.func(ne).ufuncfile)};
 else
     %% Reslice the func series
     
@@ -117,14 +121,17 @@ else
     roptions.mask = 1;
     roptions.prefix = 'r';
     
-    my_spmbatch_reslice(ppparams.funcfile{ne},roptions);
+    my_spmbatch_reslice(fullfile(ppparams.subfuncdir,ppparams.func(ne).efuncfile),roptions);
 
-    ppparams.reffunc{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','mean');
-    ppparams.funcfile{ne} = spm_file(ppparams.funcfile{ne}, 'prefix','r');
+    ppparams.func(ne).meanfuncfile = ['mean' ppparams.func(ne).efuncfile];
+    ppparams.func(ne).reffunc = ppparams.func(ne).meanfuncfile;
 
-    V = spm_vol(ppparams.funcfile{ne});
+    ppparams.func(ne).rfuncfile = ['r' ppparams.func(ne).efuncfile];
+    ppparams.func(ne).prefix = ['r' ppparams.func(ne).prefix];
+
+    V = spm_vol(fullfile(ppparams.subfuncdir,ppparams.func(ne).rfuncfile));
     funcdat = spm_read_vols(V);
 
-    delfiles{numel(delfiles)+1} = {ppparams.reffunc{ne}};
-    delfiles{numel(delfiles)+1} = {ppparams.funcfile{ne}};
+    delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,ppparams.func(ne).meanfuncfile)};
+    delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,ppparams.func(ne).rfuncfile)};
 end

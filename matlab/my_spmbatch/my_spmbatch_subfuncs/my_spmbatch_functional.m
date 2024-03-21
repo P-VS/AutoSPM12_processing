@@ -74,6 +74,7 @@ if isempty(funcniilist)
     fprintf('\nPP_Error\n');
     return
 end
+
 if isempty(funcjsonlist)
     fprintf(['No json files found for ' ppparams.substring ' ' ppparams.sesstring ' task-' ppparams.task '\n'])
     fprintf('\nPP_Error\n');
@@ -177,7 +178,7 @@ for ie=params.func.echoes
     end
 
     prefixlist = split({edirniilist.name},'sub-');
-    prefixlist = prefixlist(:,:,1);
+    if numel(edirniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
 
     tmp = find(strlength(prefixlist)==0);
     if ~isempty(tmp), ppparams.func(ie).funcfile = edirniilist(tmp).name; end

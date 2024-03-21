@@ -1,19 +1,20 @@
-function [Vfunc,funcdat,funcfile] = my_spmbatch_readSEfMRI(subfuncstring,subfmridir,numdummy,ppparams,readvols)
+function [Vfunc,funcdat] = my_spmbatch_readSEfMRI(directory,file,numdummy,ppparams,readvols)
 
 %% Loading the fMRI time series and deleting dummy scans
 fprintf('Reading the data \n')
 
-funcfile = fullfile(subfmridir,[subfuncstring '.nii']);
+funcfile = fullfile(directory,file);
 
 Vfunc = spm_vol(funcfile);
 
 if ppparams.reorient
-    if ppparams.meepi
-        nfname = split(subfuncstring,'bold_e');
-        subfuncstring = [nfname{1} '_bold_e1'];
+    if contains(file,'_bold')
+        nfname = split(ppparams.func(1).funcfile,'.nii');
+    elseif contains(file,'_epi')
+        nfname = split(ppparams.func(1).fmapfile,'.nii');
     end
 
-    transfile = fullfile(subfmridir,[subfuncstring '_reorient.mat']);
+    transfile = fullfile(directory,[nfname{1} '_reorient.mat']);
     if isfile(transfile)
         load(transfile,'M')
         transM = M;
@@ -28,7 +29,10 @@ if ppparams.reorient
 end
 
 Vfunc = Vfunc(numdummy+1:end);
+
 if readvols<Inf
+    if readvols>numel(Vfunc), readvols = numel(Vfunc); end
+
     if readvols>1
         Vfunc = Vfunc(1:readvols);
     else

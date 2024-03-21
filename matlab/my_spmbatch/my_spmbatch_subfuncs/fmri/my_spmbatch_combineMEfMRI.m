@@ -1,24 +1,22 @@
-function [funcdat,Vout] = my_spmbatch_combineMEfMRI(tefuncdata,ppparams,params)
+function [funcdat,Vout,ppparams,delfiles] = my_spmbatch_combineMEfMRI(tefuncdata,ppparams,params,delfiles)
 %% Loading the fMRI time series and deleting dummy scans
 
-nechoes = numel(ppparams.echoes);
+nechoes = numel(params.func.echoes);
 
 for i=1:nechoes
-    funcjsonfile = fullfile(ppparams.subfmridir,[ppparams.subfuncstring num2str(ppparams.echoes(i)) '.json']);
-
-    jsondat = fileread(funcjsonfile);
+    jsondat = fileread(ppparams.func(params.func.echoes(i)).jsonfile);
     jsondat = jsondecode(jsondat);
 
     te(i) = 1000.0*jsondat.EchoTime;
 
-    Vfunc = tefuncdata{ppparams.echoes(i)}.Vfunc;
+    Vfunc = tefuncdata{params.func.echoes(i)}.Vfunc;
 
     if i==1
         voldim = Vfunc.dim;
         tefuncdat = zeros(voldim(1),voldim(2),voldim(3),numel(Vfunc),nechoes);
     end
 
-    tefuncdat(:,:,:,:,i) = tefuncdata{ppparams.echoes(i)}.data;
+    tefuncdat(:,:,:,:,i) = tefuncdata{params.func.echoes(i)}.data;
 end
 
 funcdat = zeros(voldim(1),voldim(2),voldim(3),numel(Vfunc));
@@ -137,15 +135,14 @@ switch params.func.combination
 
 end
 
-Vfunc = tefuncdata{ppparams.echoes(1)}.Vfunc;
+Vfunc = tefuncdata{params.func.echoes(1)}.Vfunc;
 
-[fpath,fname,~] = fileparts(Vfunc(1).fname);
-nfname = split(fname,'bold_e');
+nfname = split(ppparams.func(1).funcfile,'_echo-');
 
 Vout = Vfunc;
 
 for j=1:numel(Vout)
-    Vout(j).fname = fullfile(fpath,['c' ppparams.prefix nfname{1} 'bold.nii']);
+    Vout(j).fname = fullfile(ppparams.subfuncdir,['c' ppparams.func(1).prefix nfname{1} '_bold.nii']);
     Vout(j).descrip = 'my_spmbatch - combine echoes';
     Vout(j).pinfo = [1,0,0];
     Vout(j).dt = [spm_type('float32'),spm_platform('bigend')];
@@ -153,3 +150,8 @@ for j=1:numel(Vout)
 end
 
 Vout = myspm_write_vol_4d(Vout,funcdat);
+
+ppparams.func(1).cfuncfile = ['c' ppparams.func(1).prefix nfname{1} '_bold.nii'];
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,ppparams.func(1).cfuncfile)};
+
+ppparams.func(1).funcfile = [nfname{1} '_bold.nii'];
