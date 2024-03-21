@@ -70,27 +70,12 @@ if blipdir==1
 
     others_up = infuncdat;
     others_dw = [];
-
-    derfolder = fullfile(ppparams.subpath,'func');
 else
     source_up = out_coreg.rfiles{1};
     source_dw = reffunc;
 
     others_up = [];
     others_dw = infuncdat;
-
-    derfolder = fullfile(ppparams.subpath,'fmap');
-end
-
-d = dir(derfolder);
-ddir=[d(:).isdir];
-dfolders = {d(ddir).name};
-delfolders = find(contains(dfolders,'derivatives'));
-
-if ~isempty(delfolders)
-    for delf=1:numel(delfolders)
-        rmdir(fullfile(derfolder,dfolders{delfolders(delf)}),'s');
-    end
 end
 
 dummy_fast  = 1;
@@ -100,11 +85,9 @@ restrictdim = acid_get_defaults('hysco.restrictdim');
 dummy_ecc   = acid_get_defaults('hysco.dummy_ecc');
 res         = acid_get_defaults('hysco.resample');
 
-[VB1,~,~,hpth] = acid_hysco_main(source_up,source_dw,[],[],pedim,dummy_fast,dummy_ecc,alpha,beta,1,restrictdim,res,{''});
+[VB1,~,~] = acid_hysco(source_up,source_dw,[],[],pedim,dummy_fast,dummy_ecc,alpha,beta,restrictdim,res);
 
-[~,nm,~] = fileparts(VB1.fname);
-VB1fname = fullfile(hpth,[nm '.nii']); %correct error in HYSCO
+outfuncdat = my_spmbatch_hysco_write(source_up,others_up,others_dw,VB1.dat.fname,pedim,1);
 
-outfuncdat = my_spmbatch_hysco_write(source_up,others_up,others_dw,VB1fname,pedim,1);
-
-delfiles{numel(delfiles)+1} = {fullfile(derfolder,'derivatives')}; 
+derfolder = split(VB1.dat.fname,[filesep 'derivatives']);
+rmdir(fullfile(derfolder{1},'derivatives'),'s'); 
