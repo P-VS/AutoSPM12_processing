@@ -27,17 +27,14 @@ params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_studie_Linde/Data';
+datpath = '/Volumes/LaCie/UZ_Brussel/rTMS-fMRI_Interleaved/Data';
 
-sublist = [1:5,8:11,13:14,16:20];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [3];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [2]; %nsessions>0
 
-params.multiple_scans = false;
-params.num_scans = [1]; %File names are sub##_asl-#_...
+params.save_folder = 'preproc_aslge_test';
 
-params.save_folder = 'preproc_aslge_tm';
-
-params.use_parallel = true; 
+params.use_parallel = false; 
 params.maxprocesses = 4; %Best not too high to avoid memory problems
 params.keeplogs = false;
 
@@ -45,26 +42,35 @@ params.save_intermediate_results = false;
 
 params.reorient = true; % align data with MNI template to improve normalization
 
-%% In case data already processsed at the GE scanner (PCASL scan)
+%% Preprocessing anatomical data
+
+    params.preprocess_anatomical = false;
+
+    % Normalization
+    params.anat.do_normalization = true;
+    params.anat.normvox = [2 2 2];
+
+    % Segmentation ussing CAT12
+    params.anat.do_segmentation = false;
+    params.anat.roi_atlas = false;
     
-    params.asl.preprocessed_ge = true;
-    params.aslge.cbfmap_present = false;
+%% Preprocessing the PCASL data (based on GE PCASL scans)
 
-%% In case data already processsed at the GE scanner (PCASL scan)
+    params.preprocess_pcasl = true;
 
-    params.aslge.do_cbfmapping = true;
-    params.aslge.T1correctionM0 = 'tisssue_maps'; %T1 correction of M0scan: 'tisssue_maps', 'T1_map', 'average_GM', 'average_WM'
+    %In case of multiple runs in the same session exist
+    params.asl.mruns = false; %true if run number is in filename
+    params.asl.runs = [1]; %the index of the runs (in filenames run-(index))
+    
+    % In case data already processsed at the GE scanner (PCASL scan)
+    params.asl.do_cbfmapping = true;
+    params.asl.T1correctionM0 = 'tisssue_maps'; %T1 correction of M0scan: 'tisssue_maps', 'T1_map', 'average_GM', 'average_WM'
 
-%% Segmentation
-
-    params.asl.do_segmentation = false;
-
-%% Normalization
-
+    % Normalization
     params.asl.do_normalization = true;
     params.asl.normvox = [2 2 2];
-  
-%% Smoothing
+
+    % Smoothing
     params.asl.do_smoothing = true;
     params.asl.smoothfwhm = 6;
 

@@ -121,6 +121,7 @@ params.reorient = true; % align data with MNI template to improve normalization 
     % Band-pass filtering
     params.denoise.do_bpfilter = false;
     params.denoise.bpfilter = [0.008 Inf]; %no highpass filter is first 0, no lowpass filter is last Inf, default is [0.008 0.1]
+    params.denoise.polort = 0; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend)
 
     % aCompCor
     params.denoise.do_aCompCor = true;
