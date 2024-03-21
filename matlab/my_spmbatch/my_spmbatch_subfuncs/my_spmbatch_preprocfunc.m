@@ -204,27 +204,29 @@ for ie=params.func.echoes
         jsondat = fileread(ppparams.func(ie).jsonfile);
         jsondat = jsondecode(jsondat);
 
-        SliceTimes = jsondat.SliceTiming;
-        nsl= numel(jsondat.SliceTiming);
-        tr = jsondat.RepetitionTime;
+        if isfield(jsondat,'SliceTiming')
+            SliceTimes = jsondat.SliceTiming;
+            nsl= numel(jsondat.SliceTiming);
+            tr = jsondat.RepetitionTime;
+            
+            funcdat=my_spmbatch_st(funcdat,Vfunc,SliceTimes,tr);
         
-        funcdat=my_spmbatch_st(funcdat,Vfunc,SliceTimes,tr);
+            if ~(params.func.do_echocombination && ~contains(ppparams.func(ie).prefix,'c'))
+                for k=1:numel(Vfunc)
+                    Vfunc(k).fname = fullfile(ppparams.subfuncdir,['a' prefix ppparams.func(ie).funcfile]);
+                    Vfunc(k).descrip = 'my_spmbatch - slice time correction';
+                    Vfunc(k).n = [k 1];
+                end
     
-        if ~(params.func.do_echocombination && ~contains(ppparams.func(ie).prefix,'c'))
-            for k=1:numel(Vfunc)
-                Vfunc(k).fname = fullfile(ppparams.subfuncdir,['a' prefix ppparams.func(ie).funcfile]);
-                Vfunc(k).descrip = 'my_spmbatch - slice time correction';
-                Vfunc(k).n = [k 1];
+                Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
+    
+                ppparams.func(ie).prefix = ['a' prefix];
+    
+                ppparams.func(ie).afuncfile = fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
+                delfiles{numel(delfiles)+1} = {ppparams.func(ie).afuncfile};
+            else
+                ppparams.func(ie).prefix = ['a' prefix];
             end
-
-            Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
-
-            ppparams.func(ie).prefix = ['a' prefix];
-
-            ppparams.func(ie).afuncfile = fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
-            delfiles{numel(delfiles)+1} = {ppparams.func(ie).afuncfile};
-        else
-            ppparams.func(ie).prefix = ['a' prefix];
         end
     elseif exist('funcdat','var')
         if ~(params.func.do_echocombination && ~contains(ppparams.func(ie).prefix,'c'))
