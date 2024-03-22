@@ -412,7 +412,7 @@ if params.denoise.do_noiseregression || params.denoise.do_bpfilter
     fprintf('Do noise regression \n')
 
     for ie=ppparams.echoes
-        [~,wfuncdat] = my_spmbatch_readSEfMRI(ppparams.ppfuncdir,ppparams.func(1).sfuncfile,0,ppparams,Inf);
+        [~,wfuncdat] = my_spmbatch_readSEfMRI(ppparams.ppfuncdir,ppparams.func(ie).sfuncfile,0,ppparams,Inf);
 
         [~,ppparams,keepfiles] = my_spmbatch_noiseregression(wfuncdat,ie,ppparams,params,keepfiles);
 
