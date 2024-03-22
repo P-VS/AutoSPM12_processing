@@ -192,9 +192,10 @@ for ie=params.func.echoes
         ppparams.func(ie).prefix = studyprefix;
 
         tmp = find(strcmp(prefixlist,'fe'));
-        if ~isempty(tmp), ppparams.func(ie).fefuncfile = edirniilist(tmp).name; end
-
-        ppparams.func(ie).reffunc = ppparams.func(ie).fefuncfile;
+        if ~isempty(tmp),
+            ppparams.func(ie).fefuncfile = edirniilist(tmp).name;
+            ppparams.func(ie).reffunc = ppparams.func(ie).fefuncfile;
+        end
     end
 
     if params.func.do_realignment, studyprefix = ['r' studyprefix]; end
@@ -204,9 +205,10 @@ for ie=params.func.echoes
         ppparams.func(ie).rfuncfile = edirniilist(tmp).name;
 
         tmp = find(strcmp(prefixlist,['mean' ppparams.func(ie).prefix]));
-        if ~isempty(tmp), ppparams.func(ie).meanfuncfile = edirniilist(tmp(1)).name; end
-
-        ppparams.func(ie).reffunc = ppparams.func(ie).meanfuncfile;
+        if ~isempty(tmp)
+            ppparams.func(ie).meanfuncfile = edirniilist(tmp(1)).name;
+            ppparams.func(ie).reffunc = ppparams.func(ie).meanfuncfile;
+        end
 
         ppparams.func(ie).prefix = studyprefix;
     end
