@@ -140,7 +140,7 @@ for ie=ppparams.echoes
     end
 
     prefixlist = split({edirniilist.name},'sub-');
-    if numel(edirniilist)==1, aslprefixlist=aslprefixlist{1}; else aslprefixlist = aslprefixlist(:,:,1); end
+    if numel(edirniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
 
     tmp = find(strcmp(prefixlist,ppparams.prefix));
     if ~isempty(tmp), ppparams.func(ie).wfuncfile = edirniilist(tmp).name; end
@@ -359,7 +359,6 @@ if params.denoise.do_mot_derivatives && ~isfield(ppparams,'der_file')
     confounds = load(ppparams.rp_file);
     confounds = confounds(:,1:6);
     confounds = cat(2,confounds,cat(1,zeros(1,6),diff(confounds)));
-    confounds = cat(1,zeros(1,6),diff(confounds));
     confounds = cat(2,confounds,power(confounds,2));
 
     ppparams.der_file = spm_file(ppparams.rp_file, 'prefix','der_','ext','.txt');
