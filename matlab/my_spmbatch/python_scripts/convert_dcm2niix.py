@@ -49,11 +49,11 @@ def set_preprocessing_parameters():
     """
     pp_params = {}
     
-    pp_params['datpath'] = '/Volumes/LaCie/UZ_Brussel/rTMS-fMRI_Interleaved/Data'  #No spaties in the path name
+    pp_params['datpath'] = '/Volumes/LaCie/UZ_Brussel/asl_bold/uzb_test_data'  #No spaties in the path name
     
     first_sub = 1
     last_sub = 1
-    pp_params['sublist'] = [3] #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
+    pp_params['sublist'] = [1] #list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = list(range(first_sub,last_sub+1))
     pp_params['sub_digits'] = 2 #if 2 the result will be sub-01, if 3 the result will be sub-001
     
     """
@@ -79,7 +79,7 @@ def set_preprocessing_parameters():
     
     pp_params['mri_data'] = []
     
-    scan_1 = ('dicom/voor/asl','perf','asl','',[1],[1],False,True,True,False)
+    scan_1 = ('dcm/3DT1','anat','T1w','',[1],[1],False,False,False,False)
     
     pp_params['mri_data'].append([scan_1])
     
@@ -115,7 +115,7 @@ def load_d2n_params(subdir,folder,acqtype,seqtype,task,session,run):
     crop = False
     ignore_deriv = False
     
-    if 'anat' in seqtype:
+    if 'anat' in acqtype:
         crop = True
         ignore_deriv = True
     
@@ -170,6 +170,12 @@ def rename_file(in_files,seqtype,add_acq,add_dir,add_run,add_echo):
             if len(test)>0: add_echo=True
             
         if add_echo: new_file = new_file+'_echo-'+ph_split[0]
+        
+        if 'T1w' in seqtype: 
+            new_file = new_file+'_T1w'
+            
+            if os.path.isfile(ifile+'_Crop_1.nii'):
+                os.rename(ifile+'_Crop_1.nii',new_file+'_Crop_1.nii')
         
         if 'fieldmap' in seqtype: #In some older studies done on our GE scanner: 2 GE scans at different TEs (no longer used)
             if '_ph' in echo_split[1]: #Based on sequence names
