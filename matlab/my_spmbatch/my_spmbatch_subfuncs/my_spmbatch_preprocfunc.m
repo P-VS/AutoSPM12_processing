@@ -187,7 +187,7 @@ for ie=params.func.echoes
         dim = size(funcdat);
 
         taglabels = ones(dim(4),1);
-        if contains(params.asl.tagorder(2),'non'), taglabels(2:2:dim(4)) = -1; else taglabels(1:2:dim(4)) = -1; end
+        if contains(params.asl.tagorder(2),'con'), taglabels(2:2:dim(4)) = -1; else taglabels(1:2:dim(4)) = -1; end
 
         s = size(funcdat);
         funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
