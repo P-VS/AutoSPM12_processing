@@ -197,36 +197,34 @@ for ie=params.func.echoes
         funcdat = reshape(funcdat(:,:),s);
     end
     
+    jsondat = fileread(ppparams.func(ie).jsonfile);
+    jsondat = jsondecode(jsondat);
+
     %% Slice time correction
-    if params.func.do_slicetime  && ~contains(ppparams.func(ie).prefix,'a')
+    if params.func.do_slicetime  && ~contains(ppparams.func(ie).prefix,'a') && if isfield(jsondat,'SliceTiming')
         fprintf('Do slice time correction\n')
         
-        jsondat = fileread(ppparams.func(ie).jsonfile);
-        jsondat = jsondecode(jsondat);
-
-        if isfield(jsondat,'SliceTiming')
-            SliceTimes = jsondat.SliceTiming;
-            nsl= numel(jsondat.SliceTiming);
-            tr = jsondat.RepetitionTime;
-            
-            funcdat=my_spmbatch_st(funcdat,Vfunc,SliceTimes,tr);
+        SliceTimes = jsondat.SliceTiming;
+        nsl= numel(jsondat.SliceTiming);
+        tr = jsondat.RepetitionTime;
         
-            if ~(params.func.do_echocombination && ~contains(ppparams.func(ie).prefix,'c'))
-                for k=1:numel(Vfunc)
-                    Vfunc(k).fname = fullfile(ppparams.subfuncdir,['a' prefix ppparams.func(ie).funcfile]);
-                    Vfunc(k).descrip = 'my_spmbatch - slice time correction';
-                    Vfunc(k).n = [k 1];
-                end
+        funcdat=my_spmbatch_st(funcdat,Vfunc,SliceTimes,tr);
     
-                Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
-    
-                ppparams.func(ie).prefix = ['a' prefix];
-    
-                ppparams.func(ie).afuncfile = fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
-                delfiles{numel(delfiles)+1} = {ppparams.func(ie).afuncfile};
-            else
-                ppparams.func(ie).prefix = ['a' prefix];
+        if ~(params.func.do_echocombination && ~contains(ppparams.func(ie).prefix,'c'))
+            for k=1:numel(Vfunc)
+                Vfunc(k).fname = fullfile(ppparams.subfuncdir,['a' prefix ppparams.func(ie).funcfile]);
+                Vfunc(k).descrip = 'my_spmbatch - slice time correction';
+                Vfunc(k).n = [k 1];
             end
+
+            Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
+
+            ppparams.func(ie).prefix = ['a' prefix];
+
+            ppparams.func(ie).afuncfile = fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
+            delfiles{numel(delfiles)+1} = {ppparams.func(ie).afuncfile};
+        else
+            ppparams.func(ie).prefix = ['a' prefix];
         end
     elseif exist('funcdat','var')
         if ~(params.func.do_echocombination && ~contains(ppparams.func(ie).prefix,'c'))
