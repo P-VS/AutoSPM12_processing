@@ -106,7 +106,6 @@ if params.func.fieldmap || params.func.pepolar
             params.func.pepolar = false;
     
             fprintf(['No fmap files found for ' ppparams.substring ' ' ppparams.sesstring ' run ' num2str(ppparams.run) ' task-' ppparams.task '\n'])
-            fprintf('\nPP_Error\n');
         end
     elseif params.func.fieldmap
 
@@ -192,7 +191,7 @@ for ie=params.func.echoes
         ppparams.func(ie).prefix = studyprefix;
 
         tmp = find(strcmp(prefixlist,'fe'));
-        if ~isempty(tmp),
+        if ~isempty(tmp)
             ppparams.func(ie).fefuncfile = edirniilist(tmp).name;
             ppparams.func(ie).reffunc = ppparams.func(ie).fefuncfile;
         end
@@ -269,6 +268,7 @@ for ie=params.func.echoes
             tmp = find(or(contains({fmapniilist.name},['echo-' num2str(ie)]),contains({fmapniilist.name},['_e' num2str(ie)])));
             if isempty(tmp)
                 fprintf(['no fmap data found for echo ' num2str(ie) '\n'])
+                fprintf('\nPP_Error\n');
                 return
             end
         
