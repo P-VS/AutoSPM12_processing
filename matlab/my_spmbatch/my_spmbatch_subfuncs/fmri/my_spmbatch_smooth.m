@@ -102,4 +102,4 @@ sV=zeros([P.dim(1),P.dim(2),P.dim(3)]);
 
 spm_conv_vol(V,sV,x,y,z,-[i,j,k]);
 
-Q = spm_write_vol(Q,sV);
+if ischar(Q), Q = spm_write_vol(Q,sV); end

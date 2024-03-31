@@ -10,6 +10,8 @@ Vfunc = spm_vol(funcfile);
 if ppparams.reorient
     if contains(file,'_bold')
         nfname = split(ppparams.func(1).funcfile,'.nii');
+    elseif contains(file,'_asl')
+        nfname = split(ppparams.asl(1).aslfile,'.nii');
     elseif contains(file,'_epi')
         nfname = split(ppparams.func(1).fmapfile,'.nii');
     end

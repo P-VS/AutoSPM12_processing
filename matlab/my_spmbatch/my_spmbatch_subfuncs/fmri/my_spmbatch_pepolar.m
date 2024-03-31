@@ -13,11 +13,20 @@ delfiles{numel(delfiles)+1} = {ppfunc};
 
 %% coregister fmap to func
 
-if isfield(ppparams.func(ne),'reffuncfile')
-    reffunc = fullfile(ppparams.subfuncdir,ppparams.func(ne).reffuncfile);
+if isfield(ppparams.func(ne),'reffunc')
+    reffunc = ppparams.func(ne).reffunc;
 else
-    reffunc = fullfile(ppparams.subfuncdir,[ppparams.func(ne).funcfile ',1']);
+    reffunc = [ppparams.func(ie).prefix ppparams.func(ne).funcfile ',1'];
 end
+
+refsplit1 = split(reffunc,'sub-');
+refsplit2 = split(refsplit1{2},'_');
+
+nreffunc = ['sub-' refsplit2{1} '_' refsplit1{1} '_' refsplit1{2}];
+
+copyfile(fullfile(ppparams.subfuncdir,reffunc),fullfile(ppparams.subfuncdir,nreffunc));
+
+reffunc = fullfile(ppparams.subfuncdir,nreffunc);
 
 estwrite.ref(1) = {reffunc};
 estwrite.source(1) = {ppfunc};
@@ -85,9 +94,15 @@ restrictdim = acid_get_defaults('hysco.restrictdim');
 dummy_ecc   = acid_get_defaults('hysco.dummy_ecc');
 res         = acid_get_defaults('hysco.resample');
 
-[VB1,~,~] = acid_hysco(source_up,source_dw,[],[],pedim,dummy_fast,dummy_ecc,alpha,beta,restrictdim,res);
+try
+    [VB1,~,~] = acid_hysco(source_up,source_dw,[],[],pedim,dummy_fast,dummy_ecc,alpha,beta,restrictdim,res);
+catch
+    [VB1,~,~] = acid_hysco_main(source_up,source_dw,[],[],pedim,dummy_fast,dummy_ecc,alpha,beta,1,restrictdim,res,{''});
+end
 
 outfuncdat = my_spmbatch_hysco_write(source_up,others_up,others_dw,VB1.dat.fname,pedim,1);
 
 derfolder = split(VB1.dat.fname,[filesep 'derivatives']);
 rmdir(fullfile(derfolder{1},'derivatives'),'s'); 
+
+delete(reffunc);
