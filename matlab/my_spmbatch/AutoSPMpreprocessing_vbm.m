@@ -49,7 +49,7 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
     % Normalization
     params.vbm.do_normalization = true;
-    params.vbm.normvox = 1.5;
+    params.vbm.normvox = [0.5 0.5 0.5];
 
     % Segmentation
     params.vbm.do_segmentation = true;

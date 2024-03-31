@@ -31,14 +31,14 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
+datpath = '/Volumes/LaCie/UZ_Brussel/asl_bold/uzb_test_data';
 
-sublist = [3];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-params.save_folder = 'preproc_test_me';
+params.save_folder = 'preproc_rest';
 
-task ={'ME-EFT'};
+task ={'rest'};
 
 params.use_parallel = false; 
 params.maxprocesses = 4; %Best not too high to avoid memory problems
@@ -50,11 +50,11 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
 %% Preprocessing anatomical data
 
-    params.preprocess_anatomical = true;
+    params.preprocess_anatomical = false;
 
     % Normalization
     params.anat.do_normalization = true;
-    params.anat.normvox = [1.5 1.5 1.5];
+    params.anat.normvox = [2 2 2]; %[1.5 1.5 1.5];
 
     % Segmentation ussing CAT12
     params.anat.do_segmentation = true;
@@ -103,32 +103,32 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
 %% Denoising
 
-    params.do_denoising = false; 
+    params.do_denoising = true; 
 
         %if do_denoising = true and preprocess_functional = false -> only denoising, other preprocessing already done
-        params.denoise.prefix = 'swcaure';
+        params.denoise.prefix = 'swure';
 
     %In case of multiple runs in the same session exist
     params.denoise.mruns = false; %true if run number is in filename
     params.denoise.runs = [1]; %the index of the runs (in filenames run-(index))
 
     params.denoise.meepi = true;
-    params.denoise.echoes = [1,2]; %the numbers of the echoes in ME-fMRI. 
+    params.denoise.echoes = [1,2,3]; %the numbers of the echoes in ME-fMRI. 
     
     % Extend motion regressors with derivatives and squared regressors
     params.denoise.do_mot_derivatives = true; %derivatives+squares (24 regressors)
 
     % Band-pass filtering
     params.denoise.do_bpfilter = false;
-    params.denoise.bpfilter = [0.008 Inf]; %no highpass filter is first 0, no lowpass filter is last Inf, default is [0.008 0.1]
-    params.denoise.polort = 0; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend)
+    params.denoise.bpfilter = [0.008 0.1]; %no highpass filter is first 0, no lowpass filter is last Inf, default is [0.008 0.1]
+    params.denoise.polort = 2; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend)
 
     % aCompCor
     params.denoise.do_aCompCor = true;
     params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal
 
     % ICA-AROMA
-    params.denoise.do_ICA_AROMA = true;
+    params.denoise.do_ICA_AROMA = false;
 
     % Noise regression / remove ICA-AROMA noise components
     params.denoise.do_noiseregression = true;
