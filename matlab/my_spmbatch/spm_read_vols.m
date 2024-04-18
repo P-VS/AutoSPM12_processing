@@ -38,10 +38,14 @@ for i=1:n
     Range(i) = ni(1);
 end
 
-Nii = load_untouch_nii(V(1).fname,Range);
-Y = Nii.img;
+Nii = my_spmbatch_load_nii(V(1).fname,Range);
+tY = Nii.img;
+
 for i=1:n
-    Y(:,:,:,i) = Y(:,:,:,i) * V(i).pinfo(1,1) + V(i).pinfo(2,1);
+    ttY = tY(:,:,:,i);
+    ttY = ttY * V(i).pinfo(1,1) + V(i).pinfo(2,1);
+    
+    Y(:,:,:,i) = ttY;
 end
 
 %-Apply implicit zero mask for image datatypes without a NaNrep

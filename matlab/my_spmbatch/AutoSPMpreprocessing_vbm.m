@@ -66,6 +66,11 @@ restoredefaultpath
 if exist(params.spm_path,'dir'), addpath(genpath(params.spm_path)); end
 if exist(params.my_spmbatch_path,'dir'), addpath(genpath(params.my_spmbatch_path)); end
 
+old_spm_read_vols_file=fullfile(spm('Dir'),'spm_read_vols.m');
+new_spm_read_vols_file=fullfile(spm('Dir'),'old_spm_read_vols.m');
+
+if isfile(old_spm_read_vols_file), movefile(old_spm_read_vols_file,new_spm_read_vols_file); end
+  
 fprintf('Start with preprocessing \n')
 
 curdir = pwd;
@@ -84,6 +89,8 @@ my_spmbatch_start_vbmprocessing(sublist,nsessions,datpath,params);
 spm_figure('close',allchild(0));
 
 cd(curdir)
+
+if isfile(new_spm_read_vols_file), movefile(new_spm_read_vols_file,old_spm_read_vols_file); end
 
 fprintf('\nDone\n')
 

@@ -31,20 +31,18 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/asl_bold/uzb_test_data';
+datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [10];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-params.save_folder = 'preproc_rest';
+params.save_folder = 'preproc_test';
 
-task ={'rest'};
+task ={'ME-EFT'};
 
 params.use_parallel = false; 
 params.maxprocesses = 4; %Best not too high to avoid memory problems
 params.keeplogs = false;
-
-params.save_intermediate_results = false; 
 
 params.reorient = true; % align data with MNI template to improve normalization and segmentation
 
@@ -62,7 +60,7 @@ params.reorient = true; % align data with MNI template to improve normalization 
     
 %% Preprocessing functional data
 
-    params.preprocess_functional = false;
+    params.preprocess_functional = true;
 
     %In case of multiple runs in the same session exist
     params.func.mruns = false; %true if run number is in filename
@@ -70,7 +68,7 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
     % If ME-fMRI, combine the multiple eccho images
     params.func.meepi = true; %true if echo number is in filename
-    params.func.echoes = [1,2]; %the index of the echoes in ME-fMRI. (in filenames echo-(index))
+    params.func.echoes = [1]; %the index of the echoes in ME-fMRI. (in filenames echo-(index))
     params.func.combination = 'none'; 
     %none: all echoes are preprocessed separatly
     %average: The combination is the average of the multiple echo images
@@ -103,7 +101,7 @@ params.reorient = true; % align data with MNI template to improve normalization 
 
 %% Denoising
 
-    params.do_denoising = true; 
+    params.do_denoising = false; 
 
         %if do_denoising = true and preprocess_functional = false -> only denoising, other preprocessing already done
         params.denoise.prefix = 'swure';
@@ -147,6 +145,11 @@ if exist(params.GroupICAT_path,'dir'), addpath(genpath(params.GroupICAT_path)); 
 if exist(params.spm_path,'dir'), addpath(genpath(params.spm_path)); end
 if exist(params.my_spmbatch_path,'dir'), addpath(genpath(params.my_spmbatch_path)); end
 
+old_spm_read_vols_file=fullfile(spm('Dir'),'spm_read_vols.m');
+new_spm_read_vols_file=fullfile(spm('Dir'),'old_spm_read_vols.m');
+
+if isfile(old_spm_read_vols_file), movefile(old_spm_read_vols_file,new_spm_read_vols_file); end
+  
 fprintf('Start with preprocessing \n')
 
 curdir = pwd;
@@ -165,6 +168,8 @@ my_spmbatch_start_fmripreprocessing(sublist,nsessions,task,datpath,params)
 spm_figure('close',allchild(0));
 
 cd(curdir)
+
+if isfile(new_spm_read_vols_file), movefile(new_spm_read_vols_file,old_spm_read_vols_file); end
 
 fprintf('\nDone\n')
 

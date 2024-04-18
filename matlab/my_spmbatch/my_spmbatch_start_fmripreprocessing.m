@@ -2,6 +2,8 @@ function my_spmbatch_start_fmripreprocessing(sublist,nsessions,task,datpath,para
 
 params.func.isaslbold = false;
 
+params.save_intermediate_results = true; 
+
 if ~params.func.mruns, params.func.runs = [1]; end
 if params.func.meepi && numel(params.func.echoes)==1, params.func.combination='none'; end
 if params.func.meepi && ~contains(params.func.combination,'none'), params.func.do_echocombination = true; else params.func.do_echocombination = false; end

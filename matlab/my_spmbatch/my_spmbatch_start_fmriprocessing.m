@@ -7,6 +7,8 @@ params.use_echoes_as_sessions = false;
 if params.meepi && ~contains(params.fmri_prefix,'c'), params.use_echoes_as_sessions = true; end
 if params.meepi && contains(params.fmri_prefix,'c'), params.echoes = [1]; end
 
+if ~contains(params.fmri_prefix,'s'), params.do_smoothing = true; else params.do_smoothing = false; end
+
 if params.mruns
     switch params.use_runs
         case 'separately'
