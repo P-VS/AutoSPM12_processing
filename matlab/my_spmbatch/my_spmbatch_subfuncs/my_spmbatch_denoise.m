@@ -145,10 +145,7 @@ for ie=ppparams.echoes
     tmp = find(strcmp(prefixlist,ppparams.prefix));
     if ~isempty(tmp), ppparams.func(ie).wfuncfile = edirniilist(tmp).name; end
 
-    tmp = find(strcmp(prefixlist,['s' ppparams.prefix]));
-    if ~isempty(tmp), ppparams.func(ie).sfuncfile = edirniilist(tmp).name; end
-
-    tmp = find(strcmp(prefixlist,['fmask_s' ppparams.prefix]));
+    tmp = find(strcmp(prefixlist,['fmask_' ppparams.prefix]));
     if ~isempty(tmp), ppparams.fmask = fullfile(edirniilist(tmp).folder,edirniilist(tmp).name); end
 
     if ie==ppparams.echoes(1)
@@ -160,39 +157,6 @@ for ie=ppparams.echoes
 
         tmp = find(strcmp(prefixlist,['c3' ppparams.prefix]));
         if ~isempty(tmp), ppparams.wc3im = fullfile(edirniilist(tmp).folder,edirniilist(tmp).name); end
-    end
-
-    %% Smooth func 
-    if ~isfield(ppparams.func(ie),'sfuncfile')
-        if ~isfield(ppparams.func(ie),'wfuncfile')
-            fprintf(['no preprocessed fmri data found for echo ' num2str(ie) '\n'])
-            fprintf('\nPP_Error\n');
-            return
-        end
-
-        fprintf('Do smoothing \n')
-    
-        Vfunc = spm_vol(fullfile(ppparams.ppfuncdir,ppparams.func(ie).wfuncfile));
-        wfuncdat = spm_read_vols(Vfunc);
-
-        spm_progress_bar('Init',numel(Vfunc),'Smoothing','volumes completed');
-
-        for i=1:numel(Vfunc)
-            [pth,nm,~] = fileparts(Vfunc(i).fname);
-
-            Q = fullfile(pth, ['s' nm  '.nii,' num2str(Vfunc(i).n)]);
-            my_spmbatch_smooth(wfuncdat(:,:,:,i),Vfunc(i),Q,[params.func.smoothfwhm params.func.smoothfwhm params.func.smoothfwhm],0);
-
-            spm_progress_bar('Set',i);
-        end
-
-        spm_progress_bar('Clear');
-
-        ppparams.func(ie).sfuncfile = ['s' ppparams.func(ie).wfuncfile];   
-
-        clear wfuncdat
-
-        fprintf('Done smoothing \n')
     end
 end
 
@@ -266,13 +230,13 @@ if params.denoise.do_ICA_AROMA || params.denoise.do_DENN
     if ~isfield(ppparams,'fmask')
         fprintf('Make mask \n')
     
-        [Vmask,fmaskdat] = my_spmbatch_readSEfMRI(ppparams.ppfuncdir,ppparams.func(1).sfuncfile,0,ppparams,10);
+        [Vmask,fmaskdat] = my_spmbatch_readSEfMRI(ppparams.ppfuncdir,ppparams.func(1).wfuncfile,0,ppparams,10);
         
         % Functional mask
         func_mask = my_spmbatch_mask(fmaskdat);
         
         Vfuncmask = Vmask(1);
-        Vfuncmask.fname = fullfile(ppparams.ppfuncdir,['fmask_' ppparams.func(1).sfuncfile]); % Change name to contain subjectID
+        Vfuncmask.fname = fullfile(ppparams.ppfuncdir,['fmask_' ppparams.func(1).wfuncfile]); % Change name to contain subjectID
         Vfuncmask.descrip = 'funcmask';
         Vfuncmask = rmfield(Vfuncmask, 'pinfo'); %remove pixel info so that there is no scaling factor applied so the values
         spm_write_vol(Vfuncmask, func_mask);
@@ -412,12 +376,43 @@ if params.denoise.do_noiseregression || params.denoise.do_bpfilter
     fprintf('Do noise regression \n')
 
     for ie=ppparams.echoes
-        [~,wfuncdat] = my_spmbatch_readSEfMRI(ppparams.ppfuncdir,ppparams.func(ie).sfuncfile,0,ppparams,Inf);
+        [Vfunc,wfuncdat] = my_spmbatch_readSEfMRI(ppparams.ppfuncdir,ppparams.func(ie).wfuncfile,0,ppparams,Inf);
 
         [~,ppparams,keepfiles] = my_spmbatch_noiseregression(wfuncdat,ie,ppparams,params,keepfiles);
 
-        clear wfuncdat
-    end
+        fprintf('Done noise regresion \n')
 
-    fprintf('Done noise regresion \n')
+        %% Smooth func 
+        fprintf('Do smoothing \n')
+
+        Vout = Vfunc;
+        swfuncdat = zeros(size(wfuncdat));
+
+        spm_progress_bar('Init',numel(Vfunc),'Smoothing','volumes completed');
+
+        for i=1:numel(Vfunc)
+            tswfuncdat = my_spmbatch_smooth(wfuncdat(:,:,:,i),Vfunc(i),[],[params.func.smoothfwhm params.func.smoothfwhm params.func.smoothfwhm],0);
+
+            swfuncdat(:,:,:,i) = tswfuncdat;
+
+            spm_progress_bar('Set',i);
+        end
+
+        spm_progress_bar('Clear');
+
+        for j=1:numel(Vout)
+            Vout(j).fname = fullfile(ppparams.ppfuncdir, ['s' ppparams.func(ie).wfuncfile]);
+            Vout(j).descrip = 'my_spmbatch - smooth';
+            Vout(j).pinfo = [1,0,0];
+            Vout(j).n = [j 1];
+        end
+    
+        Vout = myspm_write_vol_4d(Vout,swfuncdat);
+
+        ppparams.func(ie).sfuncfile = ['s' ppparams.func(ie).wfuncfile];  
+
+        fprintf('Done smoothing \n')
+
+        clear wfuncdat
+    end 
 end

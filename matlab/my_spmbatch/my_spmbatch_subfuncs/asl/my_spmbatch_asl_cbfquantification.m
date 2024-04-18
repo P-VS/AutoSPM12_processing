@@ -26,7 +26,6 @@ catch
     NumberOfAverages = 1;
 end
 
-
 %% Step 2: Calculating the CBF images
 
 % CBF = (6000 * Lambda * DM * exp(PLD/BloodT1)) ./ (2 * LabelingEfficiency * SupressionEfficiency * SCF * NumberOfAverages * BloofT1 * M0 * (1-exp(-LabelingDuration/BloodT1)))

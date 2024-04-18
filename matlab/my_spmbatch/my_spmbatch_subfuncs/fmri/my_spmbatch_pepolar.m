@@ -45,6 +45,13 @@ out_coreg = spm_run_coreg(estwrite);
 delfiles{numel(delfiles)+1} = {ppfunc};
 delfiles{numel(delfiles)+1} = {spm_file(ppfunc, 'prefix','r')};
 
+[pth,fname,~] = fileparts(out_coreg.rfiles{1});
+refsplit1 = split(fname,'sub-');
+refsplit2 = split(refsplit1{2},'_');
+
+ncoregf = fullfile(pth,['sub-' refsplit2{1} '_' refsplit1{1} '_' refsplit1{2} '.nii']);
+copyfile(fullfile(pth,[fname '.nii']),ncoregf);
+
 %% HYSCO correction
     
 jsondat = fileread(ppparams.func(ne).jsonfile);
@@ -75,12 +82,12 @@ end
 
 if blipdir==1
     source_up = reffunc;
-    source_dw = out_coreg.rfiles{1};
+    source_dw = ncoregf;
 
     others_up = infuncdat;
     others_dw = [];
 else
-    source_up = out_coreg.rfiles{1};
+    source_up = ncoregf;
     source_dw = reffunc;
 
     others_up = [];
@@ -94,11 +101,7 @@ restrictdim = acid_get_defaults('hysco.restrictdim');
 dummy_ecc   = acid_get_defaults('hysco.dummy_ecc');
 res         = acid_get_defaults('hysco.resample');
 
-try
-    [VB1,~,~] = acid_hysco(source_up,source_dw,[],[],pedim,dummy_fast,dummy_ecc,alpha,beta,restrictdim,res);
-catch
-    [VB1,~,~] = acid_hysco_main(source_up,source_dw,[],[],pedim,dummy_fast,dummy_ecc,alpha,beta,1,restrictdim,res,{''});
-end
+[VB1,~,~] = acid_hysco(source_up,source_dw,[],[],pedim,dummy_fast,dummy_ecc,alpha,beta,restrictdim,res);
 
 outfuncdat = my_spmbatch_hysco_write(source_up,others_up,others_dw,VB1.dat.fname,pedim,1);
 
@@ -106,3 +109,4 @@ derfolder = split(VB1.dat.fname,[filesep 'derivatives']);
 rmdir(fullfile(derfolder{1},'derivatives'),'s'); 
 
 delete(reffunc);
+delete(ncoregf);

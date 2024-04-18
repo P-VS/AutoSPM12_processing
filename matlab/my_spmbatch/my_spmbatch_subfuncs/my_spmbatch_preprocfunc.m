@@ -195,17 +195,35 @@ for ie=params.func.echoes
         funcdat = reshape(funcdat(:,:),s);
     end
     
-    jsondat = fileread(ppparams.func(ie).jsonfile);
-    jsondat = jsondecode(jsondat);
-
     %% Slice time correction
-    if params.func.do_slicetime  && ~contains(ppparams.func(ie).prefix,'a') && isfield(jsondat,'SliceTiming')
+    if params.func.do_slicetime  && ~contains(ppparams.func(ie).prefix,'a')
         fprintf('Do slice time correction\n')
-        
-        SliceTimes = jsondat.SliceTiming;
-        nsl= numel(jsondat.SliceTiming);
+            
+        jsondat = fileread(ppparams.func(ie).jsonfile);
+        jsondat = jsondecode(jsondat);
+
         tr = jsondat.RepetitionTime;
+        nsl=Vfunc(1).dim(3);
         
+        if params.func.isaslbold
+            if isfield(jsondat,'LabelingDuration'), tr=tr-jsondat.LabelingDuration; else tr=tr-params.asl.LabelingDuration; end
+            if isfield(jsondat,'PostLabelDelay'), tr=tr-jsondat.PostLabelDelay; else tr=tr-params.asl.PostLabelDelay; end
+        end
+
+        if isfield(jsondat,'SliceTiming')
+            SliceTimes = jsondat.SliceTiming;
+        else
+            if isfield(jsondat,'MultibandAccelerationFactor'), hbf = jsondat.MultibandAccelerationFactor; else hbf = 1; end
+
+            nslex = ceil(nsl/hbf);
+            isl = [1:2:nsl 2:2:nsl];
+            isl = mod(isl-1,nslex);
+
+            TA = tr-tr/nsl;
+
+            SliceTimes = isl*TA/(nsl-1);
+        end
+
         funcdat=my_spmbatch_st(funcdat,Vfunc,SliceTimes,tr);
 
         prefix = ['a' prefix];
@@ -309,18 +327,30 @@ for ie=ppparams.echoes
 
         if ~exist('wfuncdat','var'), wfuncdat = spm_read_vols(Vfunc); end
 
+        Vout = Vfunc;
+        swfuncdat = zeros(size(wfuncdat));
+
         spm_progress_bar('Init',numel(Vfunc),'Smoothing','volumes completed');
 
         for i=1:numel(Vfunc)
-            [pth,nm,~] = fileparts(Vfunc(i).fname);
 
-            Q = fullfile(pth, ['s' nm  '.nii,' num2str(Vfunc(i).n)]);
-            my_spmbatch_smooth(wfuncdat(:,:,:,i),Vfunc(i),Q,[params.func.smoothfwhm params.func.smoothfwhm params.func.smoothfwhm],0);
+            tswfuncdat = my_spmbatch_smooth(wfuncdat(:,:,:,i),Vfunc(i),[],[params.func.smoothfwhm params.func.smoothfwhm params.func.smoothfwhm],0);
+
+            swfuncdat(:,:,:,i) = tswfuncdat;
 
             spm_progress_bar('Set',i);
         end
 
         spm_progress_bar('Clear');
+    
+        for j=1:numel(Vout)
+            Vout(j).fname = fullfile(ppparams.subfuncdir,['s' ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
+            Vout(j).descrip = 'my_spmbatch - smooth';
+            Vout(j).pinfo = [1,0,0];
+            Vout(j).n = [j 1];
+        end
+    
+        Vout = myspm_write_vol_4d(Vout,swfuncdat);
 
         ppparams.func(ie).sfuncfile = ['s' ppparams.func(ie).prefix ppparams.func(ie).funcfile];
         keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subfuncdir,ppparams.func(ie).sfuncfile)};    

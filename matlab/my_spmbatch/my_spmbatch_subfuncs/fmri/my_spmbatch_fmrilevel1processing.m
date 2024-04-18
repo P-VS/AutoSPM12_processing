@@ -61,6 +61,9 @@ for ir=1:numel(params.iruns)
     namefilters(5).name = '_bold';
     namefilters(5).required = true;
 
+    namefilters(6).name = params.fmri_prefix;
+    namefilters(6).required = true;
+
     funcniilist = my_spmbatch_dirfilelist(ppparams.preprocfmridir,'nii',namefilters,false);
     
     if isempty(funcniilist)
@@ -72,13 +75,7 @@ for ir=1:numel(params.iruns)
     for ie=1:numel(params.echoes)
         if params.meepi && params.use_echoes_as_sessions %Filter list based on echo number
             tmp = find(or(contains({funcniilist.name},['_echo-' num2str(ie)]),contains({funcniilist.name},['_e' num2str(ie)])));
-            if isempty(tmp)
-                fprintf(['no fmri data found for echo ' num2str(ie) '\n'])
-                fprintf('\nPP_Error\n');
-                return
-            end
-        
-            edirniilist = funcniilist(tmp);
+            if isempty(tmp), edirniilist = funcniilist; else edirniilist = funcniilist(tmp); end
         else
             edirniilist = funcniilist;
         end
@@ -125,10 +122,12 @@ for ir=1:numel(params.iruns)
     
     %events.tsv file
     
-    namefilters(5).name = '_events';
-    namefilters(5).required = true;
+    enamefilters(1:4) = namefilters(1:4);
     
-    functsvlist = my_spmbatch_dirfilelist(ppparams.subfuncdir,'tsv',namefilters,false);
+    enamefilters(5).name = '_events';
+    enamefilters(5).required = true;
+    
+    functsvlist = my_spmbatch_dirfilelist(ppparams.subfuncdir,'tsv',enamefilters,false);
     
     if isempty(functsvlist)
         fprintf(['No events.tsv files found for ' ppparams.substring ' ' ppparams.sesstring ' task-' task '\n'])
@@ -139,16 +138,18 @@ for ir=1:numel(params.iruns)
     ppparams.frun(ir).functsvfile = fullfile(functsvlist(1).folder,functsvlist(1).name);
     
     %json file
+
+    jnamefilters(1:4) = namefilters(1:4);
     
-    namefilters(5).name = '_bold';
-    namefilters(5).required = true;
+    jnamefilters(5).name = '_bold';
+    jnamefilters(5).required = true;
     
     if params.meepi
         jnamefilters(6).name = '_echo-1';
         jnamefilters(6).required = true;
     end
     
-    funcjsonlist = my_spmbatch_dirfilelist(ppparams.subfuncdir,'json',namefilters,false);
+    funcjsonlist = my_spmbatch_dirfilelist(ppparams.subfuncdir,'json',jnamefilters,false);
     
     if isempty(funcjsonlist) && params.meepi
         jnamefilters(6).name = '_e1';
