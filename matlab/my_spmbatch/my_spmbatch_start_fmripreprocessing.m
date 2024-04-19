@@ -2,7 +2,7 @@ function my_spmbatch_start_fmripreprocessing(sublist,nsessions,task,datpath,para
 
 params.func.isaslbold = false;
 
-params.save_intermediate_results = true; 
+params.reorient = true; % align data with MNI template to improve normalization and segmentation
 
 if ~params.func.mruns, params.func.runs = [1]; end
 if params.func.meepi && numel(params.func.echoes)==1, params.func.combination='none'; end

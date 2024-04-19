@@ -33,7 +33,7 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [10];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [9];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
 params.save_folder = 'preproc_test';
@@ -44,7 +44,7 @@ params.use_parallel = false;
 params.maxprocesses = 4; %Best not too high to avoid memory problems
 params.keeplogs = false;
 
-params.reorient = true; % align data with MNI template to improve normalization and segmentation
+params.save_intermediate_results = false; 
 
 %% Preprocessing anatomical data
 
