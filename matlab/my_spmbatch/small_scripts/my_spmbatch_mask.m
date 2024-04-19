@@ -18,10 +18,7 @@ tmp2 = meandata(tmp1)>thr;
 
 mask(tmp1(tmp2)) = 1;
 
-se = strel('sphere',1);
-mask = imopen(mask,se);
-mask = imclose(mask,se);
-
+mask = spm_dilate(mask,ones([3,3,3]));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function thr = opt_thr_corr(img)
