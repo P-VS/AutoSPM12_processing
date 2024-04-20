@@ -8,7 +8,7 @@ for i=1:numel(Vfunc)
 end
 
 %% Normalization of the functional scan
-if ne==ppparams.echoes(1) %Based op OldNorm
+if ne==ppparams.echoes(1) || ~isfield(ppparams,'deffile') %Based op OldNorm
     funcnormest.subj.source = {wfuncfiles{1,1}};
     funcnormest.subj.wtsrc = '';
     funcnormest.eoptions.template = {fullfile(spm('Dir'),'toolbox','OldNorm','EPI.nii')};
