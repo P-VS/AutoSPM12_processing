@@ -44,6 +44,8 @@ for ie=params.func.echoes
     
         Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
 
+        clear funcdat
+
         delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,ppparams.func(ie).efuncfile)};
         
         if ppparams.reorient   
@@ -83,6 +85,8 @@ for ie=params.func.echoes
         Rfunc = spm_write_vol(Rfunc,rdat);
 
         ppparams.func(ie).reffunc = ppparams.func(ie).fefuncfile;
+
+        clear rdat Rfunc Vfunc
         
         delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,ppparams.func(ie).fefuncfile)};
     end
@@ -284,6 +288,8 @@ elseif params.func.do_echocombination
     Rfunc = spm_create_vol(Rfunc);
     Rfunc = spm_write_vol(Rfunc,rdat);
 
+    clear rdat
+
     ppparams.func(1).reffunc = ['f' ppparams.func(1).cfuncfile];
     delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,ppparams.func(1).reffunc)};
 
@@ -325,20 +331,22 @@ for ie=ppparams.echoes
     
         Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
 
-        if ~exist('wfuncdat','var'), wfuncdat = spm_read_vols(Vfunc); end
-
         Vout = Vfunc;
-        swfuncdat = zeros(size(wfuncdat));
+        swfuncdat = zeros([Vfunc(1).dim(1),Vfunc(1).dim(2),Vfunc(1).dim(3),numel(Vfunc)]);
 
         spm_progress_bar('Init',numel(Vfunc),'Smoothing','volumes completed');
 
         for i=1:numel(Vfunc)
 
-            tswfuncdat = my_spmbatch_smooth(wfuncdat(:,:,:,i),Vfunc(i),[],[params.func.smoothfwhm params.func.smoothfwhm params.func.smoothfwhm],0);
+            if ~exist('wfuncdat','var'), twfuncdat = spm_read_vols(Vfunc(i)); else twfuncdat = wfuncdat(:,:,:,i); end
+
+            tswfuncdat = my_spmbatch_smooth(twfuncdat,Vfunc(i),[],[params.func.smoothfwhm params.func.smoothfwhm params.func.smoothfwhm],0);
 
             swfuncdat(:,:,:,i) = tswfuncdat;
 
             spm_progress_bar('Set',i);
+
+            clear tswfuncdat twfuncdat
         end
 
         spm_progress_bar('Clear');
