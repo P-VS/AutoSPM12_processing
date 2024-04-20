@@ -33,14 +33,14 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [9];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [8:10];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-params.save_folder = 'preproc_test';
+params.save_folder = 'preproc_ME-EFT_perTE';
 
 task ={'ME-EFT'};
 
-params.use_parallel = false; 
+params.use_parallel = true; 
 params.maxprocesses = 4; %Best not too high to avoid memory problems
 params.keeplogs = false;
 
@@ -52,7 +52,7 @@ params.save_intermediate_results = false;
 
     % Normalization
     params.anat.do_normalization = true;
-    params.anat.normvox = [2 2 2]; %[1.5 1.5 1.5];
+    params.anat.normvox = [1.5 1.5 1.5];
 
     % Segmentation ussing CAT12
     params.anat.do_segmentation = true;
@@ -68,7 +68,7 @@ params.save_intermediate_results = false;
 
     % If ME-fMRI, combine the multiple eccho images
     params.func.meepi = true; %true if echo number is in filename
-    params.func.echoes = [1]; %the index of the echoes in ME-fMRI. (in filenames echo-(index))
+    params.func.echoes = [1:3]; %the index of the echoes in ME-fMRI. (in filenames echo-(index))
     params.func.combination = 'none'; 
     %none: all echoes are preprocessed separatly
     %average: The combination is the average of the multiple echo images
@@ -101,10 +101,10 @@ params.save_intermediate_results = false;
 
 %% Denoising
 
-    params.do_denoising = false; 
+    params.do_denoising = true; 
 
         %if do_denoising = true and preprocess_functional = false -> only denoising, other preprocessing already done
-        params.denoise.prefix = 'swure';
+        params.denoise.prefix = 'waure';
 
     %In case of multiple runs in the same session exist
     params.denoise.mruns = false; %true if run number is in filename
@@ -122,17 +122,17 @@ params.save_intermediate_results = false;
     params.denoise.polort = 2; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend)
 
     % aCompCor
-    params.denoise.do_aCompCor = true;
+    params.denoise.do_aCompCor = false;
     params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal
 
     % ICA-AROMA
     params.denoise.do_ICA_AROMA = false;
 
     % Noise regression / remove ICA-AROMA noise components
-    params.denoise.do_noiseregression = true;
+    params.denoise.do_noiseregression = false;
 
     % Prepare data for DENN denoising in python
-    params.denoise.do_DENN = false;
+    params.denoise.do_DENN = true;
     
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------
@@ -170,6 +170,8 @@ spm_figure('close',allchild(0));
 cd(curdir)
 
 if isfile(new_spm_read_vols_file), movefile(new_spm_read_vols_file,old_spm_read_vols_file); end
+
+if exist(fullfile(datpath,'derivatives')), rmdir(fullfile(datpath,'derivatives'),'s'); end
 
 fprintf('\nDone\n')
 
