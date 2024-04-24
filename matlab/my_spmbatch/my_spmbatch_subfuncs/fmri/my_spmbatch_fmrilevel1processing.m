@@ -194,7 +194,14 @@ matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t0 = 1;
 for ir=1:numel(params.iruns)
     % correct events file for dummy scans if needed
     dummys = floor(params.dummytime/tr);
-    edat{ir} = tdfread(ppparams.frun(ir).functsvfile,'\t');
+    try
+        edat{ir} = tdfread(ppparams.frun(ir).functsvfile,'\t');
+    catch
+        T = readtable(ppparams.frun(ir).functsvfile,'FileType','text');
+        edat{ir}.onset = T.onset;
+        edat{ir}.duration = T.duration;
+        edat{ir}.trial_type = T.trial_type;
+    end
     edat{ir}.onset = edat{ir}.onset-dummys*tr;
     
     for it=1:numel(edat{ir}.trial_type(:,1))
