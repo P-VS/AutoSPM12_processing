@@ -101,25 +101,29 @@ for ir=1:numel(params.iruns)
     
     %confound file
     
-    cnamefilters = namefilters;
+    if params.add_regressors
+        cnamefilters = namefilters;
+        
+        cnamefilters(6).name = params.confounds_prefix;
+        cnamefilters(6).required = true;
     
-    cnamefilters(6).name = params.confounds_prefix;
-    cnamefilters(6).required = true;
-    
-    funcconlist = my_spmbatch_dirfilelist(ppparams.preprocfmridir,'txt',cnamefilters,false);
-    
-    if isempty(funcconlist)
-        fprintf(['No confound file found for ' ppparams.substring ' ' ppparams.sesstring ' task-' task '\n'])
-        fprintf('\nPP_Error\n');
-        return
+        funcconlist = my_spmbatch_dirfilelist(ppparams.preprocfmridir,'txt',cnamefilters,false);
+        
+        if isempty(funcconlist)
+            fprintf(['No confound file found for ' ppparams.substring ' ' ppparams.sesstring ' task-' task '\n'])
+            fprintf('\nPP_Error\n');
+            return
+        end
+        
+        prefixlist = split({funcconlist.name},'sub-');
+        if numel(funcconlist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
+        
+        tmp = find(strcmp(prefixlist,params.confounds_prefix));
+        if ~isempty(tmp), ppparams.frun(ir).confoundsfile = fullfile(funcconlist(tmp).folder,funcconlist(tmp).name); else ppparams.frun(ir).confoundsfile = ''; end        
+    else
+        ppparams.frun(ir).confoundsfile = '';
     end
-    
-    prefixlist = split({funcconlist.name},'sub-');
-    if numel(funcconlist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
-    
-    tmp = find(strcmp(prefixlist,params.confounds_prefix));
-    if ~isempty(tmp), ppparams.frun(ir).confoundsfile = fullfile(funcconlist(tmp).folder,funcconlist(tmp).name); else ppparams.frun(ir).confoundsfile = ''; end
-    
+
     %events.tsv file
     
     enamefilters(1:4) = namefilters(1:4);
@@ -295,7 +299,7 @@ for ic=1:numel(params.contrast)
         subweights = zeros(1,numel(edat{ir}.conditions));
         if params.add_regressors
             rpdat = load(ppparams.frun(ir).confoundsfile);
-            subweights=[subweights zeros(1,numel(rpdat(1,:)))]; 
+            subweights=[subweights zeros(1,numel(rpdat(1,:)))];
         end
         for icn=1:numel(params.contrast(ic).conditions)
             if params.contrast(ic).vector(icn)>0; contrastname = [contrastname ' + ' params.contrast(ic).conditions{icn}]; end
@@ -307,12 +311,13 @@ for ic=1:numel(params.contrast)
             end
     
             if indx>0; subweights(indx)=params.contrast(ic).vector(icn); end
-
-            subweights = repmat(subweights,1,numel(params.echoes));
         end
+
+        subweights = repmat(subweights,1,numel(params.echoes));
+
         weights=[weights subweights];
     end
-    
+
     matlabbatch{3}.spm.stats.con.consess{ic}.tcon.name = contrastname;
     matlabbatch{3}.spm.stats.con.consess{ic}.tcon.weights = weights;
     
