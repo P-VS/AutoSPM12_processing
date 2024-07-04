@@ -214,21 +214,44 @@ for ie=params.func.echoes
             if isfield(jsondat,'PostLabelDelay'), tr=tr-jsondat.PostLabelDelay; else tr=tr-params.asl.PostLabelDelay; end
         end
 
-        if isfield(jsondat,'SliceTiming')
-            SliceTimes = jsondat.SliceTiming;
-        else
-            if isfield(jsondat,'MultibandAccelerationFactor'), hbf = jsondat.MultibandAccelerationFactor; else hbf = 1; end
-
-            nslex = ceil(nsl/hbf);
-            isl = [1:2:nsl 2:2:nsl];
-            isl = mod(isl-1,nslex);
-
-            TA = tr-tr/nsl;
-
-            SliceTimes = isl*TA/(nsl-1);
+        if ~isfield(ppparams,'SliceTimes')
+            jsondat = fileread(ppparams.func(ie).jsonfile);
+            jsondat = jsondecode(jsondat);
+        
+            ppparams.tr = jsondat.RepetitionTime;
+            nsl=tVfunc(1).dim(3);
+            
+            if ~params.func.isaslbold && isfield(jsondat,'SliceTiming')
+                ppparams.SliceTimes = jsondat.SliceTiming;
+            else
+                if isfield(jsondat,'MultibandAccelerationFactor')
+                    hbf = jsondat.MultibandAccelerationFactor; 
+                    nslex = ceil(nsl/hbf);
+                    isl = zeros([1,nslex]);
+                    isl(1:2:nslex)=[0:1:(nslex-1)/2];
+                    isl(2:2:nslex)=[ceil(nslex/2):1:nslex-1];
+                    isl=repmat(isl,[1,hbf]);
+                else 
+                    isl = [1:2:nsl 2:2:nsl];
+                    nslex = nsl;
+                end
+        
+                if params.func.isaslbold
+                    if isfield(jsondat,'LabelingDuration'), params.asl.LabelingDuration=jsondat.LabelingDuration; end
+                    if isfield(jsondat,'PostLabelDelay'), params.asl.PostLabelDelay=jsondat.PostLabelDelay; end
+        
+                    TA = ppparams.tr-params.asl.LabelingDuration-params.asl.PostLabelDelay;
+        
+                    ppparams.SliceTimes = params.asl.LabelingDuration+params.asl.PostLabelDelay+isl*TA/nslex;
+                else
+                    TA = ppparams.tr/nslex;
+            
+                    ppparams.SliceTimes = isl*TA/nslex;
+                end
+            end
         end
-
-        funcdat=my_spmbatch_st(funcdat,Vfunc,SliceTimes,tr);
+        
+        funcdat=my_spmbatch_st(funcdat,tVfunc,ppparams.SliceTimes,ppparams.tr);
 
         prefix = ['a' prefix];
     end
