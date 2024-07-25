@@ -24,8 +24,8 @@ mask = spm_dilate(mask,ones([3,3,3]));
 function thr = opt_thr_corr(img)
 costfunc = @(thr) -correlation(img, img > thr);
 [thr ncc] = fminbnd(costfunc, min(img), max(img));
-fprintf('Maximal correlation of %g found with threshold of %g\n', ...
-    -ncc, thr);
+%fprintf('Maximal correlation of %g found with threshold of %g\n', ...
+%    -ncc, thr);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function c = correlation(x, y)
@@ -50,7 +50,7 @@ dfs = diff(srt);
 mx = max(dfs);
 k = floor(mean(find(dfs == mx))); % in case non-unique
 thr = mean([srt(k) srt(k+1)]);
-fprintf('Anti-mode threshold of %g by Hartigan method\n', thr);
+%fprintf('Anti-mode threshold of %g by Hartigan method\n', thr);
 
 % Histogram method
 iqrange = diff(srt(round(numel(srt)*[0.25 0.75])));
@@ -60,10 +60,10 @@ numbins = ceil((srt(end) - srt(1)) / binwidth);
 mn = min(counts);
 k = round(mean(find(counts == mn))); % in case non-unique
 thr2 = bins(k);
-fprintf('Anti-mode threshold of %g by histogram method\n', thr2);
+%fprintf('Anti-mode threshold of %g by histogram method\n', thr2);
 
 % Assume Hartigan more accurate if similar, but less reliable if different
 if abs(thr - thr2) > 3 * binwidth
     thr = thr2;
 end
-fprintf('Anti-mode threshold of %g chosen.\n', thr);
+%fprintf('Anti-mode threshold of %g chosen.\n', thr);

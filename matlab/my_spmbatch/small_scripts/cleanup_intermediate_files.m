@@ -1,12 +1,12 @@
 function cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,save_intermediate_results,subdir,save_folder)
 
-if sub<10
-    substring = ['sub-0' num2str(sub)];
-else
-    substring = ['sub-' num2str(sub)];
-end
+ppparams.substring = ['sub-' num2str(sub,'%02d')];
+if ~isfolder(fullfile(datpath,ppparams.substring)), ppparams.substring = ['sub-' num2str(sub,'%03d')]; end
 
-subpath = fullfile(datpath,substring,['ses-00' num2str(ses)]);
+ppparams.sesstring = ['ses-' num2str(ses,'%02d')];
+if ~isfolder(fullfile(datpath,ppparams.substring,ppparams.sesstring)), ppparams.sesstring = ['ses-' num2str(ses,'%03d')]; end
+
+subpath = fullfile(datpath,ppparams.substring,ppparams.sesstring);
 
 subolddir = fullfile(subpath,subdir);
 subnewdir = fullfile(subpath,save_folder);

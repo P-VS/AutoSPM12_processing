@@ -8,7 +8,7 @@ end
 
 subpath = fullfile(datpath,substring,['ses-00' num2str(ses)]);
 
-preproc_func = fullfile(subpath,params.save_folder);
+preproc_func = fullfile(subpath,params.func_save_folder);
 
 rpdir = dir([preproc_func filesep 'rp_*' task '_bold.txt']);
 if ~isempty(rpdir)
