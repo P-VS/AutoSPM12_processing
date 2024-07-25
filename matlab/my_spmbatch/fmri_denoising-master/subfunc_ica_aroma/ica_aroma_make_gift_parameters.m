@@ -1,6 +1,6 @@
-function icaparms_file = ica_aroma_make_gift_parameters(t_r,n_sessions,mask,comp_est,ppparams)
+function icaparms_file = ica_aroma_make_gift_parameters(ica_source_file,t_r,n_sessions,mask,comp_est,ppparams)
 
-icaparms_file = fullfile(ppparams.ppfuncdir,'input_spatial_ica.m');
+icaparms_file = fullfile(ppparams.subfuncdir,'input_spatial_ica.m');
 
 fid = fopen(icaparms_file,'w');
 
@@ -92,16 +92,22 @@ fprintf(fid,'\n%s',['numOfSess = ' num2str(n_sessions) ';']);
 % You can provide the file numbers ([1:220]) to include as a vector. If you want to
 % select all the files then leave empty.
 
-for i=1:numel(ppparams.echoes)
-    Vfunc = spm_vol(fullfile(ppparams.ppfuncdir,ppparams.func(ppparams.echoes(i)).sfuncfile));
+[spth,snm,~] = fileparts(ica_source_file);
+
+fprintf(fid,'\n%s',['s1_s1 = {']);
+fprintf(fid,'%s',['''' spth ''',''' [snm '.nii'] '''']);
+fprintf(fid,'%s','};');
+
+%for i=1:numel(ppparams.echoes)
+%    Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(i).prefix ppparams.func(i).funcfile]));
     
-    fprintf(fid,'\n%s',['s1_s' num2str(i) ' = {']);
-    fprintf(fid,'%s',['''' ppparams.ppfuncdir ''',''' ppparams.func(ppparams.echoes(i)).sfuncfile '''']); % ',(1:' num2str(numel(Vfunc)) ')']); % subject 1 session 1
-    fprintf(fid,'%s','};');
-end
+%    fprintf(fid,'\n%s',['s1_s' num2str(i) ' = {']);
+%    fprintf(fid,'%s',['''' ppparams.subfuncdir ''',''' [ppparams.func(i).prefix ppparams.func(i).funcfile] '''']); % ',(1:' num2str(numel(Vfunc)) ')']); % subject 1 session 1
+%    fprintf(fid,'%s','};');
+%end
 
 %% Enter directory to put results of analysis
-outdir = fullfile(ppparams.ppfuncdir,'ica_dir');
+outdir = fullfile(ppparams.subfuncdir,'ica_dir');
 fprintf(fid,'\n%s',['outputDir = ''' outdir ''';']);
 
 %% Enter Name (Prefix) Of Output Files

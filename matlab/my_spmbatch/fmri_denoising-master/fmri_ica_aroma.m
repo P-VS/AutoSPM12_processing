@@ -1,42 +1,80 @@
-function [ppparams,keepfiles,delfiles] = fmri_ica_aroma(ppparams,keepfiles,delfiles)
+function [ppparams,keepfiles,delfiles] = fmri_ica_aroma(ppparams,params,keepfiles,delfiles)
 %FMRI_ICA_AROMA Performs ICA-AROMA
-
-%% ICA step
 
 % Initialize parameters and run ICA:
 
 % Get t_r
-jsondat = jsondecode(fileread(ppparams.funcjsonfile));
+jsondat = jsondecode(fileread(ppparams.func(ppparams.echoes(1)).jsonfile));
 t_r = jsondat.("RepetitionTime");
 
-curdir = pwd;
-
-
-ica_dir = fullfile(ppparams.ppfuncdir, 'ica_dir'); % path to ICs computed at previous step
+ica_dir = fullfile(ppparams.subfuncdir, 'ica_dir'); % path to ICs computed at previous step
 
 if ~exist(ica_dir,"dir")
+    mkdir(ica_dir);
+    
+    if params.func.meepi
+        for ie=ppparams.echoes
+            Vtemp = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
+            if ie==ppparams.echoes(1)
+                voldim = Vtemp(1).dim;
+                funcdat = zeros([voldim(1),voldim(2),voldim(3),numel(Vtemp)]);
+            end
+            funcdat = funcdat+spm_read_vols(Vtemp);
+        end
+    
+        funcdat = funcdat ./ numel(ppparams.echoes);
+    
+        for iv=1:numel(Vtemp)
+            Vtemp(iv).fname = fullfile(ica_dir,['c' ppparams.func(1).prefix ppparams.func(1).funcfile]);
+            Vtemp(iv).descrip = 'my_spmbatch - combine';
+            Vtemp(iv).pinfo = [1,0,0];
+            Vtemp(iv).n = [iv 1];
+        end
+
+        Vtemp = myspm_write_vol_4d(Vtemp,funcdat);
+
+        ica_source_file = fullfile(ica_dir,['c' ppparams.func(1).prefix ppparams.func(1).funcfile]);
+
+        clear Vtemp funcdat
+
+    else
+        ica_source_file = fullfile(ppparams.subfuncdir,[ppparams.func(1).prefix ppparams.func(1).funcfile]);
+    end
+    
+    %% ICA step
+    
+    curdir = pwd;
+
     fprintf('Start ICA \n') 
 
-    do_ica(ppparams.fmask, t_r, ppparams); 
+    do_ica(ica_source_file,ppparams.fmask, t_r, ppparams); 
 
-    delfiles{numel(delfiles)+1} = {fullfile(ppparams.ppfuncdir, 'input_spatial_ica.m')};
+    cd(curdir)
+
+    delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir, 'input_spatial_ica.m')};
 end
 
-cd(curdir)
-
-%% AROMA (IC classification)
+%% AROMA (ICA classification)
 
 fprintf('Start ICA classification\n')
 
-noiseICdata = ica_aroma_classification(ppparams, ppparams.fmask, ica_dir, t_r);
+[nonBOLDICdata,nonASLICdata] = ica_aroma_classification(ppparams, params, ppparams.fmask, ica_dir, t_r);
 
-delfiles{numel(delfiles)+1} = {fullfile(ppparams.ppfuncdir, 'headdata.nii')};
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir, 'headdata.nii')};
 
 %% Denoising 
 
-ppparams.ica_file = spm_file(fullfile(ppparams.ppfuncdir,ppparams.func(1).sfuncfile), 'prefix','ica_','ext','.txt');
+ppparams.nboldica_file = spm_file(fullfile(ppparams.subfuncdir,[ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile]), 'prefix','nboldica_','ext','.txt');
+writematrix(nonBOLDICdata,ppparams.nboldica_file,'Delimiter','tab');
 
-writematrix(noiseICdata,ppparams.ica_file,'Delimiter','tab');
+delfiles{numel(delfiles)+1} = {ica_dir};
+delfiles{numel(delfiles)+1} = {ppparams.nboldica_file};
 
+if params.func.isaslbold && contains(params.asl.splitaslbold,'meica')
+    ppparams.naslica_file = spm_file(fullfile(ppparams.subfuncdir,[ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile]), 'prefix','naslica_','ext','.txt');
+    writematrix(nonASLICdata,ppparams.naslica_file,'Delimiter','tab');
+
+    delfiles{numel(delfiles)+1} = {ppparams.naslica_file};
 end
 
+clear nonBOLDICdata nonASLICdata

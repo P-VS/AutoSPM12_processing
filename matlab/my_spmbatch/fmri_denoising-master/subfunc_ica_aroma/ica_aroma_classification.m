@@ -1,4 +1,4 @@
-function noiseICdata = ica_aroma_classification(ppparams, funcmask, ica_dir, t_r)
+function [nonBOLDICdata,nonASLICdata] = ica_aroma_classification(ppparams, params, funcmask, ica_dir, t_r)
 
 %This function classifies the ica components extracted by fmri_do_ica into
 % noise/no-noise (both physiological and motion noise) based on:
@@ -13,9 +13,9 @@ function noiseICdata = ica_aroma_classification(ppparams, funcmask, ica_dir, t_r
 aroma_dir = fullfile(ica_dir,'ICA-AROMA');
 if ~exist(aroma_dir,"dir"), mkdir(aroma_dir); end
 
-GM = ppparams.wc1im;
-WM = ppparams.wc2im;
-CSF = ppparams.wc3im;
+GM = ppparams.fc1im;
+WM = ppparams.fc2im;
+CSF = ppparams.fc3im;
 
 gmdat = spm_read_vols(spm_vol(GM));
 wmdat = spm_read_vols(spm_vol(WM));
@@ -79,20 +79,47 @@ end
 
 compFiles = icatb_fullFile('directory', ica_dir, 'files', compFiles);
 
-[compData, icaTimecourse, structuralImage, coords, HInfo, text_left_right, classComp] = icatb_loadICAData('structfile',structFile,'compfiles',compFiles,'comp_numbers',[1:numComp],...
-                                                                                                          'converttoz','yes','threshold', 1,'returnvalue',3,'open_dialog','no');
+compData = spm_read_vols(spm_vol(compFiles));
+dim = size(compData);
+HInfo.V = spm_vol(structFile);
+HInfo.DIM = dim(1:3);
+HInfo.VOX = double(HInfo.V(1).private.hdr.pixdim(2:4)); HInfo.VOX = abs(HInfo.VOX);
 
-% Reshape icasig to components by voxels
+compData = permute(compData, [4 1 2 3]);
+compData = reshape(compData, size(compData, 1), prod(dim(1:3)));
+[compData] = icatb_applyDispParameters(compData, 1, 3, 1, dim(1:3), HInfo);
+compData = reshape(compData, [size(compData,1), dim(1), dim(2), dim(3)]);
 compData = permute(compData, [2 3 4 1]);
+
+if ppparams.save_intermediate_results
+    VC = spm_vol(compFiles);
+    for ic=1:numComp
+        VC(ic) = spm_vol(funcmask);
+        VC(ic).fname = fullfile(aroma_dir, 'thres_compdata.nii'); 
+        VC(ic).n = [ic 1];
+        spm_write_vol(VC(ic), compData(:,:,:,ic));
+    end
+end
+
+% load time course
+icaTimecourse = icatb_loadICATimeCourse(compFiles, 'real', [], [1:numComp]);
 
 % Structural volume
 dim = HInfo.DIM;
-tdim = size(icaTimecourse);
+tdim = size(icaTimecourse(:,1));
 
 % Reshape to 2d
 compData = reshape(compData, [prod(dim(1:3)),numComp]);
 
-%       """Fraction component outside GM or WM""
+%%%%%%%% End for getting the component data %%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%% Decision tree %%%%%%%%%%%%%%%%%
+
+BOLDComp = ones([numComp,1]);
+ASLComp = ones([numComp,1]);
+
+% 1. """Fraction component outside GM or WM""
+fprintf('Brain/No brain fractions \n') 
 
 nobrainFract = zeros(numComp,1);
 brainFract = zeros(numComp,1);
@@ -118,10 +145,61 @@ for i = 1:numComp
     brainFract(i) = comparison;
 end
 
+% Componets which falls mainly outside the brain are considered as noise
+tmp = find(nobrainFract > 2*brainFract);
+if ~isempty(tmp)
+    BOLDComp(tmp) = 0;
+    ASLComp(tmp) = 0;
+end
+
+%  2. """Maximum robust correlation with confounds"""  
+fprintf('Correlation with noise regresors \n') 
+
+%     Read confounds
+    if isfield(ppparams,'acc_file'), conffile = ppparams.acc_file; 
+    elseif isfield(ppparams,'der_file'), conffile = ppparams.der_file; 
+        isfield(ppparams,'rp_file'), conffile = ppparams.rp_file; end
+
+    conf_model = load(conffile); 
+
+%     Determine the maximum correlation between confounds and IC time-series
+    [nmixrows, nmixcols] = size(icaTimecourse);
+    [nconfrows, nconfcols] = size(conf_model);
+    
+%     Resample the mix and conf_model matrices to have the same number of columns
+    nmix = repmat(icaTimecourse, 1, compute_lcm(nmixcols,nconfcols)/nmixcols); 
+    nconf_model = repmat(conf_model, 1, compute_lcm(nmixcols,nconfcols)/nconfcols);
+    
+    corr_mat = corr(nmix, nconf_model);
+    max_correls = max(corr_mat, [], 2);
+    
+    max_correls = double(reshape(max_correls,[nmixcols,int64(size(max_correls, 1)/nmixcols)]));
+    maxRPcorr = max_correls(:,1);
+
+tmp = find(abs(maxRPcorr) > 0.7);
+if ~isempty(tmp)
+    BOLDComp(tmp) = 0;
+    ASLComp(tmp) = 0;
+end
+
+% 3.    if ME-fMRI do MEICA
+if numel(ppparams.echoes)>1
+    fprintf('MEICA \n') 
+
+    [kappas,rhos] = my_spmbatch_meica(compData,icaTimecourse,ppparams,params);
+
+    tmp = find(1.25*kappas<rhos);
+    if ~isempty(tmp), BOLDComp(tmp) = 0; end
+
+    tmp = find(1.25*rhos<kappas);
+    if ~isempty(tmp), ASLComp(tmp) = 0; end
+end
+
+% 4. """High frequency content"""
+fprintf('High frequency content \n') 
+
 FT = abs(fft(icaTimecourse, [], 1));% FT of each IC along the firt dimension (time) 
 FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric) +1 to get Nyquist frequency bin as well 
-
-%    """High frequency content"""
        
 %   Determine sample frequency
     Fs = 1/t_r;
@@ -149,49 +227,30 @@ FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric
 %     Now get the fractions associated with those indices, these are the final feature scores
     HFC = f_norm(idx_cutoff)';
     
-%         """Maximum robust correlation with confounds"""  
-    
-%     Read confounds
-    conf_model = load(ppparams.rp_file); 
-
-%     Determine the maximum correlation between confounds and IC time-series
-    [nmixrows, nmixcols] = size(icaTimecourse);
-    [nconfrows, nconfcols] = size(conf_model);
-    
-%     Resample the mix and conf_model matrices to have the same number of columns
-    nmix = repmat(icaTimecourse, 1, compute_lcm(nmixcols,nconfcols)/nmixcols); 
-    nconf_model = repmat(conf_model, 1, compute_lcm(nmixcols,nconfcols)/nconfcols);
-    
-    corr_mat = corr(nmix, nconf_model);
-    max_correls = max(corr_mat, [], 2);
-    
-    max_correls = double(reshape(max_correls,[nmixcols,int64(size(max_correls, 1)/nmixcols)]));
-    maxRPcorr = max_correls(:,1);
-
-%      """ This function classifies a set of components into motion and non-motion components based on three features; 
-%     maximum RP correlation, high-frequency content and non-brain-fraction"""
-    
-%   Define criteria needed for classification (thresholds and hyperplane-parameters)
-    thr_corr = 0.50;
     thr_HFC = f_norm(min(find((f-0.12)>0)));
+
+    tmp = (HFC > thr_HFC);
+    if ~isempty(tmp), BOLDComp(tmp) = 0; end
 
 %   Classify the ICs
 
-    noiseICs = find((nobrainFract > brainFract) | (HFC > thr_HFC) | (maxRPcorr > thr_corr));
+    nonBOLDICs = find(BOLDComp<1);
+    nonBOLDICdata = icaTimecourse(:,nonBOLDICs);
 
-    noiseICdata = icaTimecourse(:,noiseICs);
+    nonASLICs = find(ASLComp<1);
+    nonASLICdata = icaTimecourse(:,nonASLICs);
     
 %   Save results
 
     if ppparams.save_intermediate_results
-        varnames = {'NoBrain_fraction','Brain_fraction','high_frequency_content','max_correlations'};
-        T = table(nobrainFract,brainFract,HFC,maxRPcorr,'VariableNames',varnames);
+        varnames = {'NoBrain_fraction','Brain_fraction','max_correlations','kappa','rho','high_frequency_content','BOLD_comp','ASL_comp'};
+        T = table(nobrainFract,brainFract,maxRPcorr,kappas,rhos,HFC,BOLDComp,ASLComp,'VariableNames',varnames);
     
         aroma_file = fullfile(aroma_dir,'AROMA_desission.csv');
     
         writetable(T,aroma_file,'WriteRowNames',false);
                
-        funcfname = split(ppparams.func(1).wfuncfile,'.nii');
+        funcfname = split([ppparams.func(1).prefix ppparams.func(1).funcfile],'.nii');
     
         fg = spm_figure('FindWin','Graphics');
     
@@ -215,14 +274,14 @@ FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric
         % Path to noise ICs (might want to change path)
         noise_ICs_dir = fullfile(aroma_dir, strcat('ICA-AROMA_ICs_noise_',funcfname{1},'.txt'));
         
-        if ~isempty(noiseICs) 
-            if length(size(noiseICs)) > 0
-                dlmwrite(noise_ICs_dir, noiseICs(:), 'precision', "%i"); %write matrix to text file with values separated by a ',' as a delimiter
+        if ~isempty(nonBOLDICs) 
+            if length(size(nonBOLDICs)) > 0
+                dlmwrite(noise_ICs_dir, nonBOLDICs(:), 'precision', "%i"); %write matrix to text file with values separated by a ',' as a delimiter
             else
-                dlmwrite(noise_ICs_dir, int64(noiseICs), 'precision', "%i");
+                dlmwrite(noise_ICs_dir, int64(nonBOLDICs), 'precision', "%i");
             end
         else
-            f = open(confounds_ICs,'w');
+            f = open(noise_ICs_dir,'w');
             fclose(f);
         end
     end
