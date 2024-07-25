@@ -1,10 +1,9 @@
-function [wfuncdat,ppparams,delfiles,keepfiles] = my_spmbatch_oldnormalization_func(ne,funcfile,reffuncfile,ppparams,params,delfiles,keepfiles)
+function [ppparams,delfiles,keepfiles] = my_spmbatch_oldnormalization_func(ne,ppparams,params,delfiles,keepfiles)
 
-Vfunc = spm_vol(funcfile);
-Rfunc= spm_vol(reffuncfile);
+Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ne).prefix ppparams.func(ne).funcfile]));
 
 for i=1:numel(Vfunc)
-    wfuncfiles{i,1} = [funcfile ',' num2str(i)];
+    wfuncfiles{i,1} = [Vfunc(i).fname ',' num2str(i)];
 end
 
 %% Normalization of the functional scan
@@ -22,9 +21,9 @@ if ne==ppparams.echoes(1) || ~isfield(ppparams,'deffile') %Based op OldNorm
 
     spm_run_normalise(funcnormest);
 
-    [fpth,fnm,~] = fileparts(funcfile);
+    fnm = split(ppparams.func(ne).funcfile,'.nii');
 
-    ppparams.deffile = fullfile(fpth,[fnm '_sn.mat']);
+    ppparams.deffile = fullfile(ppparams.subfuncdir,[ppparams.func(ne).prefix fnm{1} '_sn.mat']);
     delfiles{numel(delfiles)+1} = {ppparams.deffile};
 end
 
@@ -54,8 +53,8 @@ funcnormwrite.roptions.prefix = woptions.prefix;
 
 spm_run_normalise(funcnormwrite);
 
-ppparams.func(ne).wfuncfile = ['w' ppparams.func(ne).prefix ppparams.func(ne).funcfile];
-keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subfuncdir,ppparams.func(ne).wfuncfile)};
+keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subfuncdir,['w' ppparams.func(ne).prefix ppparams.func(ne).funcfile])};
 
-Vfunc = spm_vol(fullfile(ppparams.subfuncdir,ppparams.func(ne).wfuncfile));
-wfuncdat = spm_read_vols(Vfunc);
+ppparams.func(ne).prefix = ['w' ppparams.func(ne).prefix];
+
+clear Vfunc

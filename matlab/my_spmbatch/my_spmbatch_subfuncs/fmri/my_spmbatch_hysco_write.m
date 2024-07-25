@@ -136,6 +136,10 @@ prefix = 'u';
 % field-inhomogeneity to image volumes
 if ~isempty(in_blipup)
     dim = size(in_blipup);
+    if numel(dim)<4
+        dim=[dim 1]; 
+        in_blipup = reshape(in_blipup,[dim(1),dim(2),dim(3),1]);
+    end
     outdat = zeros(dim);
 
     for vol=1:dim(4)
@@ -147,6 +151,10 @@ end
 
 if ~isempty(in_blipdown)
     dim = size(in_blipdown);
+    if numel(dim)<4
+        dim=[dim 1]; 
+        in_blipdown = reshape(in_blipdown,[dim(1),dim(2),dim(3),1]);
+    end
     outdat = zeros(dim);
     
     for vol=1:dim(4)

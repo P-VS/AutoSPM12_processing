@@ -34,6 +34,8 @@ if ppparams.reorient
     Ve1amp.n = [1 1];
     Ve1amp = spm_create_vol(Ve1amp);
     Ve1amp = spm_write_vol(Ve1amp,ve1amdat);
+
+    clear ve1amdat
     
     Ve1ph = my_reset_orientation(Ve1ph,transM * MM);
 
@@ -44,11 +46,15 @@ if ppparams.reorient
     Ve1ph.n = [1 1];
     Ve1ph = spm_create_vol(Ve1ph);
     Ve1ph = spm_write_vol(Ve1ph,ve1phdat);    
+
+    clear ve1phdat
 end
 
 fme1step = mbstep;
 
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.ref(1) = {fullfile(ppparams.subfuncdir,ppparams.func(ne).fefuncfile)};
+reffunc = fullfile(ppparams.subfuncdir,['e' ppparams.func(ne).funcfile ',1']);
+
+matlabbatch{mbstep}.spm.spatial.coreg.estwrite.ref(1) = {reffunc};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.source(1) = {Ve1amp.fname};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.other(1) = {Ve1ph.fname};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.eoptions.cost_fun = 'nmi';
@@ -98,21 +104,25 @@ if ppparams.reorient
     Ve2amp.n = [1 1];
     Ve2amp = spm_create_vol(Ve2amp);
     Ve2amp = spm_write_vol(Ve2amp,ve2amdat);
+
+    clear ve2amdat
     
     Ve2ph = my_reset_orientation(Ve2ph,transM * MM);
 
     ve2phdat = spm_read_vols(Ve2ph);
     
-    Ve2ph.fname = spm_file(Ve2ph.fname, 'prefix','e');;
+    Ve2ph.fname = spm_file(Ve2ph.fname, 'prefix','e');
     Ve2ph.descrip = 'my_spmbatch - reoriented';
     Ve2ph.n = [1 1];
     Ve2ph = spm_create_vol(Ve2ph);
-    Ve2ph = spm_write_vol(Ve2ph,ve2phdat);    
+    Ve2ph = spm_write_vol(Ve2ph,ve2phdat); 
+
+    clear ve2phdat
 end
 
 fme2step = mbstep;
 
-matlabbatch{mbstep}.spm.spatial.coreg.estwrite.ref(1) = {fullfile(ppparams.subfuncdir,ppparams.func(ne).fefuncfile)};
+matlabbatch{mbstep}.spm.spatial.coreg.estwrite.ref(1) = {reffunc};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.source(1) = {Ve2amp.fname};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.other(1) = {Ve2ph.fname};
 matlabbatch{mbstep}.spm.spatial.coreg.estwrite.eoptions.cost_fun = 'nmi';
@@ -136,7 +146,7 @@ delfiles{numel(delfiles)+1} = {ph2file};
 
 fmstep = mbstep;
   
-jsondat = fileread(fullfile(ppparams.subfuncdir,ppparams.func(ne).jsonfile));
+jsondat = fileread(fullfile(ppparams.subfuncdir,ppparams.func(1).jsonfile));
 jsondat = jsondecode(jsondat);
 pedir = jsondat.PhaseEncodingDirection;
 
@@ -172,7 +182,7 @@ matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mf
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.ndilate = 4;
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.thresh = 0.5;
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.defaults.defaultsval.mflags.reg = 0.02;
-matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.session.epi(1) = {fullfile(ppparams.subfuncdir,ppparams.func(ne).fefuncfile)};
+matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.session.epi(1) = {reffunc};
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.matchvdm = 1;
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.sessname = 'session';
 matlabbatch{mbstep}.spm.tools.fieldmap.calculatevdm.subj.writeunwarped = 0;
@@ -189,7 +199,6 @@ delfiles{numel(delfiles)+1} = {spm_file(amp1file, 'prefix','sc')};
 delfiles{numel(delfiles)+1} = {spm_file(amp2file, 'prefix','sc')};
 delfiles{numel(delfiles)+1} = {spm_file(amp1file, 'prefix','fpm_sc')};
 delfiles{numel(delfiles)+1} = {spm_file(amp1file, 'prefix','vdm5_sc')};
-delfiles{numel(delfiles)+1} = {spm_file(fullfile(ppparams.subfuncdir,ppparams.func(ne).fefuncfile), 'prefix','u')};
 
 %%Run matlabbatch
 if exist("matlabbatch",'var')

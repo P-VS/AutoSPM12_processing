@@ -45,13 +45,13 @@ for ir=1:numel(params.iruns)
     namefilters(2).name = ppparams.sesstring;
     namefilters(2).required = false;
     
-    switch params.use_runs
+    switch params.func.use_runs
         case 'separately'
             namefilters(3).name = ['run-' num2str(run)];
         case 'together'
             namefilters(3).name = ['run-' num2str(params.iruns(ir))];
     end
-    if params.mruns, namefilters(3).required = true; else namefilters(3).required = false; end
+    if params.func.mruns, namefilters(3).required = true; else namefilters(3).required = false; end
     
     namefilters(4).name = ['task-' task];
     namefilters(4).required = true;
@@ -67,13 +67,13 @@ for ir=1:numel(params.iruns)
     funcniilist = my_spmbatch_dirfilelist(ppparams.preprocfmridir,'nii',namefilters,false);
     
     if isempty(funcniilist)
-        fprintf(['No nii files found for ' ppparams.substring ' ' ppparams.sesstring ' task-' ppparams.task '\n'])
+        fprintf(['No nii files found for ' ppparams.substring ' ' ppparams.sesstring ' task-' params.task '\n'])
         fprintf('\nPP_Error\n');
         return
     end
 
-    for ie=1:numel(params.echoes)
-        if params.meepi && params.use_echoes_as_sessions %Filter list based on echo number
+    for ie=1:numel(params.func.echoes)
+        if params.func.meepi && params.use_echoes_as_sessions %Filter list based on echo number
             tmp = find(or(contains({funcniilist.name},['_echo-' num2str(ie)]),contains({funcniilist.name},['_e' num2str(ie)])));
             if isempty(tmp), edirniilist = funcniilist; else edirniilist = funcniilist(tmp); end
         else
@@ -109,6 +109,13 @@ for ir=1:numel(params.iruns)
     
         funcconlist = my_spmbatch_dirfilelist(ppparams.preprocfmridir,'txt',cnamefilters,false);
         
+        if isempty(funcconlist)
+            cnamefilters(5).name = '_asl';
+            cnamefilters(5).required = true;
+    
+            funcconlist = my_spmbatch_dirfilelist(ppparams.preprocfmridir,'txt',cnamefilters,false);
+        end
+
         if isempty(funcconlist)
             fprintf(['No confound file found for ' ppparams.substring ' ' ppparams.sesstring ' task-' task '\n'])
             fprintf('\nPP_Error\n');
@@ -148,18 +155,18 @@ for ir=1:numel(params.iruns)
     jnamefilters(5).name = '_bold';
     jnamefilters(5).required = true;
     
-    if params.meepi
-        jnamefilters(6).name = '_echo-1';
-        jnamefilters(6).required = true;
-    end
-    
     funcjsonlist = my_spmbatch_dirfilelist(ppparams.subfuncdir,'json',jnamefilters,false);
-    
-    if isempty(funcjsonlist) && params.meepi
-        jnamefilters(6).name = '_e1';
-        jnamefilters(6).required = true;
+        
+    if isempty(funcjsonlist)
+        jnamefilters(5).name = '_asl';
+        jnamefilters(5).required = true;
         
         funcjsonlist = my_spmbatch_dirfilelist(ppparams.subfuncdir,'json',jnamefilters,false);
+    end
+
+    if params.func.meepi
+        jstmp = find(or(contains({funcjsonlist.name},'echo-1'),contains({funcjsonlist.name},'_e1')));
+        funcjsonlist = funcjsonlist(jstmp);
     end
     
     if isempty(funcjsonlist)
@@ -172,7 +179,7 @@ for ir=1:numel(params.iruns)
 end
 
 %% fMRI model specification
-if params.mruns && contains(params.use_runs,'separately')
+if params.func.mruns && contains(params.func.use_runs,'separately')
     resultmap = fullfile(ppparams.subpath,['SPMMAT-' task '_' params.analysisname '_run-' num2str(run)]);
 else
     resultmap = fullfile(ppparams.subpath,['SPMMAT-' task '_' params.analysisname]);
@@ -248,8 +255,8 @@ for ir=1:numel(params.iruns)
         end
     end
     
-    for ne=1:numel(params.echoes)
-        nsess = (ir-1)*numel(params.echoes)+ne;
+    for ne=1:numel(params.func.echoes)
+        nsess = (ir-1)*numel(params.func.echoes)+ne;
     
         matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).scans = ppfmridat{ir}.sess{ne}.func(:,1);
     
@@ -313,7 +320,7 @@ for ic=1:numel(params.contrast)
             if indx>0; subweights(indx)=params.contrast(ic).vector(icn); end
         end
 
-        subweights = repmat(subweights,1,numel(params.echoes));
+        subweights = repmat(subweights,1,numel(params.func.echoes));
 
         weights=[weights subweights];
     end
