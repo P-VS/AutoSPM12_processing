@@ -74,7 +74,7 @@ if ~isempty(ppanatniilist)
     prefixlist = prefixlist(:,:,1);
 end
     
-if params.reorient, anatprefix = 'e'; else anatprefix = ''; end
+anatprefix = 'e';
 
 if ~isempty(ppanatniilist) && params.anat.do_normalization
     tmp = find(strcmp(prefixlist,['w' anatprefix]));
@@ -90,48 +90,44 @@ if ~isempty(ppanatniilist) && params.anat.do_segmentation
     tmp = find(strcmp(prefixlist,['wp1' anatprefix]));
     if isempty(tmp), tmp = find(strcmp(prefixlist,['wc1' anatprefix])); end
 
-    if ~isempty(tmp), ppparams.wc1im = panatniilist(tmp).name; end
+    if ~isempty(tmp), ppparams.anat.wc1im = panatniilist(tmp).name; end
 
     tmp = find(strcmp(prefixlist,['wp2' anatprefix]));
     if isempty(tmp), tmp = find(strcmp(prefixlist,['wc2' anatprefix])); end
 
-    if ~isempty(tmp), ppparams.wc2im = panatniilist(tmp).name; end
+    if ~isempty(tmp), ppparams.anat.wc2im = panatniilist(tmp).name; end
 
     tmp = find(strcmp(prefixlist,['wp3' anatprefix]));
     if isempty(tmp), tmp = find(strcmp(prefixlist,['wc3' anatprefix])); end
 
-    if ~isempty(tmp), ppparams.wc3im = panatniilist(tmp).name; end
+    if ~isempty(tmp), ppparams.anat.wc3im = panatniilist(tmp).name; end 
 end
 
 %% Do reoriention
 
-if params.reorient
-    nm = split(ppparams.subanat,'.nii');
-    transfile = fullfile(ppparams.subanatdir,[nm{1} '_reorient.mat']);
-    if isfile(transfile)
-        load(transfile,'M')
-        transM = M;
-    else        
-        transM = my_spmbatch_vol_set_com(fullfile(ppparams.subanatdir,ppparams.subanat));
-        transM(1:3,4) = -transM(1:3,4);
-    end
-
-    Vanat = spm_vol(fullfile(ppparams.subanatdir,ppparams.subanat));
-    MM = Vanat.private.mat0;
-
-    Vanat = my_reset_orientation(Vanat,transM * MM);
-
-    anatdat = spm_read_vols(Vanat);
-
-    Vanat.fname = fullfile(ppparams.subanatdir,['e' ppparams.subanat]);
-    Vanat.descrip = 'reoriented';
-    Vanat = spm_create_vol(Vanat);
-    Vanat = spm_write_vol(Vanat,anatdat);
-
-    auto_acpc_reorient(Vanat.fname,'T1');
-else
-    copyfile(fullfile(ppparams.subanatdir,ppparams.subanat),fullfile(ppparams.subanatdir,['e' ppparams.subanat]));
+nm = split(ppparams.subanat,'.nii');
+transfile = fullfile(ppparams.subanatdir,[nm{1} '_reorient.mat']);
+if isfile(transfile)
+    load(transfile,'M')
+    transM = M;
+else        
+    transM = my_spmbatch_vol_set_com(fullfile(ppparams.subanatdir,ppparams.subanat));
+    transM(1:3,4) = -transM(1:3,4);
 end
+
+Vanat = spm_vol(fullfile(ppparams.subanatdir,ppparams.subanat));
+MM = Vanat.private.mat0;
+
+Vanat = my_reset_orientation(Vanat,transM * MM);
+
+anatdat = spm_read_vols(Vanat);
+
+Vanat.fname = fullfile(ppparams.subanatdir,['e' ppparams.subanat]);
+Vanat.descrip = 'reoriented';
+Vanat = spm_create_vol(Vanat);
+Vanat = spm_write_vol(Vanat,anatdat);
+
+auto_acpc_reorient(Vanat.fname,'T1');
 
 ppparams.subanat = ['e' ppparams.subanat];
 delfiles{numel(delfiles)+1} = {fullfile(ppparams.subanatdir,ppparams.subanat)};
@@ -152,15 +148,15 @@ if params.anat.do_segmentation && ~isfield(ppparams,'wc1im') && ~isfield(ppparam
 
     [delfiles,keepfiles] = my_spmbatch_cat12vbm(ppparams,params,delfiles,keepfiles);
 
-    ppparams.wc1im = ['mwp1' ppparams.subanat];
-    ppparams.wc2im = ['mwp2' ppparams.subanat];
-    ppparams.wc3im = ['mwp3' ppparams.subanat];
+    ppparams.anat.wc1im = ['mwp1' ppparams.subanat];
+    ppparams.anat.wc2im = ['mwp2' ppparams.subanat];
+    ppparams.anat.wc3im = ['mwp3' ppparams.subanat];
     ppparams.wsubanat = ['wm1' ppparams.subanat];
 
     if ~params.anat.do_normalization
-        ppparams.c1im = ['p1' ppparams.subanat];
-        ppparams.c2im = ['p2' ppparams.subanat];
-        ppparams.c3im = ['p3' ppparams.subanat];
+        ppparams.anat.c1im = ['p1' ppparams.subanat];
+        ppparams.anat.c2im = ['p2' ppparams.subanat];
+        ppparams.anat.c3im = ['p3' ppparams.subanat];
     end
 end
 
