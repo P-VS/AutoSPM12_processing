@@ -70,16 +70,17 @@ def set_preprocessing_parameters():
     9.add_echo: (True or False) add echo numer tag to nifti file name (_echo-#)
     
     example
-    T1w:      scan_1 = ('dicom/T1w','anat','T1w','',[1],[1],False,False,False,False)
+    T1w:      scan_1 = ('dicom/anat_t1','anat','T1w','',[1],[1],False,False,False,False)
     fieldamp: scan_1 = ('dicom/fieldmap','fmap','fieldmap','',[1],[1],False,False,False,False) !!based on 2 GE scans TE_1 and TE_2!!
-    pepolar:  scan_1 = ('dicom/pepolar','fmap','pepolar','',[1],[1],False,True,False,False)
-    fMRI:     scan_1 = ('dicom/fMRI','func','fmri','rest',[1],[1],False,True,True,True)
-    asl:      scan_1 = ('dicom/pcasl','perf','asl','',[1],[1],False,False,False,False) !!GE PCASL based!!
+    pepolar:  scan_1 = ('dicom/fmri_pp','fmap','pepolar','',[1],[1],False,True,False,False)
+    fMRI:     scan_1 = ('dicom/fmri_task','func','fmri','rest',[1],[1],False,True,True,True)
+    ASLBOLD:  scan_1 = ('dicom/aslbold','func','aslbold','rest',[1],[1],False,True,True,True)
+    pcasl:    scan_1 = ('dicom/pcasl','perf','asl','',[1],[1],False,False,False,False) !!GE PCASL based!!
     """
     
     pp_params['mri_data'] = []
     
-    scan_1 = ('dcm/3DT1','anat','T1w','',[1],[1],False,False,False,False)
+    scan_1 = ('dcm/ZipTest','anat','T1w','',[1],[1],False,False,False,False)
     
     pp_params['mri_data'].append([scan_1])
     
@@ -121,6 +122,24 @@ def load_d2n_params(subdir,folder,acqtype,seqtype,task,session,run):
     
     return source_dir, crop, ignore_deriv, out_filename, output_dir
 
+"""
+---------------------------------------------------------------------------------------
+"""
+def check_zipfile(source_dir):
+    
+    import os
+    import shutil
+    
+    ldir = os.listdir(source_dir)
+    
+    for ifile in ldir:
+        if os.path.isfile(os.path.join(source_dir,ifile)):
+            if '.zip' in ifile and not '._' in ifile:
+                shutil.unpack_archive(os.path.join(source_dir,ifile),source_dir)
+                       
+    return source_dir
+    
+    
 """
 ---------------------------------------------------------------------------------------
 """
@@ -203,6 +222,7 @@ def rename_file(in_files,seqtype,add_acq,add_dir,add_run,add_echo):
             
         if 'pepolar' in seqtype: new_file = new_file+'_epi'
         if 'fmri' in seqtype: new_file = new_file+'_bold' 
+        if 'aslbold' in seqtype: new_file = new_file+'_aslbold' 
             
         os.rename(ifile+'.nii',new_file+'.nii')
         os.rename(ifile+'.json',new_file+'.json')
@@ -281,14 +301,20 @@ def main():
                
         dcm2niiwf.connect([(selectfiles,load_par_node,[('subdir','subdir')])])
         
+        checkzip_node = Node(interface=Function(input_names=['source_dir'],
+                                                output_names=['source_dir'],
+                                                function=check_zipfile),name='check_zip'+str(k))
+        
+        dcm2niiwf.connect([(load_par_node,checkzip_node,[('source_dir','source_dir')])])
+        
         d2nii_node = Node(Dcm2niix(compress='n', anon_bids=True, bids_format=True), name='d2nii'+str(k))
         
-        dcm2niiwf.connect([(load_par_node,d2nii_node,[('source_dir','source_dir'),
-                                                      ('crop','crop'),
+        dcm2niiwf.connect([(load_par_node,d2nii_node,[('crop','crop'),
                                                       ('ignore_deriv','ignore_deriv'),
                                                       ('out_filename','out_filename'),
                                                       ('output_dir','output_dir')
-                                                      ])
+                                                      ]),
+                           (checkzip_node,d2nii_node,[('source_dir','source_dir')])
                            ])
         
         renamefile_node = Node(interface=Function(input_names=['in_files','seqtype','add_acq','add_dir','add_run','add_echo'],
