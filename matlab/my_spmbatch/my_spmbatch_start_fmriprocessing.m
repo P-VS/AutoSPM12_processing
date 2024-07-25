@@ -1,22 +1,22 @@
 function my_spmbatch_start_fmriprocessing(sublist,nsessions,datpath,params)
 
-if ~params.meepi, params.echoes = [1]; end
-if ~params.mruns, params.runs = [1]; end
+if ~params.func.meepi, params.func.echoes = [1]; end
+if ~params.func.mruns, params.func.runs = [1]; end
 
 params.use_echoes_as_sessions = false;
-if params.meepi && ~contains(params.fmri_prefix,'c'), params.use_echoes_as_sessions = true; end
-if params.meepi && contains(params.fmri_prefix,'c'), params.echoes = [1]; end
+if params.func.meepi && ~contains(params.fmri_prefix,'c'), params.use_echoes_as_sessions = true; end
+if params.func.meepi && contains(params.fmri_prefix,'c'), params.func.echoes = [1]; end
 
 if ~contains(params.fmri_prefix,'s'), params.do_smoothing = true; else params.do_smoothing = false; end
 
-if params.mruns
+if params.func.mruns
     switch params.use_runs
         case 'separately'
-            params.oruns = params.runs; 
+            params.oruns = params.func.runs; 
             params.iruns = [1];
         case 'together'
             params.oruns = [1];
-            params.iruns = params.runs;
+            params.iruns = params.func.runs;
     end
 else
     params.oruns = [1];

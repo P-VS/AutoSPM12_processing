@@ -4,7 +4,7 @@ load(paramsfile)
 
 try
     %% do smoothing first (if not done before)
-    if params. do_smoothing
+    if params.do_smoothing
         params = my_spmbatch_fmriprocessing_do_smoothing(sub,ses,run,task,datpath,params);
     end
 

@@ -1,4 +1,4 @@
-function out = my_spmbatch_run_fmripreprocessing(sub,ses,run,task,datpath,paramsfile)
+function out = my_spmbatch_run_aslboldpreprocessing(sub,ses,run,task,datpath,paramsfile)
 
 load(paramsfile)
 
@@ -10,8 +10,8 @@ try
         % Clean up unnecessary files
         cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,'anat','preproc_anat');
     end
-    
-    %% preprocess functional scans
+
+     %% preprocess functional scans
     if params.preprocess_functional
         [delfiles,keepfiles] = my_spmbatch_functional(sub,ses,run,task,datpath,params);
         
@@ -19,12 +19,20 @@ try
         cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,'func',params.func_save_folder);  
     end
     
+    %% preprocess ASL-BOLD scans
+    if params.preprocess_asl
+        [delfiles,keepfiles] = my_spmbatch_fasl(sub,ses,run,task,datpath,params);
+
+        % Clean up unnecessary files
+        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,'perf',params.perf_save_folder); 
+    end
+
     %% denoise functional scans
-    if params.do_denoising && ~(params.preprocess_functional && params.func.denoise)
+    if params.do_denoising
         [delfiles,keepfiles] = my_spmbatch_denoise(sub,ses,run,task,datpath,params);
     
         % Clean up unnecessary files
-        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,params.func_save_folder,params.func_save_folder);
+        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,params.func_save_folder,params.perf_save_folder);
     end
 catch e
     fprintf('\nPP_Error\n');

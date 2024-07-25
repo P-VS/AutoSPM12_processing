@@ -1,11 +1,35 @@
-function my_spmbatch_start_fmripreprocessing(sublist,nsessions,task,datpath,params)
+function my_spmbatch_start_aslboldpreprocessing(sublist,nsessions,task,datpath,params)
 
-params.func.isaslbold = false;
-params.asl.splitaslbold = 'none';
+params.func.isaslbold = true;
+params.func.meepi = true;
 
-if ~params.func.mruns, params.func.runs = [1]; end
-if params.func.meepi && numel(params.func.echoes)==1, params.func.combination='none'; end
-if params.func.meepi && ~contains(params.func.combination,'none'), params.func.do_echocombination = true; else params.func.do_echocombination = false; end
+if ~contains(params.func.combination,'none'), params.func.do_echocombination = true; else params.func.do_echocombination = false; end
+if contains(params.asl.splitaslbold,'meica')
+    params.func.denoise = true; 
+    params.denoise.do_mot_derivatives = true;
+    params.denoise.do_ICA_AROMA = true;
+    params.denoise.do_noiseregression = true;
+end
+
+if params.do_denoising
+    if params.preprocess_functional
+        params.denoise.meepi = true;
+        params.denoise.echoes = params.func.echoes;
+
+        params.denoise.prefix = 'e';
+        if params.func.fieldmap, params.denoise.prefix = ['u' params.denoise.prefix]; end
+        if params.func.do_realignment && ~params.func.fieldmap, params.denoise.prefix = ['r' params.denoise.prefix]; end
+        if params.func.pepolar, params.denoise.prefix = ['u' params.denoise.prefix]; end
+        if params.func.do_slicetime, params.denoise.prefix = ['a' params.denoise.prefix]; end
+        if params.func.meepi && ~contains(params.func.combination,'none')
+            params.denoise.prefix = ['c' params.denoise.prefix]; 
+            params.denoise.mecombined = true;
+        else
+            params.denoise.mecombined = false;
+        end
+        if params.func.do_normalization, params.denoise.prefix = ['w' params.denoise.prefix]; end
+    end
+end
 
 save(fullfile(datpath,'params.mat'),'params')
 
@@ -40,9 +64,9 @@ for k = 1:numel(task)
     
                 fprintf(['\nStart preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' run ' num2str(datlist(i,3)) ' task ' task{k} '\n'])
         
-                mtlb_cmd = sprintf('"restoredefaultpath;addpath(genpath(''%s''));addpath(genpath(''%s''));addpath(genpath(''%s''));my_spmbatch_run_fmripreprocessing(%d,%d,%d,''%s'',''%s'',''%s'');"', ...
+                mtlb_cmd = sprintf('"restoredefaultpath;addpath(genpath(''%s''));addpath(genpath(''%s''));addpath(genpath(''%s''));my_spmbatch_run_aslboldpreprocessing(%d,%d,%d,''%s'',''%s'',''%s'');"', ...
                                             params.GroupICAT_path,params.spm_path,params.my_spmbatch_path,datlist(i,1),datlist(i,2),datlist(i,3),task{k},datpath,fullfile(datpath,'params.mat'));
-                logfile{i} = fullfile(datpath,['fmri_preprocess_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
+                logfile{i} = fullfile(datpath,['aslbold_preprocess_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
         
                 if exist(logfile{i},'file'), delete(logfile{i}); end
                 
@@ -74,7 +98,7 @@ for k = 1:numel(task)
                         if ~isempty(errortest)
                             pfinnished = pfinnished+1;
     
-                            nlogfname = fullfile(datpath,['error_fmri_preprocess_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
+                            nlogfname = fullfile(datpath,['error_aslbold_preprocess_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
                             movefile(logfile{i},nlogfname);
     
                             fprintf(['\nError during preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' run ' num2str(datlist(i,3)) ' task ' task{k} '\n'])
@@ -84,11 +108,11 @@ for k = 1:numel(task)
                             if ~params.keeplogs
                                 delete(logfile{i}); 
                             else
-                                nlogfname = fullfile(datpath,['done_fmri_preprocess_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
+                                nlogfname = fullfile(datpath,['done_aslbold_preprocess_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
                                 movefile(logfile{i},nlogfname);
                             end
     
-                            fprintf(['\nDone preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' run ' num2str(datlist(i,2)) ' task ' task{k} '\n'])
+                            fprintf(['\nDone preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' run ' num2str(datlist(i,3)) ' task ' task{k} '\n'])
                         end
                     end
                 end
@@ -112,7 +136,7 @@ for k = 1:numel(task)
         for i=1:numel(datlist(:,1))
             itstart = tic;
 
-            my_spmbatch_run_fmripreprocessing(datlist(i,1),datlist(i,2),datlist(i,3),task{k},datpath,fullfile(datpath,'params.mat'));
+            my_spmbatch_run_aslboldpreprocessing(datlist(i,1),datlist(i,2),datlist(i,3),task{k},datpath,fullfile(datpath,'params.mat'));
 
             % Print and save realignment paramers  
             save_rp_plot(datlist(i,1),datlist(i,2),datlist(i,3),task{k},datpath,params);

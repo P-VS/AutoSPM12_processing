@@ -43,8 +43,6 @@ params.keeplogs = false;
 
 params.save_intermediate_results = false; 
 
-params.reorient = true; % align data with MNI template to improve normalization and segmentation
-
 %% Preprocessing anatomical data for VBM with CAT12 toolbox
 
     % Normalization
