@@ -14,11 +14,8 @@ catestwrite.opts.affreg = 'mni';
 catestwrite.opts.biasacc = 0.5;
 catestwrite.extopts.restypes.optimal = [1 0.3];
 
-if params.reorient
-    catestwrite.extopts.setCOM = 1;
-else
-    catestwrite.extopts.setCOM = 0;
-end
+catestwrite.extopts.setCOM = 1;
+
 catestwrite.extopts.APP = 1070;
 catestwrite.extopts.affmod = 0;
 catestwrite.extopts.spm_kamap = 0;

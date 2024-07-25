@@ -1,76 +1,101 @@
-function [outfasldata,Vout,ppparams,delfiles] = my_spmbacth_faslsubtraction(fasldata,Vasl,ppparams,params,delfiles)
+function [ppparams,delfiles,keepfiles] = my_spmbacth_faslsubtraction(ppparams,params,delfiles,keepfiles)
 
-GM = spm_vol(fullfile(ppparams.subperfdir,ppparams.asl(1).c1m0scanfile));
-WM = spm_vol(fullfile(ppparams.subperfdir,ppparams.asl(1).c2m0scanfile));
+GM = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c1m0scanfile));
+WM = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c2m0scanfile));
+CSF = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c3m0scanfile));
 
 gmim = spm_read_vols(GM);
 wmim = spm_read_vols(WM);
+csfim = spm_read_vols(CSF);
 
 mask = gmim+wmim;
-mask_ind = find(mask>0.1);
+mask(mask<0.1) = 0;
+mask(mask>0) = 1;
 
-if contains(params.asl.tagorder,'labeled')
-    cidx=[-3 -2 -1 0 1 2];
-    lidx=[-2 -1 0 1 2 3];
-    conidx = 2:2:numel(Vasl);
-    labidx = 1:2:numel(Vasl);
-else
-    cidx=[-2 -1 0 1 2 3];
-    lidx=[-3 -2 -1 0 1 2];
-    conidx = 1:2:numel(Vasl);
-    labidx = 2:2:numel(Vasl);
-end
+csfim(mask>0) = 0;
 
-voldim = size(fasldata);
+nfname = split(ppparams.perf(1).aslfile,'_asl');
 
-outfasldata = zeros(voldim(1),voldim(2),voldim(3),voldim(4));
+Vasl=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix ppparams.perf(1).aslfile]));
 
-for iv=1:voldim(4) % sinc interpolation to replace the labeled scans by a control scan
-    if isempty(find(conidx==iv)), timeshift = 2.5; else timeshift = 3; end
-    idx=ceil(iv/2)+cidx;
-    idx(find(idx<1))=1;
-    idx(find(idx>numel(conidx)))=numel(conidx);
-    nimg = fasldata(:,:,:,conidx(idx));
-    nimg=reshape(nimg,size(nimg,1)*size(nimg,2)*size(nimg,3),size(nimg,4));
-    clear tmpimg;
-    [pn,tn]=size(nimg);
-    tmpimg=sinc_interpVec(nimg(mask_ind,:),timeshift);
-    Vconimg=zeros(size(nimg,1),1);
-    Vconimg(mask_ind)=tmpimg;
-    Vconimg=reshape(Vconimg,voldim(1),voldim(2),voldim(3));
-    clear tmpimg pn tn;
+tdim = numel(Vasl);
+nvols = params.loadmaxvols;
+for ti=1:nvols:tdim
+    if ti+nvols>tdim, nvols=tdim-ti+1; end
+    minvol = max([1,ti-1]);
+    maxvol = min([tdim,ti+nvols]);
 
-    if isempty(find(labidx==iv)), timeshift = 2.5; else timeshift = 3; end
-    idx=ceil(iv/2)+lidx;
-    idx(find(idx<1))=1;
-    idx(find(idx>numel(labidx)))=numel(labidx);
-    nimg = fasldata(:,:,:,labidx(idx));
-    nimg=reshape(nimg,size(nimg,1)*size(nimg,2)*size(nimg,3),size(nimg,4));
-    clear tmpimg;
-    [pn,tn]=size(nimg);
-    tmpimg=sinc_interpVec(nimg(mask_ind,:),timeshift);
-    Vlabimg=zeros(size(nimg,1),1);
-    Vlabimg(mask_ind)=tmpimg;
-    Vlabimg=reshape(Vlabimg,voldim(1),voldim(2),voldim(3));
-    clear tmpimg pn tn;
+    fprintf(['Subtract vols: ' num2str(ti) '-' num2str(minvol+nvols-1) '\n'])
     
-    outfasldata(:,:,:,iv) = Vconimg-Vlabimg;
+    fasldata = spm_read_vols(Vasl(minvol:maxvol));
+    
+    voldim = size(fasldata);
+    
+    %fasldata = fasldata .* repmat(mask,1,1,1,voldim(4));
+
+    if ti==1
+        csfdata = sum(reshape(fasldata .* repmat(csfim,1,1,1,voldim(4)),[voldim(1)*voldim(2)*voldim(3),voldim(4)]),1)/numel(find(csfim>0));
+        
+        conidx = 2:2:tdim;
+        labidx = 1:2:tdim;
+        
+        mean_csfcon = mean(csfdata(conidx));
+        mean_csflab = mean(csfdata(labidx));
+        
+        if mean_csflab>mean_csfcon
+            conidx = 1:2:tdim;
+            labidx = 2:2:tdim;
+        end
+    end
+
+    deltamdata = zeros([voldim(1),voldim(2),voldim(3),voldim(4)]);
+
+    for iv=2:nvols-1
+        if sum(conidx==(iv+ti-1))
+            itcondat=fasldata(:,:,:,iv); 
+        else
+            itcondat=(fasldata(:,:,:,iv-1)+fasldata(:,:,:,iv+1))/2; 
+        end
+           
+        if sum(labidx==(iv+ti-1)) 
+            itlabdat=fasldata(:,:,:,iv); 
+        else
+            itlabdat=(fasldata(:,:,:,iv-1)+fasldata(:,:,:,iv+1))/2; 
+        end
+    
+        deltamdata(:,:,:,iv) = itcondat-itlabdat;
+    end
+
+    if ti==1
+        if sum(conidx==1), itcondat=fasldata(:,:,:,1); else itcondat=fasldata(:,:,:,2); end
+        if sum(labidx==1), itlabdat=fasldata(:,:,:,1); else itlabdat=fasldata(:,:,:,2); end
+
+        deltamdata(:,:,:,1) = itcondat-itlabdat;
+    else
+        deltamdata = deltamdata(:,:,:,2:end);
+    end
+
+    if maxvol==tdim
+        if sum(conidx==maxvol), itcondat=fasldata(:,:,:,voldim(4)); else itcondat=fasldata(:,:,:,voldim(4)-1); end
+        if sum(labidx==maxvol), itlabdat=fasldata(:,:,:,voldim(4)); else itlabdat=fasldata(:,:,:,voldim(4)-1); end
+
+        deltamdata(:,:,:,voldim(4)) = itcondat-itlabdat;
+    else
+        deltamdata = deltamdata(:,:,:,1:end-1);
+    end
+        
+    Vout = Vasl(1);
+    rmfield(Vout,'pinfo');
+    for iv=1:nvols
+        Vout.fname = fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix nfname{1} '_deltam.nii']);
+        Vout.descrip = 'my_spmbatch - deltam';
+        Vout.dt = [spm_type('float32'),spm_platform('bigend')];
+        Vout.n = [ti+iv-1 1];
+        Vout = spm_write_vol(Vout,deltamdata(:,:,:,iv));
+    end
+
+    clear deltamdata
 end
 
-nfname = split(ppparams.asl(params.func.echoes(1)).aslfile,'_asl');
-
-Vout = Vasl;
-
-for j=1:numel(Vout)
-    Vout(j).fname = fullfile(ppparams.subperfdir,[ppparams.asl(1).aslprefix nfname{1} '_deltam.nii']);
-    Vout(j).descrip = 'my_spmbatch - deltam';
-    Vout(j).pinfo = [1,0,0];
-    Vout(j).dt = [spm_type('float32'),spm_platform('bigend')];
-    Vout(j).n = [j 1];
-end
-
-Vout = myspm_write_vol_4d(Vout,outfasldata);
-
-delfiles{numel(delfiles)+1} = {Vout(1).fname};
-
-ppparams.asl(1).deltamfile = [ppparams.asl(1).aslprefix nfname{1} '_deltam.nii'];
+ppparams.perf(1).deltamprefix = ppparams.perf(1).aslprefix;
+ppparams.perf(1).deltamfile = [nfname{1} '_deltam.nii'];

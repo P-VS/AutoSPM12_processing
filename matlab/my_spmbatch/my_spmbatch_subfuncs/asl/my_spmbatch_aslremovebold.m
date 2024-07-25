@@ -3,8 +3,38 @@ function [tefasldat,Vout,ppparams,delfiles] = my_spmbatch_aslremovebold(tefaslda
 
 nechoes = numel(params.func.echoes);
 
+GM = spm_vol(fullfile(ppparams.subperfdir,ppparams.asl(1).c1m0scanfile));
+WM = spm_vol(fullfile(ppparams.subperfdir,ppparams.asl(1).c2m0scanfile));
+CSF = spm_vol(fullfile(ppparams.subperfdir,ppparams.asl(1).c3m0scanfile));
+
+gmim = spm_read_vols(GM);
+wmim = spm_read_vols(WM);
+csfim = spm_read_vols(CSF);
+
 mask = my_spmbatch_mask(tefasldata{params.func.echoes(1)}.data);
+mask = gmim+wmim;
+mask(gmim+wmim<0.1) = 0;
+mask(mask>0) = 1;
+
 mask_ind = find(mask>0);
+
+csfim(gmim+wmim>0.1) = 0;
+
+voldim = size(tefasldata{params.func.echoes(1)}.data);
+Vasl = tefasldata{params.func.echoes(1)}.Vasl;
+
+conidx = 2:2:numel(Vasl);
+labidx = 1:2:numel(Vasl);
+
+csfdata = sum(reshape(tefasldata{params.func.echoes(1)}.data .* repmat(csfim,1,1,1,numel(Vasl)),[voldim(1)*voldim(2)*voldim(3),numel(Vasl)]),1)/numel(find(csfim>0));
+
+mean_csfcon = mean(csfdata(conidx));
+mean_csflab = mean(csfdata(labidx));
+
+if mean_csflab>mean_csfcon
+    conidx = 1:2:numel(Vasl);
+    labidx = 2:2:numel(Vasl);
+end
 
 switch params.asl.removebold
     case 't2star'
@@ -29,35 +59,35 @@ switch params.asl.removebold
                 otefasldat(:,:,:,iv,i) = my_spmbatch_smooth(utefasldat(:,:,:,iv,i),Vasl(iv),{},[3 3 3],0);
             end
         
-            if is_asl    
-                if contains(params.asl.tagorder,'labeled')
-                    cidx=[-3 -2 -1 0 1 2];
-                    conidx = 2:2:numel(Vasl);
-                    labidx = 1:2:numel(Vasl);
-                else
-                    cidx=[-2 -1 0 1 2 3];
-                    conidx = 1:2:numel(Vasl);
-                    labidx = 2:2:numel(Vasl);
-                end
+            %if is_asl    
+            %    if contains(params.asl.tagorder,'labeled')
+            %        cidx=[-3 -2 -1 0 1 2];
+            %        conidx = 2:2:numel(Vasl);
+            %        labidx = 1:2:numel(Vasl);
+            %    else
+            %        cidx=[-2 -1 0 1 2 3];
+            %        conidx = 1:2:numel(Vasl);
+            %        labidx = 2:2:numel(Vasl);
+            %    end
         
-                for iv=1:numel(Vasl) % sinc interpolation to replace the labeled scans by a control scan
-                    if isempty(find(conidx==iv)), timeshift = 2.5; else timeshift = 3; end
-                    idx=ceil(iv/2)+cidx;
-                    idx(find(idx<1))=1;
-                    idx(find(idx>numel(conidx)))=numel(conidx);
-                    nimg = otefasldat(:,:,:,conidx(idx),i);
-                    nimg=reshape(nimg,size(nimg,1)*size(nimg,2)*size(nimg,3),size(nimg,4));
-                    clear tmpimg;
-                    [pn,tn]=size(nimg);
-                    tmpimg=sinc_interpVec(nimg(mask_ind,:),timeshift);
-                    Vconimg=zeros(size(nimg,1),1);
-                    Vconimg(mask_ind)=tmpimg;
-                    Vconimg=reshape(Vconimg,voldim(1),voldim(2),voldim(3));
-                    clear tmpimg pn tn;
+            %    for iv=1:numel(Vasl) % sinc interpolation to replace the labeled scans by a control scan
+            %        if isempty(find(conidx==iv)), timeshift = 2.5; else timeshift = 3; end
+            %        idx=ceil(iv/2)+cidx;
+            %        idx(find(idx<1))=1;
+            %        idx(find(idx>numel(conidx)))=numel(conidx);
+            %        nimg = otefasldat(:,:,:,conidx(idx),i);
+            %        nimg=reshape(nimg,size(nimg,1)*size(nimg,2)*size(nimg,3),size(nimg,4));
+            %        clear tmpimg;
+            %        [pn,tn]=size(nimg);
+            %        tmpimg=sinc_interpVec(nimg(mask_ind,:),timeshift);
+            %        Vconimg=zeros(size(nimg,1),1);
+            %        Vconimg(mask_ind)=tmpimg;
+            %        Vconimg=reshape(Vconimg,voldim(1),voldim(2),voldim(3));
+            %        clear tmpimg pn tn;
             
-                    otefasldat(:,:,:,iv,i) = Vconimg;
-                end
-            end
+            %        otefasldat(:,:,:,iv,i) = Vconimg;
+            %    end
+            %end
         end
         
         tefasldat = zeros(voldim(1),voldim(2),voldim(3),numel(Vasl));
@@ -143,22 +173,30 @@ switch params.asl.removebold
 
         dt = [spm_type('float32'),spm_platform('bigend')];
     case 'filter'
-        tefasldat = tefasldata{params.func.echoes(1)}.data;
+        jsondat = fileread(ppparams.asl(params.func.echoes(1)).asljson);
+        jsondat = jsondecode(jsondat);
+    
+        tr = jsondat.RepetitionTime;
+        
+        for i=1:nechoes
+            ttefasldat = tefasldata{params.func.echoes(i)}.data;
 
-        if is_asl
-            jsondat = fileread(ppparams.asl(params.func.echoes(1)).asljson);
-            jsondat = jsondecode(jsondat);
-        
-            tr = jsondat.RepetitionTime;
-    
-            bf = min([0.09,1/(2*tr)]);
-    
-            s = size(tefasldat);
-            tefasldat = reshape(tefasldat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
-        
-            [tefasldat,~] = fmri_cleaning(tefasldat(:,:),1,[tr bf Inf],[],[],'restoremean','on');
-    
-            tefasldat = reshape(tefasldat(:,:),s);
+            hpf = min([0.09,1/(2*tr)]);
+
+            if is_asl
+                s = size(ttefasldat);
+                ttefasldat = reshape(ttefasldat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
+            
+                [ttefasldat,~] = fmri_cleaning(ttefasldat(:,:),0,[tr hpf Inf],[],[],'restoremean','on');
+                
+                if i==1, tefasldat = reshape(ttefasldat(:,:),s); else tefasldat = tefasldat + reshape(ttefasldat(:,:),s); end
+            else 
+                if i==1, tefasldat = reshape(ttefasldat(:,:),s); else tefasldat = tefasldat + reshape(ttefasldat(:,:),s); end
+            end     
+
+            tefasldat = tefasldat/nechoes;
+
+            clear 'ttefasldat'
         end
 
         dt = tefasldata{params.func.echoes(1)}.Vasl(1).dt;
