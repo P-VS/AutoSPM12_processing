@@ -1,91 +1,79 @@
-# UZB-fmr-processing-scripts
+UZB-fmr-processing-scripts
 
-This repository contains some scripts used at UZ Brussel to standardise, optimise and automate the processing single echo and multi-echo fMRI data. Additionally, a batch script is provided to do the segmentation in CAT12 for VBM.
-
+This repository contains the scripts used at UZ Brussel to standardise, optimise and automate the processing of single echo and multi-echo fMRI data. Additionally, a batch script is provided to do the segmentation in CAT12 for VBM.
 The python and Matlab scripts can be used independently from each other.
-
 The scripts comes without any warrant for the results. You may use them at your own responsibility. I only share them to help and inspire others with their own processing scripts.
 
 The folders contains following tools:
 
 1. Python
-
--AutoCropBET_T1w: FSL based cropping (RobustFOV), brain extraction (BET) and segmentation (FAST) of T1 weighted head scans
+-convert_dcm2niix: convert dicom to nii data format using dcm2niix and organise the data for the processing (BIDS based)
 
 2. Matlab
-
--spm_read_vols: alternative version of spm_read_vols that loads nifty data per volume rather than per slice to fasten up data loading. This script used the scripts in the my_spmbatch/NIFTI folder (copied from https://nl.mathworks.com/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image). To use it, you have to replace or rename the original spm_read_vols.m file in the SPM12 folder.
-
 -my_spmbatch/AutoSPMpreprocessing_fmri: initiating the automatic preprocessing of fMRI data in SPM12.
 
--my_spmbatch/AutoSPMprocessing_fmri: initiating the automatic processing of fMRI data in SPM12.
+-my_spmbatch/AutoSPM1stlevel_fmri: initiating the automatic 1st level analysis of fMRI data in SPM12.
 
 -my_spmbatch/AutoSPMpreprocessing_vbm: initiating the automatic preprocessing of VBM data (T1 anatomical high resolution scans) in CAT12.
 
-The onsets and timings of the task events/blocks are read from an events.tsv file.
+-my_spmbatch/AutoSPMpreprocessing_asl: initiating of the automatic preprocessing of 3D PCASL data from a GE scanner (WIP)
 
-If no dummy scans at the start of the fMRI scan were added, you see a decrease in the image contrast in the first few dynamics. In that case, it is advisable to delete these first dynamics from the fMRI time series. In the AutoSPMpreprocessing_fmri script a step to delete these first "dummy" scans is included and the AutoSPMprocessing_fmri script will correct the onset timings in the event.tsv file with the start of the first dynamic in the remaining fMRI data. The number of dynamics that has to be deleted is calculated based on the 'dummytime' parameter (in seconds) and the TR. If your fMRI task started after the dummy scans at the scanner, you have to set the 'dummytime' as 0.
+-my_spmbatch/AutoSPMpreprocessing_aslbold: initiating the automatic preprocessing of ASLBOLD (experimental sequence on GE) (WIP)
 
-Although a Matlab convertion tool to convert dicom images into nifti format is included, dcm2niix (https://github.com/rordenlab/dcm2niix) as implemented in Python is advised. In the 'python_scripts' folder a batch script (convert_dcm2niix.py) is provided.
+Each analysis can be started by setting all the parameters in the beginning of the AutoSPM… script and clic ‘Run’.
 
 3. fMRI_Class
-
-The slides of my fMRI classes are provided. During these classes, a demo dataset is analysed manualy in the same way as is done by my scripts.
-
---------------------------------------------------------------------------------------
+The slides of my fMRI classes are provided. During these classes, a demo dataset is analysed manually in the same way as is done by my scripts.
 
 Required software installed:
 
-- Matlab
-- SPM12 (https://www.fil.ion.ucl.ac.uk/spm/)
-	- make sure SPM and its subfolders are added to the Matlab Path
-- MRIcroGL (https://www.mccauslandcenter.sc.edu/mricrogl/) for dicom to nifti conversion
-- CAT12 (https://neuro-jena.github.io/cat/) for VBM
-- GIFT (https://trendscenter.org/software/gift/) to use ICA-AROMA denoising
-
+* Matlab
+* SPM12 (https://www.fil.ion.ucl.ac.uk/spm/)
+* MRIcroGL (https://www.mccauslandcenter.sc.edu/mricrogl/) for dicom to nifti conversion
+* CAT12 (https://neuro-jena.github.io/cat/) for VBM
+* GIFT (https://trendscenter.org/software/gift/) to use ICA-AROMA denoising
 To use the Matlab script within SPM:
-
-- ACID SPM toolbox (http://www.diffusiontools.com/index.html)
-- MEHBfMRI SPM toolbox (https://github.com/P-VS/MEHBfMRI)
-
+* ACID SPM toolbox (http://www.diffusiontools.com/index.html)
+* MEHBfMRI SPM toolbox (https://github.com/P-VS/MEHBfMRI)
 To use the Python script:
+* Anaconda (https://www.anaconda.com/distribution/)
+    * start Spyder in a terminal/Command Promt: type "spyder"
+* Nipype (https://nipype.readthedocs.io/en/latest/):
+    * in terminal type: conda install --channel conda-forge nipype
+* nibabel (https://nipy.org/nibabel/):
+    * In terminal type: pip install nibabel
+* nilearn (https://nilearn.github.io):
+    * in terminal type: pip install -U --user nilearn
+* dcm2niix: conda install -c conda-forge dcm2niix
 
-- FSL
-- Anaconda (https://www.anaconda.com/distribution/)
-	- start Spyder in a terminal/Command Promt: type "spyder"
-- DICOM Sort for sorting dicom files per series
-	- from terminal: pip install DICOMsort
-	- start from terminal by the command "dicomsort"
-	- as program (https://dicomsort.com)
-- Nipype (https://nipype.readthedocs.io/en/latest/): 
-	- in terminal type: conda install --channel conda-forge nipype
-- nibabel (https://nipy.org/nibabel/): 
-	- In terminal type: pip install nibabel 
-- nilearn (https://nilearn.github.io):
-	- in terminal type: pip install -U --user nilearn
-- dcm2niix: conda install -c conda-forge dcm2niix
+The fMRI preprocessing script for fMRI provide the following steps (In a fixed order):
 
---------------------------------------------------------------------------------------
+IMPORTANT: !! Look at your data before starting any preprocessing. It makes no sense to lose time in trying to preprocess bad data !!
 
-Prior to using this script to process your data:
+1. Automatic set the origin in the anterior comisura and align with the MNI template to improve coregistration and normalisation steps 
+2. Remove dummy scans (prefix to the file name for the combination of steps 1 and 2 = e)
+3. Realignment to the first echo (prefix to the file name = r)
+4. TOPUP like EPI geometric distortion correction based on a phase encoding gradient polarity reversed scan (pepolar) (prefix to the file name = u)
+5. For ASLBOLD: filetering between BOLD (f<0.1Hz) (prefix to the file name = f, endfix is set to _bold) and ALS (f>0.1Hz) part (endfix is set to _asl)
+6. denoising (prefix to the file name = d)
+    1. Bandpass filtering and detrending
+    2. Extension of  motion regressors to 24 by adding the temporal derivative and the squared regressors)
+    3. aCompCor (noise componenten determined on no gray or white matter voxels)
+    4. ICA-AROMA for single echo fMRI / ME-ICA-AROMA foor multi-echo fMRI. A component is labeled as noise if at least 1 of following criteria is met:
+        1. Fraction of the component in non brain areas > 2 * fraction of the component in brain areas (grey and white matter areas)
+        2. The highest correlation between a component’s time course and the noise regressors (24 motion+aCompCor) (see Van Schuerbeek te al. The optimized combination of aCompCor and ICA-AROMA to reduce motion and physiologic noise in task fMRI data. Biomed. Physiologic. Eng. Express 2022, 8(5), doi:10.1088/2057-1976/ac63f0)
+        3. Non T2*-related signal as determined with ME-ICA: Rho > 1.25 * Kappa (see Kundu et al. Differentiating BOLD and non-BOLD signals in fMRI time series using multi-echo EPI. NeuroImage 2012, 60(3): 1759-1770, code based ons tedana: https://github.com/ME-ICA/tedana)
+        4. High frequency content > 50%
+    5. Noise regression of the 24 motion regressors, aCompCor regressors / Soft removal of the ICA noise components
+7. For ASLBOLD: the S0 components as determined with ME-ICA (non ASL if Kappa > 1.25 * Rho) in step 6.3 are added to the filtered ASL component from step 5 to form the functional asl signal
+8. If multi-echo fMRI: echo combination (prefix to the file name = c). Choices are
+    1. Simple averaging
+    2. TE weighted
+    3. T2* weighted (as in tedana: https://github.com/ME-ICA/tedana) 
+    4. Dynamic T2* mapping (see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244)
+9. Slice time correction (also possible with HyperBand/Simultaneous multislice) (prefix to the file name = a)
+10. Normalisation to the MNI template (prefix to the file name = w)
+11. Smoothing (prefix to the file name = s)
+12. Denoising (if not done in step 6) (prefix to the file name = d)
 
-Convert the DICOM files into nifti using dcm2niix (e.g. manual in MROCroGL or by using 'convert_dcm2niix.py')
-For the anatomical scans, set 'Crop 3D Images' on
-
-Optional but advisable, in SPM, set the origin and orientation of all scans according to the anterior-posterior comissura. It is best not to apply the transformation to the 4D data (it will nly be applied on the first dynamic), but to save the parameters in a .mat-file. The script will use the saved transformation for all dynamics.
-
-Organise the data in BIDS format
-    - datpath
-        -sub-##
-            -ses-00# (if your experiment contains multiple session per subject)
-                -anat: containes the anatomical data (3D T1)
-                   Files: sub-##_T1w.nii and sub-##_T1w.json
-                -func: containes the fmri data
-                   Files: sub-##_task-..._bold.nii and sub-##_task-..._bold.json
-                -fmap: containnes the gradient pololarity (blip-up/down) filpt data or the fieldmap scans
-                   Files in case of inverted gradient polarity: sub-##_dir-pi_epi.nii and sub-##_dir-pi_epi.json
-                   Files in case of fieldmap scans: (image 1 in file is amplitude, image 2 in file is phase)
-                          sub-##_fmap_echo-1.nii and sub-##_fmap_echo-1.json
-                          sub-##_fmap_echo-2.nii and sub-##_fmap_echo-2.json
-    
-IMPORTANT: !! Look at your data before starting any (pre)processing. It makes no sense to lose time in trying to process bad data !!
+IMPORTANT: !! Look at your the result of the preprocessing before starting any 1st level (individual subject) or groups analysis. Doing statistical tests on wrongly preprocessed data can affect your results!
