@@ -168,8 +168,6 @@ if params.func.meepi %Filter list based on echo number
 
     tmp = find(and(~contains({funcniilist.name},'_echo-'),~contains({funcniilist.name},'_e')));
     if ~isempty(tmp), edirniilist = [edirniilist;funcniilist(tmp)]; end
-
-    ppparams.func(1).jsonfile = fullfile(funcjsonlist(jstmp(1)).folder,funcjsonlist(jstmp(1)).name);
 else
     edirniilist = funcniilist;
 end
