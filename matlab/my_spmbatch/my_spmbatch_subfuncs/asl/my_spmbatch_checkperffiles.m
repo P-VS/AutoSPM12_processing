@@ -12,13 +12,10 @@ if params.func.mruns, namefilters(3).required = true; else namefilters(3).requir
 namefilters(4).name = ['task-' ppparams.task];
 namefilters(4).required = true;
 
-namefilters(5).name = '_echo-1';
-namefilters(5).required = true;
-
 % asl data
 
-namefilters(6).name = '_asl';
-namefilters(6).required = true;
+namefilters(5).name = '_asl';
+namefilters(5).required = true;
 
 aslniilist = my_spmbatch_dirfilelist(ppparams.subperfdir,'nii',namefilters,false);
 
@@ -28,34 +25,44 @@ if isempty(aslniilist)
     return
 end
 
-prefixlist = split({aslniilist.name},'sub-');
-if numel(aslniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
+for ie=1:numel(params.func.echoes)
+    tmp = find(contains({aslniilist.name},['_echo-' num2str(ie)]));
+    if ~isempty(tmp), edirniilist = aslniilist(tmp); else edirniilist = []; end
 
-studyprefix = ppparams.func(1).prefix;
+    prefixlist = split({edirniilist.name},'sub-');
+    if numel(edirniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
 
-perfcheck = true;
-while perfcheck
-    tmp = find(strcmp(prefixlist,studyprefix));
-    if ~isempty(tmp)
-        ppparams.perf(1).aslprefix = studyprefix; 
-        perfcheck = false;
-    else 
-        studyprefix = studyprefix(2:end); 
-        if length(studyprefix) == 0 
-            perfcheck = false; 
+    fpresplit = split(prefixlist{1},'f');
+    studyprefix = ['f' fpresplit{end}];
+    if contains(params.asl.splitaslbold,'meica') && ~contains(studyprefix,'d'), studyprefix = ['d' studyprefix]; end
+    
+    perfcheck = true;
+    while perfcheck
+        tmp = find(strcmp(prefixlist,studyprefix));
+        if ~isempty(tmp)
+            ppparams.perf(ie).aslprefix = studyprefix; 
+            perfcheck = false;
+        else 
+            studyprefix = studyprefix(2:end); 
+            if length(studyprefix) == 0 
+                perfcheck = false; 
+            end
         end
     end
-end
-
-if ~isempty(tmp)
-    ffile = aslniilist(tmp).name;
-    fsplit = split(ffile,ppparams.perf(1).aslprefix);
-    ppparams.perf(1).aslfile = fsplit{2};
+    
+    if ~isempty(tmp)
+        ffile = edirniilist(tmp).name;
+        fsplit = split(ffile,ppparams.perf(ie).aslprefix);
+        ppparams.perf(ie).aslfile = fsplit{2};
+    end
 end
 
 % m0scan data
 
-namefilters(6).name = '_m0scan';
+namefilters(5).name = '_m0scan';
+namefilters(5).required = true;
+
+namefilters(6).name = '_echo-1';
 namefilters(6).required = true;
 
 m0scanniilist = my_spmbatch_dirfilelist(ppparams.subperfdir,'nii',namefilters,false);
@@ -69,7 +76,8 @@ end
 prefixlist = split({m0scanniilist.name},'sub-');
 if numel(m0scanniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
 
-studyprefix = ppparams.func(1).prefix;
+fpresplit = split(ppparams.perf(ie).aslprefix,'f');
+studyprefix = fpresplit{end};
 
 perfcheck = true;
 while perfcheck
@@ -102,8 +110,8 @@ if ~isempty(tmp), ppparams.perf(1).c3m0scanfile = m0scanniilist(tmp).name; end
 
 % deltam data
 
-namefilters(6).name = '_deltam';
-namefilters(6).required = true;
+namefilters(5).name = '_deltam';
+namefilters(5).required = true;
 
 deltamniilist = my_spmbatch_dirfilelist(ppparams.subperfdir,'nii',namefilters,false);
 

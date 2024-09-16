@@ -62,12 +62,23 @@ if ~isfield(ppparams.perf(1),'deltamfile')
     [ppparams,delfiles,keepfiles] = my_spmbacth_faslsubtraction(ppparams,params,delfiles,keepfiles);
 end
 
-return
 %% Make cbf series
-if params.asl.do_cbfmapping || ~isfield(ppparams,'cbfmap')
-    if ~isfield(ppparams,'tm0scan')
-        fprintf('Start M0 preprocessing \n')
+if ~isfield(ppparams.perf(1),'cbffile')
+    fprintf('Start CBF mapping \n')
     
-      %  [ppparams,delfiles,keepfiles] = my_spmbatch_asl_M0correction(ppparams,params,delfiles,keepfiles);
-    end
+    [ppparams,delfiles,keepfiles] = my_spmbatch_fasl_cbfmapping(ppparams,params,delfiles,keepfiles);
+end
+
+%% Normalise CBF series
+if ~isfield(ppparams.perf(1),'wcbffile')
+    fprintf('Do normalization\n')
+
+    [ppparams,delfiles,keepfiles] = my_spmbatch_aslbold_normalization(ppparams,params,delfiles,keepfiles);
+end
+
+%% Smooth CBF series        
+if ~isfield(ppparams.perf(1),'scbffile')
+    fprintf('Do smoothing \n')
+
+    [ppparams,delfiles,keepfiles] = my_spmbatch_dosmoothasl(ppparams,params,delfiles,keepfiles);
 end

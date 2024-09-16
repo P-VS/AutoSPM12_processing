@@ -98,7 +98,7 @@ end
 
 m0dat = spm_read_vols(spm_vol(ppparams.rm0scan));
 
-corr_T1 = 1 ./ (1-exp(-2.025/T1dat)); % M0 sscan @GE is a saturation rescovery SE with ST=2.0
+corr_T1 = 1 ./ (1-exp(-2.025./T1dat)); % M0 sscan @GE is a saturation rescovery SE with ST=2.0
 m0dat = m0dat .* corr_T1;
 
 VM0 = spm_vol(ppparams.rm0scan);

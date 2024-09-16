@@ -1,4 +1,4 @@
-function [ppparams,delfiles,keepfiles] = my_spmbatch_split_asl_bold(ppparams,ie,delfiles,keepfiles)
+function [ppparams,delfiles,keepfiles] = my_spmbatch_split_asl_bold(params,ppparams,ie,delfiles,keepfiles)
 
 fprintf('Split ASL/BOLD \n')
 
@@ -34,7 +34,7 @@ end
 Vbold = myspm_write_vol_4d(Vbold,bolddat);
 
 funcdat = reshape(funcdat(:,:),s);
-funcdat = funcdat-bolddat+repmat(mean(funcdat,4),[1,1,1,s(4)]);
+if contains(params.asl.splitaslbold,'meica'), funcdat = funcdat-bolddat+repmat(mean(funcdat,4),[1,1,1,s(4)]); end
 
 Vasl = Vfunc;
 for iv=1:numel(Vasl)
@@ -46,7 +46,6 @@ end
 
 Vasl = myspm_write_vol_4d(Vasl,funcdat);
 
-delfiles{numel(delfiles)+1} = {fullfile(ppparams.subperfdir,['f' ppparams.func(ie).prefix fname{1} '_asl.nii'])};
 delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_bold.nii'])};
 
 ppparams.func(ie).funcfile = [fname{1} '_bold.nii'];

@@ -8,94 +8,105 @@ gmim = spm_read_vols(GM);
 wmim = spm_read_vols(WM);
 csfim = spm_read_vols(CSF);
 
-mask = gmim+wmim;
-mask(mask<0.1) = 0;
-mask(mask>0) = 1;
-
-csfim(mask>0) = 0;
-
-nfname = split(ppparams.perf(1).aslfile,'_asl');
+csfim(gmim+wmim>0) = 0;
+csfim(csfim<0.2) = 0;
+csfim(csfim>0) = 1;
 
 Vasl=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix ppparams.perf(1).aslfile]));
 
-tdim = numel(Vasl);
-nvols = params.loadmaxvols;
-for ti=1:nvols:tdim
-    if ti+nvols>tdim, nvols=tdim-ti+1; end
-    minvol = max([1,ti-1]);
-    maxvol = min([tdim,ti+nvols]);
+jsondat = fileread(ppparams.func(1).jsonfile);
+jsondat = jsondecode(jsondat);
+tr = jsondat.RepetitionTime;
 
-    fprintf(['Subtract vols: ' num2str(ti) '-' num2str(minvol+nvols-1) '\n'])
-    
-    fasldata = spm_read_vols(Vasl(minvol:maxvol));
-    
-    voldim = size(fasldata);
-    
-    %fasldata = fasldata .* repmat(mask,1,1,1,voldim(4));
+fasldata = spm_read_vols(Vasl);
+voldim = size(fasldata);
 
-    if ti==1
-        csfdata = sum(reshape(fasldata .* repmat(csfim,1,1,1,voldim(4)),[voldim(1)*voldim(2)*voldim(3),voldim(4)]),1)/numel(find(csfim>0));
-        
-        conidx = 2:2:tdim;
-        labidx = 1:2:tdim;
-        
-        mean_csfcon = mean(csfdata(conidx));
-        mean_csflab = mean(csfdata(labidx));
-        
-        if mean_csflab>mean_csfcon
-            conidx = 1:2:tdim;
-            labidx = 2:2:tdim;
-        end
-    end
+mask = my_spmbatch_mask(fasldata);
 
-    deltamdata = zeros([voldim(1),voldim(2),voldim(3),voldim(4)]);
+csfdata = sum(reshape(fasldata .* repmat(csfim,[1,1,1,voldim(4)]),[voldim(1)*voldim(2)*voldim(3),voldim(4)]),1)/numel(find(csfim>0));
 
-    for iv=2:nvols-1
-        if sum(conidx==(iv+ti-1))
-            itcondat=fasldata(:,:,:,iv); 
-        else
-            itcondat=(fasldata(:,:,:,iv-1)+fasldata(:,:,:,iv+1))/2; 
-        end
-           
-        if sum(labidx==(iv+ti-1)) 
-            itlabdat=fasldata(:,:,:,iv); 
-        else
-            itlabdat=(fasldata(:,:,:,iv-1)+fasldata(:,:,:,iv+1))/2; 
-        end
-    
-        deltamdata(:,:,:,iv) = itcondat-itlabdat;
-    end
+conidx = 2:2:voldim(4);
+labidx = 1:2:voldim(4);
 
-    if ti==1
-        if sum(conidx==1), itcondat=fasldata(:,:,:,1); else itcondat=fasldata(:,:,:,2); end
-        if sum(labidx==1), itlabdat=fasldata(:,:,:,1); else itlabdat=fasldata(:,:,:,2); end
+mean_csfcon = mean(csfdata(conidx));
+mean_csflab = mean(csfdata(labidx));
 
-        deltamdata(:,:,:,1) = itcondat-itlabdat;
-    else
-        deltamdata = deltamdata(:,:,:,2:end);
-    end
+if mean_csflab>mean_csfcon
+    conidx = 1:2:voldim(4);
+    labidx = 2:2:voldim(4);
+end
 
-    if maxvol==tdim
-        if sum(conidx==maxvol), itcondat=fasldata(:,:,:,voldim(4)); else itcondat=fasldata(:,:,:,voldim(4)-1); end
-        if sum(labidx==maxvol), itlabdat=fasldata(:,:,:,voldim(4)); else itlabdat=fasldata(:,:,:,voldim(4)-1); end
+ppparams.asl.conidx = conidx;
+ppparams.asl.labidx = labidx;
 
-        deltamdata(:,:,:,voldim(4)) = itcondat-itlabdat;
-    else
-        deltamdata = deltamdata(:,:,:,1:end-1);
-    end
-        
+clear csfdata mean_csflab mean_csfcon
+
+deltamdata = zeros([voldim(1)*voldim(2)*voldim(3),voldim(4)]);
+
+fasldata = reshape(fasldata,[voldim(1)*voldim(2)*voldim(3),voldim(4)]);
+
+condat = fasldata(mask>0,conidx);
+labdat = fasldata(mask>0,labidx);
+
+ncondat = spline((conidx-1)*tr,condat,[0:tr:(voldim(4)-1)*tr]);
+nlabdat = spline((labidx-1)*tr,labdat,[0:tr:(voldim(4)-1)*tr]);
+
+deltamdata(mask>0,:) = ncondat-nlabdat;
+
+deltamdata = reshape(deltamdata,[voldim(1),voldim(2),voldim(3),voldim(4)]);
+
+clear ncondat nlabdat condat labdat fasldata
+
+nfname = split(ppparams.perf(1).aslfile,'_asl');
+
+if contains(params.asl.temp_resolution,'original')
     Vout = Vasl(1);
     rmfield(Vout,'pinfo');
-    for iv=1:nvols
+    for iv=1:voldim(4)
         Vout.fname = fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix nfname{1} '_deltam.nii']);
         Vout.descrip = 'my_spmbatch - deltam';
         Vout.dt = [spm_type('float32'),spm_platform('bigend')];
-        Vout.n = [ti+iv-1 1];
+        Vout.n = [iv 1];
         Vout = spm_write_vol(Vout,deltamdata(:,:,:,iv));
     end
+elseif contains(params.asl.temp_resolution,'reduced')
+    nvols = floor(params.asl.dt/tr); 
+    
+    rdeltamdata = zeros([voldim(1),voldim(2),voldim(3),ceil(voldim(4)/nvols)]);
 
-    clear deltamdata
+    Vout = Vasl(1);
+    rmfield(Vout,'pinfo');
+    for iv=1:ceil(voldim(4)/nvols)
+        minvol=max(2,(iv-1)*nvols+1);
+        maxvol=min(iv*nvols,voldim(4)-1);
+
+        rdeltamdata = mean(deltamdata(:,:,:,minvol:maxvol),4);
+
+        Vout.fname = fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix nfname{1} '_deltam.nii']);
+        Vout.descrip = 'my_spmbatch - deltam';
+        Vout.dt = [spm_type('float32'),spm_platform('bigend')];
+        Vout.n = [iv 1];
+        Vout = spm_write_vol(Vout,rdeltamdata);
+
+        clear rdeltamdata
+    end
+elseif contains(params.asl.temp_resolution,'only_mean')
+    mdeltamdata = mean(deltamdata(:,:,:,2:voldim(4)-1),4);
+
+    Vout = Vasl(1);
+    rmfield(Vout,'pinfo');
+    Vout.fname = fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix nfname{1} '_deltam.nii']);
+    Vout.descrip = 'my_spmbatch - deltam';
+    Vout.dt = [spm_type('float32'),spm_platform('bigend')];
+    Vout.n = [1 1];
+    Vout = spm_write_vol(Vout,mdeltamdata);
+
+    clear mdeltam
 end
+
+clear deltamdata
 
 ppparams.perf(1).deltamprefix = ppparams.perf(1).aslprefix;
 ppparams.perf(1).deltamfile = [nfname{1} '_deltam.nii'];
+
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix nfname{1} '_deltam.nii'])};
