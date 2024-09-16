@@ -2,6 +2,7 @@ function my_spmbatch_start_fmriprocessing(sublist,nsessions,datpath,params)
 
 if ~params.func.meepi, params.func.echoes = [1]; end
 if ~params.func.mruns, params.func.runs = [1]; end
+if contains(params.modality,'fasl'), params.func.echoes = [1]; end
 
 params.use_echoes_as_sessions = false;
 if params.func.meepi && ~contains(params.fmri_prefix,'c'), params.use_echoes_as_sessions = true; end

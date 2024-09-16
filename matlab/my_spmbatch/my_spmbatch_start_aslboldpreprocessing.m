@@ -3,10 +3,15 @@ function my_spmbatch_start_aslboldpreprocessing(sublist,nsessions,task,datpath,p
 params.func.isaslbold = true;
 params.func.meepi = true;
 
+params.asl.splitaslbold = 'meica'; %(default='meica') % this step is part of params.preprocess_functional = true;
+%'meica' : after filterinf, ME-ICA (tedana based) with T2* part = BOLD and S0 part is ASL
+%See Cohen et al 2018. Multiband multi-echo simultaneous ASL/BOLD for
+%task-induced functional MRI. PLoS One 13(2):e0190427
+
 if ~contains(params.func.combination,'none'), params.func.do_echocombination = true; else params.func.do_echocombination = false; end
 if contains(params.asl.splitaslbold,'meica')
-    params.func.denoise = true; 
     params.denoise.do_mot_derivatives = true;
+    params.denoise.do_aCompCor = false;
     params.denoise.do_ICA_AROMA = true;
     params.denoise.do_noiseregression = true;
 end

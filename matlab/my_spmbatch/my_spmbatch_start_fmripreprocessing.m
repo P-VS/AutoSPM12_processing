@@ -1,6 +1,7 @@
 function my_spmbatch_start_fmripreprocessing(sublist,nsessions,task,datpath,params)
 
 params.func.isaslbold = false;
+params.preprocess_asl = false;
 params.asl.splitaslbold = 'none';
 
 if ~params.func.mruns, params.func.runs = [1]; end

@@ -31,13 +31,13 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/asl_bold/openfmri_data';
+datpath = '/Volumes/LaCie/UZ_Brussel/asl_bold/ASL_fingertapping';
 
 sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_func'; %name of the folder to save the preprocessed bold data
-params.perf_save_folder = 'preproc_asl'; %name of the folder to save the preprocessed asl data
+params.func_save_folder = 'preproc_func_filter_indTE'; %name of the folder to save the preprocessed bold data
+params.perf_save_folder = 'preproc_asl_filter'; %name of the folder to save the preprocessed asl data
 
 task ={'bilateralfingertapping'};
 
@@ -54,7 +54,7 @@ params.maxprocesses = 2; %Best not too high to avoid memory problems %(default=2
 params.loadmaxvols = 100; %to reduce memory load, the preprocessing can be split in smaller blocks (default = 100)
 params.keeplogs = false; %(default=false)
 
-params.save_intermediate_results = true; %clean up the directory by deleting unnecessary files generated during the processing (default = false)
+params.save_intermediate_results = false; %clean up the directory by deleting unnecessary files generated during the processing (default = false)
 
 %% Preprocessing anatomical data
 
@@ -70,18 +70,18 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     
 %% Preprocessing ASL data
 
-    params.preprocess_asl = true; %(default=true)
+    params.preprocess_asl = false; %(default=true)
 
     %ASL data
     params.asl.isM0scan = 'last'; %The M0 image is by defaullt the last volume @GE (set 'last')
-    params.asl.LabelingDuration = 1.5; % in seconds (parameter is ignored if LabelingDuration is in json file)
-    params.asl.PostLabelDelay = 1.5; % in seconds (parameter is ignored if PostLabelDelay is in json file)
+    params.asl.LabelingDuration = 1.450; % in seconds (parameter is ignored if LabelingDuration is in json file)
+    params.asl.PostLabelDelay = 1.525; % in seconds (parameter is ignored if PostLabelDelay is in json file)
     
-    params.asl.T1correctionM0 = 'tisssue_maps'; %T1 correction of M0scan: 'tisssue_maps', 'T1_map', 'average_GM', 'average_WM
-
-    params.asl.splitaslbold = 'meica'; %(default='meica') % this step is part of params.preprocess_functional = true;
-    %'filter' : temporal filtering with BOLD part=f<0.1Hz, ASL part=f>0.1Hz
-    %'meica' : after filterinf, ME-ICA (tedana based) with T2* part = BOLD and S0 part is ASL
+    params.asl.temp_resolution = 'original'; %tempporal resolution of the gennerated CBF series
+    % 'original' : temporal resolution of the original series
+    % 'only_mean' : only 1 CBF image (mean over the whole series
+    % 'reduced' : the mean CBF over a few timepoints (e.g. per minute) 
+    params.asl.dt = 40; %new temporal resolution in seconds if params.asl.temp_resolution = 'reduced'
 
 %% Preprocessing functional (the order of the parameters represents the fixed order of the steps done)
 
@@ -98,9 +98,9 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 
     %Denoising before echo combination and normalization ussing the
     %parameters from params.denoise
-    params.func.denoise = true; %(default=true)
+    params.func.denoise = false; %(default=false)
 
-    params.func.combination = 'T2star_weighted'; %only used for ME-EPI (default=T2star_weighted)
+    params.func.combination = 'none'; %only used for ME-EPI (default=T2star_weighted)
     %none: all echoes are preprocessed separatly
     %average: The combination is the average of the multiple echo images
     %TE_weighted: The combination is done wi=TEi or 

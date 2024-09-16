@@ -24,16 +24,17 @@ params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/asl_bold/openfmri_data';
+datpath = '/Volumes/LaCie/UZ_Brussel/asl_bold/ASL_fingertapping';
 
 first_sub = 1;
 last_sub = 1;
-sublist = [1]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1:13]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 nsessions = [1]; %nsessions>0
  
 params.task = {'bilateralfingertapping'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
 
-params.analysisname = 'bold';
+params.analysisname = 'func_meica';
+params.modality = 'fmri'; %'fmri' or 'fasl'
 
 params.use_parallel = false; 
 params.maxprocesses = 2; %Best not too high to avoid memory problems
@@ -41,8 +42,8 @@ params.loadmaxvols = 100; %to reduce memory load, the preprocessing can be split
 params.keeplogs = false;
 
 %% fMRI data parameters
-    params.preprocfmridir = 'preproc_func'; %directory with the preprocessed fMRI data
-    params.fmri_prefix = 'swcafre'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
+    params.preprocfmridir = 'preproc_func_meica'; %directory with the preprocessed fMRI data
+    params.fmri_prefix = 'swacdfre'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
     
     params.dummytime = 0; %only if the timings in the _events.tsv file should be corrected for dummy scans
     
@@ -59,7 +60,7 @@ params.keeplogs = false;
 
 %% SPM first level analysis parameters
     params.confounds_prefix = 'rp_e'; %confounds file of form [confounds_prefix 'sub-ii_task-... .txt']
-    params.add_regressors = true;
+    params.add_regressors = false;
     params.use_ownmask = false;
     params.model_serial_correlations = 'AR(1)';
     params.hpf = 128; %default 128
