@@ -126,27 +126,20 @@ brainFract = zeros(numComp,1);
 
 for i = 1:numComp       
     
-    nbmaskdat = nobrain;
-    nbCompdat = compData(:,i);
+    Compdat = compData(:,i);
 
-    nbmaskdat = reshape(nbmaskdat,[numel(nbmaskdat),1]);
-    nbCompdat = reshape(nbCompdat,[numel(nbmaskdat),1]);
+    totComp = sum(Compdat(Compdat>0),"all");
+    brainComp = sum(Compdat(braindat>0),"all");
+    nbrainComp = sum(Compdat(nobrain>0),"all");
 
-    [comparison, ~, ~, ~] = icatb_correlateFunctions(nbmaskdat, nbCompdat);
-    nobrainFract(i) = comparison;
+    nobrainFract(i) = nbrainComp/totComp;
+    brainFract(i) = brainComp/totComp;
 
-    brainmaskdat = braindat;
-    brainCompdat = compData(:,i);
-
-    brainmaskdat = reshape(brainmaskdat,[numel(brainmaskdat),1]);
-    brainCompdat = reshape(brainCompdat,[numel(brainmaskdat),1]);
-
-    [comparison, ~, ~, ~] = icatb_correlateFunctions(brainmaskdat, brainCompdat);
-    brainFract(i) = comparison;
+    clear Compdat
 end
 
 % Componets which falls mainly outside the brain are considered as noise
-tmp = find(nobrainFract > 2*brainFract);
+tmp = find(nobrainFract > 3*brainFract);
 if ~isempty(tmp)
     BOLDComp(tmp) = 0;
     ASLComp(tmp) = 0;
@@ -158,7 +151,7 @@ fprintf('Correlation with noise regresors \n')
 %     Read confounds
     if isfield(ppparams,'acc_file'), conffile = ppparams.acc_file; 
     elseif isfield(ppparams,'der_file'), conffile = ppparams.der_file; 
-        isfield(ppparams,'rp_file'), conffile = ppparams.rp_file; end
+    elseif isfield(ppparams,'rp_file'), conffile = ppparams.rp_file; end
 
     conf_model = load(conffile); 
 
@@ -176,7 +169,7 @@ fprintf('Correlation with noise regresors \n')
     max_correls = double(reshape(max_correls,[nmixcols,int64(size(max_correls, 1)/nmixcols)]));
     maxRPcorr = max_correls(:,1);
 
-tmp = find(abs(maxRPcorr) > 0.7);
+tmp = find(abs(maxRPcorr) > 0.75);
 if ~isempty(tmp)
     BOLDComp(tmp) = 0;
     ASLComp(tmp) = 0;
@@ -186,12 +179,12 @@ end
 if numel(ppparams.echoes)>1
     fprintf('MEICA \n') 
 
-    [kappas,rhos] = my_spmbatch_meica(compData,icaTimecourse,ppparams,params);
+    [kappas,rhos,kappa_elbow,rhos_elbow] = my_spmbatch_meica(compData,icaTimecourse,ppparams,params);
 
-    tmp = find(1.25*kappas<rhos);
+    tmp = find(and(3.0*kappas<rhos,kappas<kappa_elbow));
     if ~isempty(tmp), BOLDComp(tmp) = 0; end
 
-    tmp = find(1.25*rhos<kappas);
+    tmp = find(and(3.0*rhos<kappas,rhos<rhos_elbow));
     if ~isempty(tmp), ASLComp(tmp) = 0; end
 end
 

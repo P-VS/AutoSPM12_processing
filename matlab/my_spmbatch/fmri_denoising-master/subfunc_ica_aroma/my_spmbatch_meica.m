@@ -1,4 +1,4 @@
-function [kappas,rhos] = my_spmbatch_meica(z_maps,icaTimecourse,ppparams,params)
+function [kappas,rhos,kappa_elbow,rhos_elbow] = my_spmbatch_meica(z_maps,icaTimecourse,ppparams,params)
 
 % This function is based on MEICA implementation in tedana (https://github.com/ME-ICA/tedana)
 
@@ -85,3 +85,35 @@ for i_comp=1:ncomp
     kappas(i_comp) = mean(f_t2_maps(mask_idx, i_comp).*weight_maps(mask_idx, i_comp));
     rhos(i_comp) = mean(f_s0_maps(mask_idx, i_comp).*weight_maps(mask_idx, i_comp));
 end
+
+%kappa and rho elbow calculations
+kappa_elbow = getelbow(kappas,ppparams.echoes);
+rhos_elbow = getelbow(rhos,ppparams.echoes);
+
+function elbow = getelbow(arr,nechoes)
+
+mfilelist = dir(fullfile(spm('Dir'), '**','*.m'));
+if sum(contains({mfilelist.name},'finv.m'))
+    tmp = find(contains({mfilelist.name},'finv.m'));
+    movefile(fullfile(mfilelist(tmp(1)).folder,mfilelist(tmp(1)).name),fullfile(mfilelist(tmp(1)).folder,['tmp' mfilelist(tmp(1)).name]));
+end
+
+F01 = finv((1-0.01),1,numel(nechoes)-1);
+
+if sum(contains({mfilelist.name},'finv.m'))
+    movefile(fullfile(mfilelist(tmp(1)).folder,['tmp' mfilelist(tmp(1)).name]),fullfile(mfilelist(tmp(1)).folder,mfilelist(tmp(1)).name));
+end
+
+arr = reshape(arr,[1,numel(arr)]);
+nonsig_arr = arr(arr<F01);
+nonsig_arr = sort(nonsig_arr,'descend');
+n_nns_arr = numel(nonsig_arr);
+coords = [0:n_nns_arr-1; nonsig_arr];
+p = coords-reshape(coords(:,1),[2,1]);
+b=p(:,end);
+b_hat=reshape(b./sqrt(sum(b.^2,'all')),[2,1]);
+proj_p_b = p - b_hat'*p.*repmat(b_hat,[1,n_nns_arr]);
+d = sum(abs(proj_p_b),1);
+[~,k_min_ind] = max(d);
+
+elbow = nonsig_arr(k_min_ind);
