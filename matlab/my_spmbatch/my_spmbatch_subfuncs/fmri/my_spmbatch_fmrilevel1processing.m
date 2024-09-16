@@ -58,7 +58,8 @@ for ir=1:numel(params.iruns)
     
     %fMRI data
     
-    namefilters(5).name = '_bold';
+    if contains(params.modality,'fmri'), namefilters(5).name = '_bold'; end
+    if contains(params.modality,'fasl'), namefilters(5).name = '_cbf'; end
     namefilters(5).required = true;
 
     namefilters(6).name = params.fmri_prefix;
@@ -103,6 +104,8 @@ for ir=1:numel(params.iruns)
     
     if params.add_regressors
         cnamefilters = namefilters;
+
+        namefilters(5).name = '_bold';
         
         cnamefilters(6).name = params.confounds_prefix;
         cnamefilters(6).required = true;
@@ -283,8 +286,23 @@ matlabbatch{1}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0];
 matlabbatch{1}.spm.stats.fmri_spec.volt = 1;
 matlabbatch{1}.spm.stats.fmri_spec.global = 'None';
 
-matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.8;
-matlabbatch{1}.spm.stats.fmri_spec.mask = {''};
+Vfunc = spm_vol(fullfile(ppparams.preprocfmridir,ppparams.frun(1).func(1).funcfile));
+nvols = min([numel(Vfunc),50]);
+fdata = spm_read_vols(Vfunc(1:nvols));
+mask = my_spmbatch_mask(fdata);
+
+Vmask = Vfunc(1);
+rmfield(Vmask,'pinfo');
+Vmask.fname = fullfile(ppparams.preprocfmridir,['mask_' ppparams.frun(1).func(1).funcfile]);
+Vmask.descrip = 'my_spmbatch - mask';
+Vmask.dt = [spm_type('float32'),spm_platform('bigend')];
+Vmask.n = [1 1];
+Vmask = spm_write_vol(Vmask,mask);
+
+clear fdata mask
+
+matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.0;
+matlabbatch{1}.spm.stats.fmri_spec.mask = {Vmask.fname};
 
 matlabbatch{1}.spm.stats.fmri_spec.cvi = params.model_serial_correlations;
 

@@ -66,6 +66,13 @@ if params.preprocess_asl
     
     % Search for the data files
     ppparams = my_spmbatch_checkperffiles(ppparams,params);
+
+    if contains(params.asl.splitaslbold,'meica') && ~contains(ppparams.perf(1).aslprefix,'d')
+        % Redo the preprocessing of the functional data
+        [ppparams,delfiles,~] = my_spmbatch_preprocfunc(ppparams,params,delfiles,keepfiles);
+
+        pparams.perf(1).aslprefix = ['d' pparams.perf(1).aslprefix];
+    end
     
     % Do fALS preprocessing
     [delfiles,keepfiles] = my_spmbatch_preprocfasl(ppparams,params,delfiles,keepfiles);

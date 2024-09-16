@@ -1,4 +1,4 @@
-function [funcdat,ppparams,keepfiles] = my_spmbatch_noiseregression(funcdat,ppparams,params,keepfiles,regkind)
+function funcdat = my_spmbatch_noiseregression(funcdat,ppparams,params,regkind)
 
 if ~params.preprocess_functional, params.denoise.before_normalization = false; end
 

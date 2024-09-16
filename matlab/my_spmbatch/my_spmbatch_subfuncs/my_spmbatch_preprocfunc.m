@@ -1,19 +1,28 @@
 function [ppparams,delfiles,keepfiles] = my_spmbatch_preprocfunc(ppparams,params,delfiles,keepfiles)
 
-%% Preprocessing the data per echo (reorientation,motion annd geometric distortion)
+%% Preprocessing the data per echo (reorientation,motion and geometric distortion)
 for ie=ppparams.echoes
     [ppparams,delfiles,keepfiles] = my_spmbatch_preprocfunc_perecho(ppparams,params,ie,delfiles,keepfiles);
 
     if params.func.isaslbold && ~contains(ppparams.func(ie).prefix,'f')
-        [ppparams,delfiles,keepfiles] = my_spmbatch_split_asl_bold(ppparams,ie,delfiles,keepfiles);
+        [ppparams,delfiles,keepfiles] = my_spmbatch_split_asl_bold(params,ppparams,ie,delfiles,keepfiles);
+    end
+end
+
+for ie=ppparams.echoes
+    if contains(ppparams.func(ie).funcfile,'_aslbold.nii')
+        fname = split(ppparams.func(ie).funcfile,'_aslbold.nii');
+        ppparams.func(ie).funcfile = [fname{1} '_bold.nii'];
     end
 end
 
 %% Denoising the ME/SE fMRI data
-if params.func.denoise && ~contains(ppparams.func(1).prefix,'d')
+if (params.func.isaslbold && params.preprocess_asl && contains(params.asl.splitaslbold,'meica')) ...
+        || (params.func.denoise && ~contains(ppparams.func(1).prefix,'d'))
+
     [ppparams,delfiles,keepfiles] = my_spmbatch_fmridenoising(ppparams,params,delfiles,keepfiles);
 
-    if params.denoise.do_noiseregression || params.denoise.do_bpfilter || params.denoise.do_ICA_AROMA
+    if params.func.denoise && (params.denoise.do_noiseregression || params.denoise.do_bpfilter || params.denoise.do_ICA_AROMA)
         delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile])};
     end
 end
@@ -55,9 +64,15 @@ for ie=ppparams.echoes
                 ppparams.tr = jsondat.RepetitionTime;
                 nsl=tVfunc(1).dim(3);
                 
-                if ~params.func.isaslbold && isfield(jsondat,'SliceTiming')
-                    ppparams.SliceTimes = jsondat.SliceTiming;
-                else
+                if isfield(jsondat,'SliceTiming'), ppparams.SliceTimes = jsondat.SliceTiming; else ppparams.SliceTimes = []; end
+                if ~(numel(ppparams.SliceTimes)==nsl), ppparams.SliceTimes = []; end
+
+                if params.func.isaslbold
+                    if isfield(jsondat,'LabelingDuration'), params.asl.LabelingDuration=jsondat.LabelingDuration; end
+                    if isfield(jsondat,'PostLabelDelay'), params.asl.PostLabelDelay=jsondat.PostLabelDelay; end
+                end
+                
+                if isempty(ppparams.SliceTimes)
                     if isfield(jsondat,'MultibandAccelerationFactor')
                         hbf = jsondat.MultibandAccelerationFactor; 
                         nslex = ceil(nsl/hbf);
@@ -67,22 +82,20 @@ for ie=ppparams.echoes
                         isl=repmat(isl,[1,hbf]);
                     else 
                         isl = [1:2:nsl 2:2:nsl];
+                        isl = isl-1;
                         nslex = nsl;
                     end
             
                     if params.func.isaslbold
-                        if isfield(jsondat,'LabelingDuration'), params.asl.LabelingDuration=jsondat.LabelingDuration; end
-                        if isfield(jsondat,'PostLabelDelay'), params.asl.PostLabelDelay=jsondat.PostLabelDelay; end
-            
                         TA = ppparams.tr-params.asl.LabelingDuration-params.asl.PostLabelDelay;
-            
-                        ppparams.SliceTimes = params.asl.LabelingDuration+params.asl.PostLabelDelay+isl*TA/nslex;
                     else
-                        TA = ppparams.tr/nslex;
-                
-                        ppparams.SliceTimes = isl*TA/nslex;
+                        TA = ppparams.tr;
                     end
+
+                    ppparams.SliceTimes = isl*TA*(1-1/nslex)/nslex;
                 end
+
+                if params.func.isaslbold, ppparams.SliceTimes = params.asl.LabelingDuration+params.asl.PostLabelDelay+ppparams.SliceTimes; end
             end
             
             funcdat=my_spmbatch_st(funcdat,tVfunc,ppparams.SliceTimes,ppparams.tr);

@@ -146,14 +146,16 @@ end
 
 %% Noise regression
 if params.denoise.do_noiseregression || params.denoise.do_bpfilter || params.denoise.do_ICA_AROMA
-    for ie=ppparams.echoes
-        if ~contains(ppparams.func(ie).prefix,'d')    
-            fprintf(['Do noise regression for echo ' num2str(ie) '\n'])
-    
-            Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
-            funcdat = spm_read_vols(Vfunc);
-    
-            [fbfuncdat,ppparams,keepfiles] = my_spmbatch_noiseregression(funcdat,ppparams,params,keepfiles,'bold');
+    for ie=ppparams.echoes   
+        fprintf(['Do noise regression for echo ' num2str(ie) '\n'])
+
+        Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
+        funcdat = spm_read_vols(Vfunc);
+
+        if (~params.func.isaslbold && ~contains(ppparams.func(ie).prefix,'d')) ...
+            || (params.func.isaslbold && params.func.denoise && ~contains(ppparams.func(ie).prefix,'d'))
+   
+            fbfuncdat = my_spmbatch_noiseregression(funcdat,ppparams,params,'bold');
             
             for k=1:numel(Vfunc)
                 Vfunc(k).fname = fullfile(ppparams.subfuncdir,['d' ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
@@ -164,35 +166,41 @@ if params.denoise.do_noiseregression || params.denoise.do_bpfilter || params.den
             
             Vfunc = myspm_write_vol_4d(Vfunc,fbfuncdat);
             
-            clear fbfuncdat
-
-            if params.func.isaslbold && contains(params.asl.splitaslbold,'meica')
-                [fafuncdat,ppparams,keepfiles] = my_spmbatch_noiseregression(funcdat,ppparams,params,keepfiles,'fasl');
-
-                fname = split(ppparams.func(ie).funcfile,'_bold.nii');
-            
-                fVfunc = spm_vol(fullfile(ppparams.subperfdir,[ppparams.func(ie).prefix fname{1} '_asl.nii']));
-                fafuncdat = fafuncdat + spm_read_vols(fVfunc);
-
-                for k=1:numel(fVfunc)
-                    fVfunc(k).fname = fullfile(ppparams.subperfdir,['d' ppparams.func(ie).prefix fname{1} '_asl.nii']);
-                    fVfunc(k).descrip = 'my_spmbatch - meica';
-                    fVfunc(k).pinfo = [1,0,0];
-                    fVfunc(k).n = [k 1];
-                end
-                
-                fVfunc = myspm_write_vol_4d(fVfunc,fafuncdat);
-
-                clear fafuncdat fVfunc
-
-                ppparams.func(ie).funcfile = [fname{1} '_bold.nii'];
-            end
-    
-            clear funcdat Vfunc
-    
             ppparams.func(ie).prefix = ['d' ppparams.func(ie).prefix];
 
-            fprintf(['Done noise regresion ' num2str(ie) '\n'])
+            delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile])};
+
+            clear fbfuncdat
         end
+
+        if params.func.isaslbold && contains(params.asl.splitaslbold,'meica')
+            ppparams.subperfdir = fullfile(ppparams.subpath,'perf');
+            if ~isfolder(ppparams.subperfdir), mkdir(ppparams.subperfdir); end
+
+            fafuncdat = my_spmbatch_noiseregression(funcdat,ppparams,params,'fasl');
+
+            fname = split(ppparams.func(ie).funcfile,'_bold.nii');
+            fpref = split(ppparams.func(ie).prefix,'d');
+        
+            fVfunc = spm_vol(fullfile(ppparams.subperfdir,[fpref{end} fname{1} '_asl.nii']));
+            fafuncdat = fafuncdat + spm_read_vols(fVfunc);
+
+            for k=1:numel(fVfunc)
+                fVfunc(k).fname = fullfile(ppparams.subperfdir,['d' fpref{end} fname{1} '_asl.nii']);
+                fVfunc(k).descrip = 'my_spmbatch - meica';
+                fVfunc(k).pinfo = [1,0,0];
+                fVfunc(k).n = [k 1];
+            end
+            
+            fVfunc = myspm_write_vol_4d(fVfunc,fafuncdat);
+
+            %delfiles{numel(delfiles)+1} = {fullfile(ppparams.subperfdir,['d' fpref{end} fname{1} '_asl.nii'])};
+
+            clear fafuncdat fVfunc
+        end
+
+        clear funcdat Vfunc
+
+        fprintf(['Done noise regresion ' num2str(ie) '\n'])
     end 
 end
