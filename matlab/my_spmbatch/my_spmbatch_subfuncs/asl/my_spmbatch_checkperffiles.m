@@ -30,7 +30,7 @@ for ie=1:numel(params.func.echoes)
     if ~isempty(tmp), edirniilist = aslniilist(tmp); else edirniilist = []; end
 
     prefixlist = split({edirniilist.name},'sub-');
-    if numel(edirniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
+    if numel(edirniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
 
     fpresplit = split(prefixlist{1},'f');
     studyprefix = ['f' fpresplit{end}];
@@ -74,7 +74,7 @@ if isempty(m0scanniilist)
 end
 
 prefixlist = split({m0scanniilist.name},'sub-');
-if numel(m0scanniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
+if numel(m0scanniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
 
 fpresplit = split(ppparams.perf(ie).aslprefix,'f');
 studyprefix = fpresplit{end};
@@ -117,7 +117,7 @@ deltamniilist = my_spmbatch_dirfilelist(ppparams.subperfdir,'nii',namefilters,fa
 
 if ~isempty(deltamniilist)
     prefixlist = split({deltamniilist.name},'sub-');
-    if numel(deltamniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
+    if numel(deltamniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
     
     studyprefix = ppparams.func(1).prefix;
     
@@ -151,7 +151,7 @@ cbfniilist = my_spmbatch_dirfilelist(ppparams.subperfdir,'nii',namefilters,false
 
 if ~isempty(cbfniilist)
     prefixlist = split({cbfniilist.name},'sub-');
-    if numel(cbfniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
+    if numel(cbfniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
     
     studyprefix = ppparams.func(1).prefix;
     
