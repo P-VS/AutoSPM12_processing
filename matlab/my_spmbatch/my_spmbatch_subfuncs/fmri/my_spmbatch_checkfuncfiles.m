@@ -64,7 +64,7 @@ end
 
 if ~isempty(funcrplist)
     rpprefixlist = split({funcrplist.name},'sub-');
-    if numel(rpprefixlist)==1, rpprefixlist=rpprefixlist{1}; else rpprefixlist = rpprefixlist(:,:,1); end
+    if numel(rpprefixlist)==1, rpprefixlist=rpprefixlist(1); else rpprefixlist = rpprefixlist(:,:,1); end
 end
 
 ppparams.echoes = params.func.echoes;
@@ -91,7 +91,7 @@ for ie=params.func.echoes
 
     if ~isempty(edirniilist)
         prefixlist = split({edirniilist.name},'sub-');
-        if numel(edirniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
+        if numel(edirniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
     
         if ~for_functional
             %% For denoising after normalization
@@ -173,7 +173,7 @@ else
 end
 
 prefixlist = split({edirniilist.name},'sub-');
-if numel(edirniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
+if numel(edirniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
 
 if params.func.do_realignment || params.do_denoising
     if ~isempty(funcrplist)
