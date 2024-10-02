@@ -34,9 +34,11 @@ Required software installed:
 * MRIcroGL (https://www.mccauslandcenter.sc.edu/mricrogl/) for dicom to nifti conversion
 * CAT12 (https://neuro-jena.github.io/cat/) for VBM
 * GIFT (https://trendscenter.org/software/gift/) to use ICA-AROMA denoising
+
 To use the Matlab script within SPM:
 * ACID SPM toolbox (http://www.diffusiontools.com/index.html)
 * MEHBfMRI SPM toolbox (https://github.com/P-VS/MEHBfMRI)
+
 To use the Python script (Linux annd Mac only):
 * Anaconda (https://www.anaconda.com/distribution/)
     * start Spyder in a terminal/Command Promt: type "spyder"
