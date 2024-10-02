@@ -10,6 +10,8 @@ The folders contains following tools:
 -convert_dcm2niix: convert dicom to nii data format using dcm2niix and organise the data for the processing (BIDS based)
 
 2. Matlab
+-my_spmbatch/AutoDCM2nii: initiating the automatic ccoonversion of dicom data into nifti data and organising them for further processing with my_spmbatch
+
 -my_spmbatch/AutoSPMpreprocessing_fmri: initiating the automatic preprocessing of fMRI data in SPM12.
 
 -my_spmbatch/AutoSPM1stlevel_fmri: initiating the automatic 1st level analysis of fMRI data in SPM12.
@@ -35,7 +37,7 @@ Required software installed:
 To use the Matlab script within SPM:
 * ACID SPM toolbox (http://www.diffusiontools.com/index.html)
 * MEHBfMRI SPM toolbox (https://github.com/P-VS/MEHBfMRI)
-To use the Python script:
+To use the Python script (Linux annd Mac only):
 * Anaconda (https://www.anaconda.com/distribution/)
     * start Spyder in a terminal/Command Promt: type "spyder"
 * Nipype (https://nipype.readthedocs.io/en/latest/):
