@@ -92,7 +92,11 @@ for ie=ppparams.echoes
                         TA = ppparams.tr;
                     end
 
-                    ppparams.SliceTimes = isl*TA*(1-1/nslex)/nslex;
+                    ppparams.SliceTimes = isl*TA*(1-1/nslex)/(nslex-1);
+                elseif params.func.isaslbold
+                    TA = ppparams.tr-params.asl.LabelingDuration-params.asl.PostLabelDelay;
+
+                    ppparams.SliceTimes = ppparams.SliceTimes * TA/ppparams.tr;
                 end
 
                 if params.func.isaslbold, ppparams.SliceTimes = params.asl.LabelingDuration+params.asl.PostLabelDelay+ppparams.SliceTimes; end
