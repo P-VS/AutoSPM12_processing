@@ -44,7 +44,11 @@ if isempty(SliceTimes)
     end
 
     TA = tr-LD-PLD;
-    SliceTimes = isl*TA/nslex;
+    SliceTimes = isl*TA/(nslex-1);
+else
+    TA = tr-LD-PLD;
+
+    SliceTimes = SliceTimes * TA/tr;
 end
 
 SlicePLD = PLD+SliceTimes;
