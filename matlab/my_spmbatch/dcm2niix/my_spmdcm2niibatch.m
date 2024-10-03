@@ -23,7 +23,7 @@ for si=1:numel(params.mridata)
     if contains(params.mridata(si).seqtype,'fmri') || contains(params.mridata(si).seqtype,'aslbold'), outfname=[outfname '_task-' params.mridata(si).task]; end
     if params.mridata(si).add_run, outfname=[outfname '_run-' num2str(params.mridata(1).run)]; end
 
-    dirlist = dir(infolder);
+    dirlist = dir(fullfile(infolder,['**' filesep '*.*']));
     tmp = find(strlength({dirlist.name})>4); %Remove '.' and '..'
     if ~isempty(tmp), dirlist = dirlist(tmp); end
        
@@ -31,7 +31,20 @@ for si=1:numel(params.mridata)
     if ~isempty(tmp), dirlist = dirlist(tmp); end
 
     tmp = find(contains({dirlist.name},'.zip'));    
-    if ~isempty(tmp), infolder = fullfile(dirlist(tmp(1)).folder,dirlist(tmp(1)).name); end
+    if ~isempty(tmp)
+        for iz=1:numel(tmp)
+            fname = split(dirlist(tmp(iz)).name,'.zip');
+            unzip(fullfile(dirlist(tmp(iz)).folder,dirlist(tmp(iz)).name),infolder)
+        end
+    end
+
+    dirlist = [dir(fullfile(infolder,['**' filesep '*MRDC*.*'])),...
+                dir(fullfile(infolder,['**' filesep '*.dcm'])),...
+                dir(fullfile(infolder,['**' filesep '*.DCM']))];
+    if isempty(dirlist)
+        fprintf('No diccom files found')
+        return
+    end
 
     my_spmdicm2niix(infolder, outfolder, '.nii', outfname, useparfor);
 

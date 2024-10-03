@@ -257,6 +257,7 @@ elseif ischar(src) % 1 dicom or zip/tgz file
             untar(src, dcmFolder);
         end
         fnames = filesInDir(dcmFolder);
+
     end
 else
     error('Unknown dicom source.');
@@ -2949,7 +2950,9 @@ files = {};
 for i = 1:numel(dirs)
     if isempty(dirs{i}), continue; end
     curFolder = [dirs{i} filesep];
-    a = dir(curFolder); % all files and folders
+    a = dir(fullfile(curFolder,'*MRDC*.*')); % all files and folders
+    a = [a dir(fullfile(curFolder,'*.dcm'))];
+    a = [a dir(fullfile(curFolder,'*.DCM'))];
     a([a.isdir]) = []; % remove folders
     a = strcat(curFolder, {a.name});
     files = [files a]; %#ok<*AGROW>
