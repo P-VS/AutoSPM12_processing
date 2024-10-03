@@ -92,17 +92,7 @@ rhos_elbow = getelbow(rhos,ppparams.echoes);
 
 function elbow = getelbow(arr,nechoes)
 
-mfilelist = dir(fullfile(spm('Dir'), '**','*.m'));
-if sum(contains({mfilelist.name},'finv.m'))
-    tmp = find(contains({mfilelist.name},'finv.m'));
-    movefile(fullfile(mfilelist(tmp(1)).folder,mfilelist(tmp(1)).name),fullfile(mfilelist(tmp(1)).folder,['tmp' mfilelist(tmp(1)).name]));
-end
-
-F01 = finv((1-0.01),1,numel(nechoes)-1);
-
-if sum(contains({mfilelist.name},'finv.m'))
-    movefile(fullfile(mfilelist(tmp(1)).folder,['tmp' mfilelist(tmp(1)).name]),fullfile(mfilelist(tmp(1)).folder,mfilelist(tmp(1)).name));
-end
+F01 = spm_invFcdf((1-0.01),1,numel(nechoes)-1);
 
 arr = reshape(arr,[1,numel(arr)]);
 nonsig_arr = arr(arr<F01);

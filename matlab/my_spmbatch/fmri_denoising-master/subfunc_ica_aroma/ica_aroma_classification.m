@@ -158,12 +158,26 @@ fprintf('Correlation with noise regresors \n')
 %     Determine the maximum correlation between confounds and IC time-series
     [nmixrows, nmixcols] = size(icaTimecourse);
     [nconfrows, nconfcols] = size(conf_model);
+
+    corr_mat = zeros(nmixcols,nconfcols);
+    for icomp=1:nmixcols
+        iicaTC = icaTimecourse(:,icomp)-mean(icaTimecourse(:,icomp),'all');
+        iicaTC = iicaTC / std(iicaTC);
+
+        for inoise=1:nconfcols
+            iConf = conf_model(:,inoise)-mean(conf_model(:,inoise),'all');
+            iConf = iConf / std(iConf);
+
+            ijcorr = iicaTC .* iConf;
+            corr_mat(icomp,nconfcols) = sum(ijcorr,'all')/nmixrows;
+        end
+    end
     
 %     Resample the mix and conf_model matrices to have the same number of columns
-    nmix = repmat(icaTimecourse, 1, compute_lcm(nmixcols,nconfcols)/nmixcols); 
-    nconf_model = repmat(conf_model, 1, compute_lcm(nmixcols,nconfcols)/nconfcols);
+    %nmix = repmat(icaTimecourse, 1, compute_lcm(nmixcols,nconfcols)/nmixcols); 
+    %nconf_model = repmat(conf_model, 1, compute_lcm(nmixcols,nconfcols)/nconfcols);
     
-    corr_mat = corr(nmix, nconf_model);
+    %corr_mat = corr(nmix, nconf_model);
     max_correls = max(corr_mat, [], 2);
     
     max_correls = double(reshape(max_correls,[nmixcols,int64(size(max_correls, 1)/nmixcols)]));
