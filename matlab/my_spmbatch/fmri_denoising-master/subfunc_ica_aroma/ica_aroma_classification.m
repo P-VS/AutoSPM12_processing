@@ -250,8 +250,23 @@ FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric
 %   Save results
 
     if ppparams.save_intermediate_results
-        varnames = {'NoBrain_fraction','Brain_fraction','max_correlations','kappa','rho','high_frequency_content','BOLD_comp','ASL_comp'};
-        T = table(nobrainFract,brainFract,maxRPcorr,kappas,rhos,HFC,BOLDComp,ASLComp,'VariableNames',varnames);
+        if numel(ppparams.echoes)>1
+            if params.func.isaslbold
+                varnames = {'NoBrain_fraction','Brain_fraction','max_correlations','kappa','rho','high_frequency_content','BOLD_comp','ASL_comp'};
+                T = table(nobrainFract,brainFract,maxRPcorr,kappas,rhos,HFC,BOLDComp,ASLComp,'VariableNames',varnames);
+            else
+                varnames = {'NoBrain_fraction','Brain_fraction','max_correlations','kappa','rho','high_frequency_content','BOLD_comp'};
+                T = table(nobrainFract,brainFract,maxRPcorr,kappas,rhos,HFC,BOLDComp,'VariableNames',varnames);
+            end
+        else
+            if params.func.isaslbold
+                varnames = {'NoBrain_fraction','Brain_fraction','max_correlations','high_frequency_content','BOLD_comp','ASL_comp'};
+                T = table(nobrainFract,brainFract,maxRPcorr,HFC,BOLDComp,ASLComp,'VariableNames',varnames);
+            else
+                varnames = {'NoBrain_fraction','Brain_fraction','max_correlations','high_frequency_content','BOLD_comp'};
+                T = table(nobrainFract,brainFract,maxRPcorr,HFC,BOLDComp,'VariableNames',varnames);
+            end
+        end
     
         aroma_file = fullfile(aroma_dir,'AROMA_desission.csv');
     
