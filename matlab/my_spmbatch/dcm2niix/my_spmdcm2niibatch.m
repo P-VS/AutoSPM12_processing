@@ -4,7 +4,7 @@ function my_spmdcm2niibatch(sub,params,useparfor)
 %(https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)
 %(https://www.mathworks.com/matlabcentral/fileexchange/42997-xiangruili-dicm2nii)
 
-substring = ['sub-' num2str(sub,'%02d')];
+substring = ['sub-' num2str(sub,['%0' num2str(params.sub_digits) 'd'])];
 
 for si=1:numel(params.mridata)
     sesstring = ['ses-' num2str(params.mridata(si).session,'%03d')];
