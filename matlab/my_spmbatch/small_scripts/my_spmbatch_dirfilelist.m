@@ -19,6 +19,21 @@ else
     return 
 end
 
+tmp = find(~contains({dirlist.name},'_rf_')); %Remove undeleted files from pepolar geometric correction
+if ~isempty(tmp)
+    dirlist = dirlist(tmp);
+else
+    dirlist = {};
+    return 
+end
+tmp = find(~contains({dirlist.name},'_e_')); %Remove undeleted files from pepolar geometric correction
+if ~isempty(tmp)
+    dirlist = dirlist(tmp);
+else
+    dirlist = {};
+    return 
+end
+
 if ~contains(fextension,'.'), fextension=['.' fextension]; end
 tmp = find(contains({dirlist.name},fextension));%Filter list based on the file extension
 if ~isempty(tmp) 
