@@ -7,7 +7,7 @@ if ~contains(ppparams.func(enum).prefix,'e'), do_reorientation = true; else
     do_reorientation = false; 
     ppparams.func(enum).tprefix = ['e' ppparams.func(enum).tprefix];
 end
-if (params.func.do_realignment && ~(contains(ppparams.func(enum).prefix,'r') && isfield(ppparams,'rp_file'))), do_realignment = true; else 
+if (params.func.do_realignment && ~contains(ppparams.func(enum).prefix,'r')), do_realignment = true; else 
     do_realignment = false; 
     if params.func.do_realignment, ppparams.func(enum).tprefix = ['r' ppparams.func(enum).tprefix]; end
 end
@@ -67,7 +67,7 @@ for ti=1:nvols:tdim
 
         clear funcdat t2Vfunc
     end
- 
+
     %% Realignment
     if do_realignment
         [funcdat,ppparams,keepfiles,delfiles] = my_spmbatch_realignunwarp(enum,ti,nvols,ppparams,params,keepfiles,delfiles);
