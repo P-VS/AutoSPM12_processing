@@ -31,7 +31,8 @@ for i=1:numel(keepfiles)
     if isfile(keepfiles{i}{1})
         [opath,~,~] = fileparts(keepfiles{i}{1});
         if ~strcmp(opath,subnewdir)
-            movefile(keepfiles{i}{1},subnewdir); 
+            if save_intermediate_results, copyfile(keepfiles{i}{1},subnewdir); 
+            else movefile(keepfiles{i}{1},subnewdir); end
         end
     end
 end
