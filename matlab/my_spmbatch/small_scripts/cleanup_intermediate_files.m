@@ -1,7 +1,6 @@
-function cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,save_intermediate_results,subdir,save_folder)
+function cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params,subdir,save_folder)
 
-ppparams.substring = ['sub-' num2str(sub,'%02d')];
-if ~isfolder(fullfile(datpath,ppparams.substring)), ppparams.substring = ['sub-' num2str(sub,'%03d')]; end
+ppparams.substring = ['sub-' num2str(sub,['%0' num2str(params.sub_digits) 'd'])];
 
 ppparams.sesstring = ['ses-' num2str(ses,'%02d')];
 if ~isfolder(fullfile(datpath,ppparams.substring,ppparams.sesstring)), ppparams.sesstring = ['ses-' num2str(ses,'%03d')]; end
@@ -16,7 +15,7 @@ if ~exist(subnewdir, 'dir')
 end
 
 %% Delete intermediate files
-if ~save_intermediate_results
+if ~params.save_intermediate_results
     for i=1:numel(delfiles)
         if isfile(delfiles{i})
             if isfile(delfiles{i}{1}); delete(delfiles{i}{1}); end
@@ -31,7 +30,7 @@ for i=1:numel(keepfiles)
     if isfile(keepfiles{i}{1})
         [opath,~,~] = fileparts(keepfiles{i}{1});
         if ~strcmp(opath,subnewdir)
-            if save_intermediate_results, copyfile(keepfiles{i}{1},subnewdir); 
+            if params.save_intermediate_results, copyfile(keepfiles{i}{1},subnewdir); 
             else movefile(keepfiles{i}{1},subnewdir); end
         end
     end
