@@ -64,17 +64,21 @@ delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir, 'headdata.nii')};
 
 %% Denoising 
 
-ppparams.nboldica_file = spm_file(fullfile(ppparams.subfuncdir,[ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile]), 'prefix','nboldica_','ext','.txt');
-writematrix(nonBOLDICdata,ppparams.nboldica_file,'Delimiter','tab');
+if ~isempty(nonBOLDICdata)
+    ppparams.nboldica_file = spm_file(fullfile(ppparams.subfuncdir,[ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile]), 'prefix','nboldica_','ext','.txt');
+    writematrix(nonBOLDICdata,ppparams.nboldica_file,'Delimiter','tab'); 
 
-delfiles{numel(delfiles)+1} = {ica_dir};
-delfiles{numel(delfiles)+1} = {ppparams.nboldica_file};
+    delfiles{numel(delfiles)+1} = {ica_dir};
+    delfiles{numel(delfiles)+1} = {ppparams.nboldica_file};
+end
 
 if params.func.isaslbold && contains(params.asl.splitaslbold,'meica')
-    ppparams.naslica_file = spm_file(fullfile(ppparams.subfuncdir,[ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile]), 'prefix','naslica_','ext','.txt');
-    writematrix(nonASLICdata,ppparams.naslica_file,'Delimiter','tab');
+    if ~isempty(nonASLICdata)
+        ppparams.naslica_file = spm_file(fullfile(ppparams.subfuncdir,[ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile]), 'prefix','naslica_','ext','.txt');
+        writematrix(nonASLICdata,ppparams.naslica_file,'Delimiter','tab'); 
 
-    delfiles{numel(delfiles)+1} = {ppparams.naslica_file};
+        delfiles{numel(delfiles)+1} = {ppparams.naslica_file};
+    end
 end
 
 clear nonBOLDICdata nonASLICdata

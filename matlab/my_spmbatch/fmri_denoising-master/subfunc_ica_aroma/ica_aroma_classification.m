@@ -174,8 +174,6 @@ fprintf('Correlation with noise regresors \n')
     end
     
 %     Resample the mix and conf_model matrices to have the same number of columns
-    %nmix = repmat(icaTimecourse, 1, compute_lcm(nmixcols,nconfcols)/nmixcols); 
-    %nconf_model = repmat(conf_model, 1, compute_lcm(nmixcols,nconfcols)/nconfcols);
     
     %corr_mat = corr(nmix, nconf_model);
     max_correls = max(corr_mat, [], 2);
@@ -302,9 +300,6 @@ FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric
             else
                 dlmwrite(noise_ICs_dir, int64(nonBOLDICs), 'precision', "%i");
             end
-        else
-            f = open(noise_ICs_dir,'w');
-            fclose(f);
         end
     end
 end
