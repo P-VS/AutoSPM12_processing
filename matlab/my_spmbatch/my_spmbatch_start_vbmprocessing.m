@@ -31,7 +31,7 @@ if params.use_parallel
     
             mtlb_cmd = sprintf('"restoredefaultpath;addpath(genpath(''%s''));addpath(genpath(''%s''));my_spmbatch_run_vbmpreprocessing(%d,%d,''%s'',''%s'');"', ...
                                     params.spm_path,params.my_spmbatch_path,datlist(i,1),datlist(i,2),datpath,fullfile(datpath,'params.mat'));
-            logfile{i} = fullfile(datpath,['logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
+            logfile{i} = fullfile(datpath,['logfile_' sprintf(['%0' num2str(params.sub_digits) 'd'],datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
     
             if exist(logfile{i},'file'), delete(logfile{i}); end
             
@@ -63,7 +63,7 @@ if params.use_parallel
                     if ~isempty(errortest)
                         pfinnished = pfinnished+1;
 
-                        nlogfname = fullfile(datpath,['error_vbm_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
+                        nlogfname = fullfile(datpath,['error_vbm_logfile_' sprintf(['%0' num2str(params.sub_digits) 'd'],datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
                         movefile(logfile{i},nlogfname);
 
                         fprintf(['\nError during VBM processing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) '\n'])
@@ -73,7 +73,7 @@ if params.use_parallel
                         if ~params.keeplogs
                             delete(logfile{i}); 
                         else
-                            nlogfname = fullfile(datpath,['done_vbm_logfile_' sprintf('%02d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
+                            nlogfname = fullfile(datpath,['done_vbm_logfile_' sprintf(['%0' num2str(params.sub_digits) 'd'],datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '.txt']);
                             movefile(logfile{i},nlogfname);
                         end
 

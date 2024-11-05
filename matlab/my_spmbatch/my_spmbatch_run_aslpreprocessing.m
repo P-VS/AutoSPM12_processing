@@ -8,7 +8,7 @@ try
         [delfiles,keepfiles] = my_spmbatch_preprocess_anat(sub,ses,datpath,params);
     
         % Clean up unnecessary files
-        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,'anat','preproc_anat');
+        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params,'anat','preproc_anat');
     end
     
     %% preprocess asl scans
@@ -16,7 +16,7 @@ try
         [delfiles,keepfiles] = my_spmbatch_aslpreprocessed(sub,ses,run,datpath,params);
     
         % Clean up unnecessary files
-        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,'perf',params.save_folder);
+        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params,'perf',params.save_folder);
     end
 catch e
     fprintf('\nPP_Error\n');

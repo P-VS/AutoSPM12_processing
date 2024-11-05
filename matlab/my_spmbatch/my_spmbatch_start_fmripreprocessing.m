@@ -8,6 +8,19 @@ if ~params.func.mruns, params.func.runs = [1]; end
 if params.func.meepi && numel(params.func.echoes)==1, params.func.combination='none'; end
 if params.func.meepi && ~contains(params.func.combination,'none'), params.func.do_echocombination = true; else params.func.do_echocombination = false; end
 
+if params.denoise.do_DUNE
+    %toolboxtest = ver;
+    %if sum(contains({toolboxtest.Name},'Deep Learningen Toolbox'))
+        params.denoise.do_noiseregression = false;
+        params.denoise.do_ICA_AROMA = false;
+        params.denoise.do_aCompCor = false;
+        params.denoise.do_bpfilter = false;
+        params.denoise.do_mot_derivatives = true;
+    %else
+    %    params.denoise.do_DUNE = false;
+    %end
+end
+
 save(fullfile(datpath,'params.mat'),'params')
 
 datlist = zeros(numel(sublist)*numel(nsessions)*numel(params.func.runs),3);
@@ -43,7 +56,7 @@ for k = 1:numel(task)
         
                 mtlb_cmd = sprintf('"restoredefaultpath;addpath(genpath(''%s''));addpath(genpath(''%s''));addpath(genpath(''%s''));my_spmbatch_run_fmripreprocessing(%d,%d,%d,''%s'',''%s'',''%s'');"', ...
                                             params.GroupICAT_path,params.spm_path,params.my_spmbatch_path,datlist(i,1),datlist(i,2),datlist(i,3),task{k},datpath,fullfile(datpath,'params.mat'));
-                logfile{i} = fullfile(datpath,['fmri_preprocess_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
+                logfile{i} = fullfile(datpath,['fmri_preprocess_logfile_' sprintf(['%0' num2str(params.sub_digits) 'd'],datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
         
                 if exist(logfile{i},'file'), delete(logfile{i}); end
                 
@@ -75,7 +88,7 @@ for k = 1:numel(task)
                         if ~isempty(errortest)
                             pfinnished = pfinnished+1;
     
-                            nlogfname = fullfile(datpath,['error_fmri_preprocess_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
+                            nlogfname = fullfile(datpath,['error_fmri_preprocess_logfile_' sprintf(['%0' num2str(params.sub_digits) 'd'],datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
                             movefile(logfile{i},nlogfname);
     
                             fprintf(['\nError during preprocessing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' run ' num2str(datlist(i,3)) ' task ' task{k} '\n'])
@@ -85,7 +98,7 @@ for k = 1:numel(task)
                             if ~params.keeplogs
                                 delete(logfile{i}); 
                             else
-                                nlogfname = fullfile(datpath,['done_fmri_preprocess_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
+                                nlogfname = fullfile(datpath,['done_fmri_preprocess_logfile_' sprintf(['%0' num2str(params.sub_digits) 'd'],datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' task{k} '.txt']);
                                 movefile(logfile{i},nlogfname);
                             end
     

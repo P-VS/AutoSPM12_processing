@@ -33,6 +33,8 @@ params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
 sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
+
 nsessions = [1]; %nsessions>0
 
 params.save_folder = 'preproc_anat_vbm';

@@ -26,10 +26,10 @@ params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/
 
 %% Give the basic input information of your data
 
-params.datpath = '/Volumes/LaCie/UZ_Brussel/asl_bold/uzb_test_data/';
+params.datpath = '/Volumes/LaCie/UZ_Brussel/zip_test';
 
-sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
-params.sub_digits = 2; %if 2 the result will be sub-01, if 3 the result will be sub-001
+sublist = [2];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+params.sub_digits = 4; %if 2 the result will be sub-01, if 3 the result will be sub-001
 
 %Add per sequence to convert an extra ssequence object to the mri_data structure as (folder,seqtype,name,task,[session],add_run,add_echo,add_acq)
 % folder: substructure starting from sub-## containing the dicom files
@@ -74,28 +74,28 @@ params.sub_digits = 2; %if 2 the result will be sub-01, if 3 the result will be 
 %params.mridata(2).add_echo = true;
 
 %% Example fMRI scan
-%params.mridata(3).folder = 'DCM/ME-fMRI_EFT';
-%params.mridata(3).acqtype = 'func';
-%params.mridata(3).seqtype = 'fmri';
-%params.mridata(3).task = 'ME-EFT_bold';
-%params.mridata(3).session = 1;
-%params.mridata(3).run = 1;
-%params.mridata(3).add_acq = false;
-%params.mridata(3).add_dir = true;
-%params.mridata(3).add_run = true;
-%params.mridata(3).add_echo = true;
-
-%% Example ASLBOLD scan
-params.mridata(1).folder = 'dcm/aslzip';
+params.mridata(1).folder = 'dcm';
 params.mridata(1).acqtype = 'func';
-params.mridata(1).seqtype = 'aslbold';
-params.mridata(1).task = 'rest';
+params.mridata(1).seqtype = 'fmri';
+params.mridata(1).task = 'test';
 params.mridata(1).session = 1;
 params.mridata(1).run = 1;
 params.mridata(1).add_acq = false;
 params.mridata(1).add_dir = true;
 params.mridata(1).add_run = true;
 params.mridata(1).add_echo = true;
+
+%% Example ASLBOLD scan
+%params.mridata(1).folder = 'dcm';
+%params.mridata(1).acqtype = 'func';
+%params.mridata(1).seqtype = 'aslbold';
+%params.mridata(1).task = 'rest';
+%params.mridata(1).session = 1;
+%params.mridata(1).run = 1;
+%params.mridata(1).add_acq = false;
+%params.mridata(1).add_dir = true;
+%params.mridata(1).add_run = true;
+%params.mridata(1).add_echo = true;
 
 use_parallel = false; %only possible when parallel toolbox is installed
 

@@ -59,7 +59,7 @@ for k = 1:numel(params.task)
         
                 mtlb_cmd = sprintf('"restoredefaultpath;addpath(genpath(''%s''));addpath(genpath(''%s''));my_spmbatch_run_fmriprocessing(%d,%d,%d,''%s'',''%s'',''%s'');"', ...
                                             params.spm_path,params.my_spmbatch_path,datlist(i,1),datlist(i,2),datlist(i,3),params.task{k},datpath,fullfile(datpath,'params.mat'));
-                logfile{i} = fullfile(datpath,['fmri_process_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' params.task{k} '.txt']);
+                logfile{i} = fullfile(datpath,['fmri_process_logfile_' sprintf(['%0' num2str(params.sub_digits) 'd'],datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' params.task{k} '.txt']);
         
                 if exist(logfile{i},'file'), delete(logfile{i}); end
                 
@@ -68,12 +68,12 @@ for k = 1:numel(params.task)
                     [status,result] = system(export_cmd);
                     system_cmd = sprintf(['start matlab -nodesktop -nosplash -r ' mtlb_cmd ' -logfile ' logfile{i}]);
                 else
-                    system_cmd = sprintf([fullfile(matlabroot,'bin') '/matlab -nosplash -r ' mtlb_cmd ' -logfile ' logfile{i} ' & ']);
+                    system_cmd = c([fullfile(matlabroot,'bin') '/matlab -nosplash -r ' mtlb_cmd ' -logfile ' logfile{i} ' & ']);
                 end
                 [status,result]=system(system_cmd);
             end
             
-            %% wait for all processing to be finnished
+            %% wait for all processing to be finsished
             isrunning = true;
             pfinnished = 0;
             while isrunning
@@ -91,7 +91,7 @@ for k = 1:numel(params.task)
                         if ~isempty(errortest)
                             pfinnished = pfinnished+1;
     
-                            nlogfname = fullfile(datpath,['error_fmri_process_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' params.task{k} '.txt']);
+                            nlogfname = fullfile(datpath,['error_fmri_process_logfile_' sprintf(['%0' num2str(params.sub_digits) 'd'],datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' params.task{k} '.txt']);
                             movefile(logfile{i},nlogfname);
     
                             fprintf(['\nError during processing data for subject ' num2str(datlist(i,1)) ' session ' num2str(datlist(i,2)) ' run ' num2str(datlist(i,3)) ' task ' params.task{k} '\n'])
@@ -101,7 +101,7 @@ for k = 1:numel(params.task)
                             if ~params.keeplogs
                                 delete(logfile{i}); 
                             else
-                                nlogfname = fullfile(datpath,['done_fmri_process_logfile_' sprintf('%03d',datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' params.task{k} '.txt']);
+                                nlogfname = fullfile(datpath,['done_fmri_process_logfile_' sprintf(['%0' num2str(params.sub_digits) 'd'],datlist(i,1)) '_' sprintf('%02d',datlist(i,2)) '_' sprintf('%02d',datlist(i,3)) '_' params.task{k} '.txt']);
                                 movefile(logfile{i},nlogfname);
                             end
     

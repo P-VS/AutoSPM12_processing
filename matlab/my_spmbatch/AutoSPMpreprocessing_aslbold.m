@@ -34,10 +34,12 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 datpath = '/Volumes/LaCie/UZ_Brussel/asl_bold/ASL_fingertapping';
 
 sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
+
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_func_filter_indTE'; %name of the folder to save the preprocessed bold data
-params.perf_save_folder = 'preproc_asl_filter'; %name of the folder to save the preprocessed asl data
+params.func_save_folder = 'preproc_bold_icatest'; %name of the folder to save the preprocessed bold data
+params.perf_save_folder = 'preproc_asl_icatest'; %name of the folder to save the preprocessed asl data
 
 task ={'bilateralfingertapping'};
 
@@ -54,7 +56,7 @@ params.maxprocesses = 2; %Best not too high to avoid memory problems %(default=2
 params.loadmaxvols = 100; %to reduce memory load, the preprocessing can be split in smaller blocks (default = 100)
 params.keeplogs = false; %(default=false)
 
-params.save_intermediate_results = false; %clean up the directory by deleting unnecessary files generated during the processing (default = false)
+params.save_intermediate_results = true; %clean up the directory by deleting unnecessary files generated during the processing (default = false)
 
 %% Preprocessing anatomical data
 
@@ -70,7 +72,7 @@ params.save_intermediate_results = false; %clean up the directory by deleting un
     
 %% Preprocessing ASL data
 
-    params.preprocess_asl = false; %(default=true)
+    params.preprocess_asl = true; %(default=true)
 
     %ASL data
     params.asl.isM0scan = 'last'; %The M0 image is by defaullt the last volume @GE (set 'last')
@@ -85,7 +87,7 @@ params.save_intermediate_results = false; %clean up the directory by deleting un
 
 %% Preprocessing functional (the order of the parameters represents the fixed order of the steps done)
 
-    params.preprocess_functional = true; %(default=true)
+    params.preprocess_functional = false; %(default=true)
 
     % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
     params.func.dummytime = 0; %time in seconds (default=2*TR)
@@ -172,7 +174,6 @@ warning off;
 % User interface.
 SPMid                 = spm('FnBanner',mfilename,'2.10');
 [Finter,Graf,CmdLine] = spm('FnUIsetup','Preproces SPM');
-
 
 spm('defaults', 'FMRI');
 

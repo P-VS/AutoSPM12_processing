@@ -8,7 +8,7 @@ try
         [delfiles,keepfiles] = my_spmbatch_preprocess_anat(sub,ses,datpath,params);
     
         % Clean up unnecessary files
-        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,'anat','preproc_anat');
+        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params,'anat','preproc_anat');
     end
 
      %% preprocess functional scans
@@ -16,7 +16,7 @@ try
         [delfiles,keepfiles] = my_spmbatch_functional(sub,ses,run,task,datpath,params);
         
         % Clean up unnecessary files
-        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,'func',params.func_save_folder);  
+        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params,'func',params.func_save_folder);  
     end
     
     %% preprocess ASL-BOLD scans
@@ -24,7 +24,7 @@ try
         [delfiles,keepfiles] = my_spmbatch_fasl(sub,ses,run,task,datpath,params);
 
         % Clean up unnecessary files
-        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,'perf',params.perf_save_folder); 
+        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params,'perf',params.perf_save_folder); 
     end
 
     %% denoise functional scans
@@ -32,7 +32,7 @@ try
         [delfiles,keepfiles] = my_spmbatch_denoise(sub,ses,run,task,datpath,params);
     
         % Clean up unnecessary files
-        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,params.func_save_folder,params.perf_save_folder);
+        cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params,params.func_save_folder,params.perf_save_folder);
     end
 catch e
     fprintf('\nPP_Error\n');
