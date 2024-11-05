@@ -4,8 +4,8 @@ if ~params.preprocess_functional, params.denoise.before_normalization = false; e
 
 if contains(regkind,'bold')
     if ~isfield(ppparams,'noiseregresssor')
-        if params.denoise.do_ICA_AROMA && isfield(ppparams,'nboldica_file')
-            confounds = load(ppparams.nboldica_file);
+        if params.denoise.do_ICA_AROMA
+            if isfield(ppparams,'nboldica_file'), confounds = load(ppparams.nboldica_file); else confounds = []; end
         else
             if params.denoise.do_mot_derivatives && isfield(ppparams,'der_file')
                 confounds = load(ppparams.der_file);

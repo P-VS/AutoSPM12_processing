@@ -3,7 +3,7 @@ function [ppparams,delfiles,keepfiles] = my_spmbatch_fmridenoising(ppparams,para
 reffunc = [ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile ',1'];
 
 %% Make masks
-if params.denoise.do_ICA_AROMA || params.denoise.do_DUNNET
+if params.denoise.do_ICA_AROMA || params.denoise.do_DUNE
     if ~isfield(ppparams,'fmask')
         fprintf('Make mask \n')
     
@@ -26,7 +26,7 @@ if params.denoise.do_ICA_AROMA || params.denoise.do_DUNNET
 end
 
 %% Do segmentation of func data
-if params.denoise.do_aCompCor || params.denoise.do_ICA_AROMA || params.denoise.do_DUNNET
+if params.denoise.do_aCompCor || params.denoise.do_ICA_AROMA || params.denoise.do_DUNE
 
     if ~isfield(ppparams,'fc1im') || ~isfield(ppparams,'fc2im') || ~isfield(ppparams,'fc3im')
         fprintf('Do segmentation \n')
@@ -81,8 +81,8 @@ if params.denoise.do_aCompCor || params.denoise.do_ICA_AROMA || params.denoise.d
     end
 end
 
-%% Save files needed for DUNNET
-if params.denoise.do_DUNNET
+%% Save files needed for DUNE
+if ~params.func.denoise && params.denoise.do_DUNE
     if isfield(ppparams,'fmask'), keepfiles{numel(keepfiles)+1} = {ppparams.fmask}; end
 
     if isfield(ppparams,'fc1im'), keepfiles{numel(keepfiles)+1} = {ppparams.fc1im}; end
@@ -134,6 +134,15 @@ if params.denoise.do_aCompCor && ~isfield(ppparams,'acc_file')
 
     clear funcdat Vfunc
 end  
+
+%% Denoise with DUNE
+if params.denoise.do_DUNE
+    fprintf('Start DUNE \n')
+
+    [ppparams,keepfiles,delfiles] = fmri_dune(ppparams,params,keepfiles,delfiles);
+
+    fprintf('Done DUNE \n')
+end
 
 %% Denoising with ICA-AROMA
 if params.denoise.do_ICA_AROMA && ~isfield(ppparams,'nboldica_file')
