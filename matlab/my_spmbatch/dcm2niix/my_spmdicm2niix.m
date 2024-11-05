@@ -313,8 +313,10 @@ for k = 1:nFile
         break; 
     end
 end
+
 hh(cellfun(@(c)isempty(c) || any(~isfield(c, flds(1:2))) || ~isfield(c, 'PixelData') ...
     || (isstruct(c.PixelData) && c.PixelData.Bytes<1), hh)) = [];
+
 if ~no_save, fprintf('(%g valid)\n', numel(hh)); end
 
 %% sort headers into cell h by SeriesInstanceUID/SeriesNumber
@@ -1045,6 +1047,7 @@ end
 
 % set TR and slice timing related info before re-orient
 [h, nii.hdr] = sliceTiming(h, nii.hdr);
+
 nii.hdr.xyzt_units = xyz_unit + nii.hdr.xyzt_units; % normally: mm (2) + sec (8)
 s = h{1};
 
@@ -1406,19 +1409,19 @@ if isempty(t) && any(isfield(s, {'TriggerTime' 'RTIA_timer'})) % GE
     t = cellfun(@(c)tryGetField(c, 'TriggerTime', 0), h(ind));
     if all(diff(t)==0), t = cellfun(@(c)tryGetField(c, 'RTIA_timer', 0), h(ind)); end
     if all(diff(t)==0), t=[];
-    elseif sum(diff(t)>0)<MB_factor
+    elseif sum(diff(t)>0)<MB_factor || ~(sum(t==min(t))==MB_factor)
         nslex = ceil(nSL/MB_factor);
         isl = zeros([1,nslex]);
         isl(1:2:nslex)=[0:1:(nslex-1)/2];
         isl(2:2:nslex)=[ceil(nslex/2):1:nslex-1];
         isl=repmat(isl,[1,MB_factor]);
-        t = isl*TA*(1-1/nslex)/(nslex-1);
+        t = isl*TA/nslex;
     else
         t = t - min(t);
-        ma = max(t) / TA;
-        if ma>1, t = t / 10; % was ms*10, old dicom
-        elseif ma<1e-3, t = t * 1000; % was sec, new dicom?
-        end
+        %ma = max(t) / TA;
+        %if ma>1, t = t / 10; % was ms*10, old dicom
+        %elseif ma<1e-3, t = t * 1000; % was sec, new dicom?
+        %end
     end
 end
 
