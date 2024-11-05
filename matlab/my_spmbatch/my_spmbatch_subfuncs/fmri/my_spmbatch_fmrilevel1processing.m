@@ -4,8 +4,7 @@ matlabbatch = {};
 
 %% Search for the data folders
 
-ppparams.substring = ['sub-' num2str(sub,'%02d')];
-if ~isfolder(fullfile(datpath,ppparams.substring)), ppparams.substring = ['sub-' num2str(sub,'%03d')]; end
+ppparams.substring = ['sub-' num2str(sub,['%0' num2str(params.sub_digits) 'd'])];
 
 ppparams.sesstring = ['ses-' num2str(ses,'%02d')];
 if ~isfolder(fullfile(datpath,ppparams.substring,ppparams.sesstring)), ppparams.sesstring = ['ses-' num2str(ses,'%03d')]; end

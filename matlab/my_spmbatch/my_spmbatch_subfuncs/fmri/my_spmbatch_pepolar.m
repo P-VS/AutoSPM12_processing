@@ -38,7 +38,7 @@ if nt==1
     reffunc = fullfile(ppparams.subfuncdir,nreffunc);
     
     clear Tfunc Tdat
-    
+
     estwrite.ref(1) = {reffunc};
     estwrite.source(1) = {ppfunc};
     estwrite.other = {ppfunc};
