@@ -195,8 +195,12 @@ mkdir(resultmap)
 jsondat = fileread(ppparams.frun(1).funcjsonfile);
 jsondat = jsondecode(jsondat);
 tr = jsondat.RepetitionTime;
-SliceTiming = jsondat.SliceTiming;
-nsl= ceil(numel(SliceTiming)/numel(find(SliceTiming==SliceTiming(1))));
+if isfield(jsondat,'SliceTiming')
+    SliceTiming = jsondat.SliceTiming;
+    nsl= ceil(numel(SliceTiming)/numel(find(SliceTiming==SliceTiming(1))));
+else
+    nsl = 1;
+end
 
 matlabbatch{1}.spm.stats.fmri_spec.dir = {resultmap};
 matlabbatch{1}.spm.stats.fmri_spec.timing.units = 'secs';
