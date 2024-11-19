@@ -9,6 +9,7 @@ ppparams.sub = sub;
 ppparams.ses = ses;
 ppparams.run = run;
 ppparams.task = task;
+ppparams.echoes = params.func.echoes;
 ppparams.use_parallel = params.use_parallel;
 ppparams.save_intermediate_results = params.save_intermediate_results;
 
