@@ -8,17 +8,26 @@ if ~params.func.mruns, params.func.runs = [1]; end
 if params.func.meepi && numel(params.func.echoes)==1, params.func.combination='none'; end
 if params.func.meepi && ~contains(params.func.combination,'none'), params.func.do_echocombination = true; else params.func.do_echocombination = false; end
 
+if params.denoise.do_aCompCor
+    params.denoise.do_noiseregression = true;
+    params.denoise.do_bpfilter = false;
+    params.denoise.do_mot_derivatives = true;
+end
+
+if params.denoise.do_ICA_AROMA
+    params.denoise.do_noiseregression = true;
+    params.denoise.do_DUNE = false;
+    params.denoise.do_aCompCor = true;
+    params.denoise.do_bpfilter = false;
+    params.denoise.do_mot_derivatives = true;
+end
+
 if params.denoise.do_DUNE
-    %toolboxtest = ver;
-    %if sum(contains({toolboxtest.Name},'Deep Learningen Toolbox'))
-        params.denoise.do_noiseregression = false;
-        params.denoise.do_ICA_AROMA = false;
-        params.denoise.do_aCompCor = false;
-        params.denoise.do_bpfilter = false;
-        params.denoise.do_mot_derivatives = true;
-    %else
-    %    params.denoise.do_DUNE = false;
-    %end
+    params.denoise.do_noiseregression = false;
+    params.denoise.do_ICA_AROMA = false;
+    params.denoise.do_aCompCor = false;
+    params.denoise.do_bpfilter = false;
+    params.denoise.do_mot_derivatives = true;
 end
 
 save(fullfile(datpath,'params.mat'),'params')

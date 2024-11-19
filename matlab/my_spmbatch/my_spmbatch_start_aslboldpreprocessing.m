@@ -12,6 +12,7 @@ if ~contains(params.func.combination,'none'), params.func.do_echocombination = t
 if contains(params.asl.splitaslbold,'meica')
     params.denoise.do_mot_derivatives = true;
     params.denoise.do_aCompCor = false;
+    params.denoise.do_bpfilter = false;
     params.denoise.do_ICA_AROMA = true;
     params.denoise.do_noiseregression = true;
 end

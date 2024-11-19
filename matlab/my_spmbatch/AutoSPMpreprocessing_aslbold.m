@@ -31,15 +31,15 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/asl_bold/ASL_fingertapping';
+datpath = '/Volumes/LaCie/UZ_Brussel/asl_bold/openfmri_data';
 
 sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_bold_icatest'; %name of the folder to save the preprocessed bold data
-params.perf_save_folder = 'preproc_asl_icatest'; %name of the folder to save the preprocessed asl data
+params.func_save_folder = 'preproc_bold_dune'; %name of the folder to save the preprocessed bold data
+params.perf_save_folder = 'preproc_asl_dune'; %name of the folder to save the preprocessed asl data
 
 task ={'bilateralfingertapping'};
 
@@ -72,7 +72,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     
 %% Preprocessing ASL data
 
-    params.preprocess_asl = true; %(default=true)
+    params.preprocess_asl = false; %(default=true)
 
     %ASL data
     params.asl.isM0scan = 'last'; %The M0 image is by defaullt the last volume @GE (set 'last')
@@ -87,7 +87,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 
 %% Preprocessing functional (the order of the parameters represents the fixed order of the steps done)
 
-    params.preprocess_functional = false; %(default=true)
+    params.preprocess_functional = true; %(default=true)
 
     % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
     params.func.dummytime = 0; %time in seconds (default=2*TR)
@@ -100,7 +100,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 
     %Denoising before echo combination and normalization ussing the
     %parameters from params.denoise
-    params.func.denoise = false; %(default=false)
+    params.func.denoise = true; %(default=false)
 
     params.func.combination = 'none'; %only used for ME-EPI (default=T2star_weighted)
     %none: all echoes are preprocessed separatly
@@ -111,14 +111,14 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     %see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
           
     % Slice time correction
-    params.func.do_slicetime = true; %(default=true)
+    params.func.do_slicetime = false; %(default=true)
            
     % Normalization
-    params.func.do_normalization = true; %(default=true)
+    params.func.do_normalization = false; %(default=true)
     params.func.normvox = [2.0 2.0 2.0]; %(default=[2.0 2.0 2.0])
      
     % Smoothing
-    params.func.do_smoothing = true; %(default=true)
+    params.func.do_smoothing = false; %(default=true)
     params.func.smoothfwhm = 6; %(default=6)
 
 %% Denoising
@@ -131,7 +131,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.denoise.do_mot_derivatives = true; %derivatives+squares (24 regressors) (default=true)
 
     % Band-pass filtering
-    params.denoise.do_bpfilter = true; %(default=true)
+    params.denoise.do_bpfilter = false; %(default=true)
     params.denoise.bpfilter = [0.008 0.1]; %no highpass filter is first 0, no lowpass filter is last Inf, default=[0.008 0.1]
     params.denoise.polort = 2; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend, default=2)
 
@@ -140,13 +140,13 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal (default=5)
 
     % ICA-AROMA
-    params.denoise.do_ICA_AROMA = true; %(default=true)
+    params.denoise.do_ICA_AROMA = false; %(default=true)
 
     % Noise regression / remove ICA-AROMA noise components
-    params.denoise.do_noiseregression = true; %(default=true)
+    params.denoise.do_noiseregression = false; %(default=true)
 
     % Prepare data for DUNNET denoising in python (WIP)
-    params.denoise.do_DUNNET = false; %(default=false)
+    params.denoise.do_DUNE = true; %(default=false)
     
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------

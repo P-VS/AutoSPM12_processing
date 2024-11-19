@@ -31,23 +31,23 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/zip_test';
+datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [2];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
-params.sub_digits = 4; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
+sublist = [4,5];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_func_dunelstm'; %name of the folder to save the preprocessed bold data
+params.func_save_folder = 'preproc_EmoFaces_func_meica'; %name of the folder to save the preprocessed bold data
 
-task ={'test'};
+task ={'ME-EmoFaces'};
 
 %In case of multiple runs in the same session exist
 params.func.mruns = false; %true if run number is in filename
 params.func.runs = [1]; %the index of the runs (in filenames run-(index))
 
 % For ME-fMRI
-params.func.meepi = false; %true if echo number is in filename
+params.func.meepi = true; %true if echo number is in filename
 params.func.echoes = [1,2]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
 
 params.use_parallel = false; 
@@ -80,11 +80,11 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.func.do_realignment = true; %(default=true)
 
     % Geometric correction
-    params.func.pepolar = false; %(default=true)
+    params.func.pepolar = true; %(default=true)
        
     %Denoising before echo combination and normalization ussing the
     %parameters from params.denoise
-    params.func.denoise = false; %(default=true)
+    params.func.denoise = true; %(default=true)
  
     params.func.combination = 'T2star_weighted'; %only used for ME-EPI (default=T2star_weighted)
     %none: all echoes are preprocessed separatly
@@ -98,11 +98,11 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.func.do_slicetime = true; %(default=true)
       
     % Normalization
-    params.func.do_normalization = false; %(default=true)
+    params.func.do_normalization = true; %(default=true)
     params.func.normvox = [2.0 2.0 2.0]; %(default=[2.0 2.0 2.0])
      
     % Smoothing
-    params.func.do_smoothing = false; %(default=true)
+    params.func.do_smoothing = true; %(default=true)
     params.func.smoothfwhm = 6; %(default=6)
 
 %% Denoising (after normalization)
@@ -115,12 +115,12 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.denoise.do_mot_derivatives = true; %derivatives+squares (24 regressors) (default=true)
 
     % Band-pass filtering
-    params.denoise.do_bpfilter = true; %(default=true)
+    params.denoise.do_bpfilter = false; %(default=true)
     params.denoise.bpfilter = [0.008 0.1]; %no highpass filter is first 0, no lowpass filter is last Inf, default=[0.008 0.1]
     params.denoise.polort = 2; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend, default=2)
 
     % aCompCor
-    params.denoise.do_aCompCor = false; %(default=true)
+    params.denoise.do_aCompCor = true; %(default=true)
     params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal (default=5)
 
     % ICA-AROMA
