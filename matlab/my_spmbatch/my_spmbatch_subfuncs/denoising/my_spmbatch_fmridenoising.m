@@ -3,26 +3,24 @@ function [ppparams,delfiles,keepfiles] = my_spmbatch_fmridenoising(ppparams,para
 reffunc = [ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile ',1'];
 
 %% Make masks
-if params.denoise.do_ICA_AROMA || params.denoise.do_DUNE
-    if ~isfield(ppparams,'fmask')
-        fprintf('Make mask \n')
-    
-        Vmask = spm_vol(fullfile(ppparams.subfuncdir,reffunc));
-        fmaskdat = spm_read_vols(Vmask);
+if ~isfield(ppparams,'fmask')
+    fprintf('Make mask \n')
 
-        % Functional mask
-        func_mask = my_spmbatch_mask(fmaskdat);
-        
-        Vfuncmask = Vmask(1);
-        Vfuncmask.fname = fullfile(ppparams.subfuncdir,['fmask_' ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile]);
-        Vfuncmask.descrip = 'funcmask';
-        Vfuncmask = rmfield(Vfuncmask, 'pinfo'); %remove pixel info so that there is no scaling factor applied so the values
-        spm_write_vol(Vfuncmask, func_mask);
-        
-        ppparams.fmask = Vfuncmask.fname;
-        
-        clear fmaskdat func_mask Vfuncmask Vmask
-    end
+    Vmask = spm_vol(fullfile(ppparams.subfuncdir,reffunc));
+    fmaskdat = spm_read_vols(Vmask);
+
+    % Functional mask
+    func_mask = my_spmbatch_mask(fmaskdat);
+    
+    Vfuncmask = Vmask(1);
+    Vfuncmask.fname = fullfile(ppparams.subfuncdir,['fmask_' ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile]);
+    Vfuncmask.descrip = 'funcmask';
+    Vfuncmask = rmfield(Vfuncmask, 'pinfo'); %remove pixel info so that there is no scaling factor applied so the values
+    spm_write_vol(Vfuncmask, func_mask);
+    
+    ppparams.fmask = Vfuncmask.fname;
+    
+    clear fmaskdat func_mask Vfuncmask Vmask
 end
 
 %% Do segmentation of func data
