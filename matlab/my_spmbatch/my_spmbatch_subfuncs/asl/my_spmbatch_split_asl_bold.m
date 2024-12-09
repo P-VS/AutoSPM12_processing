@@ -17,7 +17,8 @@ tr = jsondat.RepetitionTime;
 s = size(funcdat);
 funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
 
-[bolddat,~] = fmri_cleaning(funcdat(:,:),0,[tr 0 0.1],[],[],'restoremean','on');
+Ny = 1/(2*tr);
+[bolddat,~] = fmri_cleaning(funcdat(:,:),0,[tr 0.008 Ny-0.008],[],[],'restoremean','on');
 
 bolddat = reshape(bolddat(:,:),s);
 
