@@ -24,18 +24,7 @@ csfdat(braindat>0.0)=0;
 csfdat(csfdat<0.2)=0;
 csfdat(csfdat>0.0)=1;
 
-if params.denoise.do_bpfilter
-    jsondat = fileread(ppparams.func(ppparams.echoes(1)).jsonfile);
-    jsondat = jsondecode(jsondat);
-
-    tr = jsondat.RepetitionTime;
-
-    bpfilter = [tr params.denoise.bpfilter(1:2)];
-else
-    bpfilter = [];
-end
-
-acc_confounds = fmri_acompcor(funcdat(:,:,:,:),{csfdat},params.denoise.Ncomponents,'confounds',confounds,'filter',bpfilter,'PolOrder',1);
+acc_confounds = fmri_acompcor(funcdat(:,:,:,:),{csfdat},params.denoise.Ncomponents,'confounds',confounds,'filter',[],'PolOrder',1);
 
 accf = ['acc_' ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile];
 accname = split(accf,'_echo-');

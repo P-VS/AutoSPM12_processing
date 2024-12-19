@@ -111,6 +111,15 @@ if params.denoise.do_mot_derivatives && ~isfield(ppparams,'der_file')
     keepfiles{numel(keepfiles)+1} = {ppparams.der_file};
 end
 
+%% Bandpass filering
+if ~params.func.isaslbold && params.denoise.do_bpfilter
+    fprintf('Start filtering \n')
+
+    [ppparams,keepfiles,delfiles] = my_spmbatch_filtering(ppparams,params,keepfiles,delfiles);
+
+    fprintf('Done filtering \n')
+end
+
 %% Denoising with aCompCor covariates
 if params.denoise.do_aCompCor && ~isfield(ppparams,'acc_file')
     for ie=ppparams.echoes
@@ -137,7 +146,7 @@ end
 if params.denoise.do_DUNE
     fprintf('Start DUNE \n')
 
-    [ppparams,keepfiles,delfiles] = fmri_dune(ppparams,params,keepfiles,delfiles);
+    [ppparams,keepfiles,delfiles] = my_spmbatch_dune(ppparams,params,keepfiles,delfiles);
 
     fprintf('Done DUNE \n')
 end
@@ -152,7 +161,7 @@ if params.denoise.do_ICA_AROMA && ~isfield(ppparams,'nboldica_file')
 end
 
 %% Noise regression
-if params.denoise.do_noiseregression || params.denoise.do_bpfilter || params.denoise.do_ICA_AROMA
+if params.denoise.do_noiseregression || params.denoise.do_ICA_AROMA
     for ie=ppparams.echoes   
         fprintf(['Do noise regression for echo ' num2str(ie) '\n'])
 
