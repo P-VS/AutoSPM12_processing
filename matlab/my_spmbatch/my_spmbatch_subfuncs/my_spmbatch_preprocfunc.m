@@ -4,7 +4,7 @@ function [ppparams,delfiles,keepfiles] = my_spmbatch_preprocfunc(ppparams,params
 for ie=ppparams.echoes
     [ppparams,delfiles,keepfiles] = my_spmbatch_preprocfunc_perecho(ppparams,params,ie,delfiles,keepfiles);
 
-    if params.func.isaslbold && ~contains(ppparams.func(ie).prefix,'f')
+    if params.func.isaslbold && ~contains(params.asl.splitaslbold,'dune') && ~contains(ppparams.func(ie).prefix,'f')
         [ppparams,delfiles,keepfiles] = my_spmbatch_split_asl_bold(params,ppparams,ie,delfiles,keepfiles);
     end
 end
@@ -17,8 +17,7 @@ for ie=ppparams.echoes
 end
 
 %% Denoising the ME/SE fMRI data
-if (params.func.isaslbold && params.preprocess_asl && contains(params.asl.splitaslbold,'meica')) ...
-        || (params.func.denoise && ~contains(ppparams.func(1).prefix,'d'))
+if (params.func.isaslbold || params.func.denoise) && ~contains(ppparams.func(1).prefix,'d')
 
     [ppparams,delfiles,keepfiles] = my_spmbatch_fmridenoising(ppparams,params,delfiles,keepfiles);
 
