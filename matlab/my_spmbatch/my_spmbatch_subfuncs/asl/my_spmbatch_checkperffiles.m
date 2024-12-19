@@ -26,15 +26,13 @@ if isempty(aslniilist)
 end
 
 for ie=1:numel(params.func.echoes)
-    tmp = find(contains({aslniilist.name},['_echo-' num2str(ie)]));
-    if ~isempty(tmp), edirniilist = aslniilist(tmp); else edirniilist = []; end
-
-    prefixlist = split({edirniilist.name},'sub-');
-    if numel(edirniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
+    prefixlist = split({aslniilist.name},'sub-');
+    if numel(aslniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
 
     fpresplit = split(prefixlist{1},'f');
     studyprefix = ['f' fpresplit{end}];
     if contains(params.asl.splitaslbold,'meica') && ~contains(studyprefix,'d'), studyprefix = ['d' studyprefix]; end
+    if contains(params.asl.splitaslbold,'dune') && ~contains(studyprefix,'cd'), studyprefix = ['cd' studyprefix]; end
     
     perfcheck = true;
     while perfcheck
@@ -51,7 +49,7 @@ for ie=1:numel(params.func.echoes)
     end
     
     if ~isempty(tmp)
-        ffile = edirniilist(tmp).name;
+        ffile = aslniilist(tmp).name;
         fsplit = split(ffile,ppparams.perf(ie).aslprefix);
         ppparams.perf(ie).aslfile = fsplit{2};
     end

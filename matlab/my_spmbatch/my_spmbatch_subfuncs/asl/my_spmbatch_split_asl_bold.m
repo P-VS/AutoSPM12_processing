@@ -13,13 +13,12 @@ jsondat = fileread(ppparams.func(ppparams.echoes(1)).jsonfile);
 jsondat = jsondecode(jsondat);
 
 tr = jsondat.RepetitionTime;
+Ny = 1/(2*tr);
 
 s = size(funcdat);
 funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
 
-Ny = 1/(2*tr);
 [bolddat,~] = fmri_cleaning(funcdat(:,:),0,[tr 0.008 Ny-0.008],[],[],'restoremean','on');
-
 bolddat = reshape(bolddat(:,:),s);
 
 fname = split(ppparams.func(ie).funcfile,'_aslbold.nii');
@@ -34,8 +33,8 @@ end
 
 Vbold = myspm_write_vol_4d(Vbold,bolddat);
 
-funcdat = reshape(funcdat(:,:),s);
-if contains(params.asl.splitaslbold,'meica'), funcdat = funcdat-bolddat+repmat(mean(funcdat,4),[1,1,1,s(4)]); end
+[nbolddat,~] = fmri_cleaning(funcdat(:,:),0,[tr Ny-0.008 Ny],[],[],'restoremean','on');
+nbolddat = reshape(nbolddat(:,:),s);
 
 Vasl = Vfunc;
 for iv=1:numel(Vasl)
@@ -45,14 +44,14 @@ for iv=1:numel(Vasl)
     Vasl(iv).n = [iv 1];
 end
 
-Vasl = myspm_write_vol_4d(Vasl,funcdat);
+Vasl = myspm_write_vol_4d(Vasl,nbolddat);
 
 delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_bold.nii'])};
 
 ppparams.func(ie).funcfile = [fname{1} '_bold.nii'];
 ppparams.func(ie).prefix = ['f' ppparams.func(ie).prefix];
 
-ppparams.perf(ie).perffile = [fname{1} '_bold.nii'];
+ppparams.perf(ie).perffile = [fname{1} '_asl.nii'];
 ppparams.perf(ie).prefix = ['f' ppparams.func(ie).prefix];
 
 clear funcdat bolddat Vfunc Vbold Vasl
