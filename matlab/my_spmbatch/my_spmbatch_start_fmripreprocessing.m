@@ -10,7 +10,8 @@ if params.func.meepi && ~contains(params.func.combination,'none'), params.func.d
 
 if params.denoise.do_aCompCor
     params.denoise.do_noiseregression = true;
-    params.denoise.do_bpfilter = false;
+    params.denoise.do_bpfilter = true;
+    params.denoise.bpfilter = [0.008 Inf];
     params.denoise.do_mot_derivatives = true;
 end
 
@@ -18,7 +19,8 @@ if params.denoise.do_ICA_AROMA
     params.denoise.do_noiseregression = true;
     params.denoise.do_DUNE = false;
     params.denoise.do_aCompCor = true;
-    params.denoise.do_bpfilter = false;
+    params.denoise.do_bpfilter = true;
+    params.denoise.bpfilter = [0.008 Inf];
     params.denoise.do_mot_derivatives = true;
 end
 

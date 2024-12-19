@@ -33,12 +33,12 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [4,5];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_EmoFaces_func_meica'; %name of the folder to save the preprocessed bold data
+params.func_save_folder = 'preproc_func_ME-EmoFaces_meica'; %name of the folder to save the preprocessed bold data
 
 task ={'ME-EmoFaces'};
 
@@ -120,17 +120,17 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.denoise.polort = 2; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend, default=2)
 
     % aCompCor
-    params.denoise.do_aCompCor = true; %(default=true)
+    params.denoise.do_aCompCor = false; %(default=true)
     params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal (default=5)
 
     % ICA-AROMA
     params.denoise.do_ICA_AROMA = true; %(default=true)
 
     % Noise regression / remove ICA-AROMA noise components
-    params.denoise.do_noiseregression = true; %(default=true)
+    params.denoise.do_noiseregression = false; %(default=true)
 
-    % Prepare data for DUNNET (Denoising with a U-shaped Neural NETwork) (DUNNET is written in Python)
-    params.denoise.do_DUNE = false;
+    % Prepare data for DUNE denoising in python (WIP)
+    params.denoise.do_DUNE = true; %(default=false)
     
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------

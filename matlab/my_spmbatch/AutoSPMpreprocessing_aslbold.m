@@ -39,7 +39,7 @@ params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject fold
 nsessions = [1]; %nsessions>0
 
 params.func_save_folder = 'preproc_bold_dune'; %name of the folder to save the preprocessed bold data
-params.perf_save_folder = 'preproc_asl_dune'; %name of the folder to save the preprocessed asl data
+params.perf_save_folder = 'preproc_asl_dune_time'; %name of the folder to save the preprocessed asl data
 
 task ={'bilateralfingertapping'};
 
@@ -49,7 +49,7 @@ params.func.runs = [1]; %the index of the runs (in filenames run-(index))
 
 % For ME-fMRI
 params.func.meepi = true; %true if echo number is in filename (default=true)
-params.func.echoes = [1,2,3,4]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
+params.func.echoes = [1:4]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
 
 params.use_parallel = false; %(default=false)
 params.maxprocesses = 2; %Best not too high to avoid memory problems %(default=2)
@@ -84,6 +84,14 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     % 'only_mean' : only 1 CBF image (mean over the whole series
     % 'reduced' : the mean CBF over a few timepoints (e.g. per minute) 
     params.asl.dt = 40; %new temporal resolution in seconds if params.asl.temp_resolution = 'reduced'
+    
+    params.asl.splitaslbold = 'dune'; %'meica' or 'dune' (default='meica') 
+    %this step is part of params.preprocess_functional = true;
+    %'meica': after filtering, ME-ICA (tedana based)
+    %'dune': experimental splitting method
+    %T2* part = BOLD and S0 part is ASL
+    %See Cohen et al 2018. Multiband multi-echo simultaneous ASL/BOLD for
+    %task-induced functional MRI. PLoS One 13(2):e0190427
 
 %% Preprocessing functional (the order of the parameters represents the fixed order of the steps done)
 
@@ -102,7 +110,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     %parameters from params.denoise
     params.func.denoise = true; %(default=false)
 
-    params.func.combination = 'none'; %only used for ME-EPI (default=T2star_weighted)
+    params.func.combination = 'T2star_weighted'; %only used for ME-EPI (default=T2star_weighted)
     %none: all echoes are preprocessed separatly
     %average: The combination is the average of the multiple echo images
     %TE_weighted: The combination is done wi=TEi or 
@@ -111,14 +119,14 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     %see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
           
     % Slice time correction
-    params.func.do_slicetime = false; %(default=true)
+    params.func.do_slicetime = true; %(default=true)
            
     % Normalization
-    params.func.do_normalization = false; %(default=true)
+    params.func.do_normalization = true; %(default=true)
     params.func.normvox = [2.0 2.0 2.0]; %(default=[2.0 2.0 2.0])
      
     % Smoothing
-    params.func.do_smoothing = false; %(default=true)
+    params.func.do_smoothing = true; %(default=true)
     params.func.smoothfwhm = 6; %(default=6)
 
 %% Denoising
@@ -128,7 +136,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.do_denoising = false; %(default=false)
 
     % Extend motion regressors with derivatives and squared regressors
-    params.denoise.do_mot_derivatives = true; %derivatives+squares (24 regressors) (default=true)
+    params.denoise.do_mot_derivatives = false; %derivatives+squares (24 regressors) (default=true)
 
     % Band-pass filtering
     params.denoise.do_bpfilter = false; %(default=true)
@@ -145,7 +153,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     % Noise regression / remove ICA-AROMA noise components
     params.denoise.do_noiseregression = false; %(default=true)
 
-    % Prepare data for DUNNET denoising in python (WIP)
+    % Prepare data for DUNE denoising in python (WIP)
     params.denoise.do_DUNE = true; %(default=false)
     
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
