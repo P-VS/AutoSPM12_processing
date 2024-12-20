@@ -8,46 +8,48 @@ tr = jsondat.RepetitionTime;
 mask = spm_read_vols(spm_vol(ppparams.fmask));
 
 for ie=ppparams.echoes
-    Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
-    funcdat = spm_read_vols(Vfunc);
-
-    s = size(funcdat);
-    funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
+    if ~contains(ppparams.func(ie).prefix,'f')
+        Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
+        funcdat = spm_read_vols(Vfunc);
     
-    tmp=find(mask>0);
-    mfuncdat = funcdat(tmp,:);
-    mean_mfuncdat = mean(mfuncdat,2);
-    std_mfuncdat = std(mfuncdat,[],2);
+        s = size(funcdat);
+        funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
+        
+        tmp=find(mask>0);
+        mfuncdat = funcdat(tmp,:);
+        mean_mfuncdat = mean(mfuncdat,2);
+        std_mfuncdat = std(mfuncdat,[],2);
+        
+        mfuncdat = mfuncdat - repmat(mean_mfuncdat,[1,s(end)]);
+        mfuncdat(std_mfuncdat>0,:) = mfuncdat(std_mfuncdat>0,:) ./ repmat(std_mfuncdat(std_mfuncdat>0),[1,s(end)]);
+        mfuncdat(std_mfuncdat<=0,:) = 0;
     
-    mfuncdat = mfuncdat - repmat(mean_mfuncdat,[1,s(end)]);
-    mfuncdat(std_mfuncdat>0,:) = mfuncdat(std_mfuncdat>0,:) ./ repmat(std_mfuncdat(std_mfuncdat>0),[1,s(end)]);
-    mfuncdat(std_mfuncdat<=0,:) = 0;
-
-    mfuncdat = filter_chunk(mfuncdat, params.denoise.bpfilter(1), params.denoise.bpfilter(2), tr);
-
-    mfuncdat = mfuncdat .* repmat(std_mfuncdat,[1,s(end)]);
-    mfuncdat = mfuncdat + repmat(mean_mfuncdat,[1,s(end)]);
+        mfuncdat = filter_chunk(mfuncdat, params.denoise.bpfilter(1), params.denoise.bpfilter(2), tr);
     
-    funcdat(tmp,:) = mfuncdat;
+        mfuncdat = mfuncdat .* repmat(std_mfuncdat,[1,s(end)]);
+        mfuncdat = mfuncdat + repmat(mean_mfuncdat,[1,s(end)]);
+        
+        funcdat(tmp,:) = mfuncdat;
+        
+        funcdat = reshape(funcdat(:,:),s);
+        
+        clear mfuncdat mean_mfuncdat std_mfuncdat tmp
     
-    funcdat = reshape(funcdat(:,:),s);
+        for k=1:numel(Vfunc)
+            Vfunc(k).fname = fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
+            Vfunc(k).descrip = 'my_spmbatch - bandpass filtering';
+            Vfunc(k).pinfo = [1,0,0];
+            Vfunc(k).n = [k 1];
+        end
+        
+        Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
     
-    clear mfuncdat mean_mfuncdat std_mfuncdat tmp
-
-    for k=1:numel(Vfunc)
-        Vfunc(k).fname = fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
-        Vfunc(k).descrip = 'my_spmbatch - bandpass filtering';
-        Vfunc(k).pinfo = [1,0,0];
-        Vfunc(k).n = [k 1];
+        clear funcdat
+    
+        ppparams.func(ie).prefix = ['f' ppparams.func(ie).prefix];
+    
+        delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile])};
     end
-    
-    Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
-
-    clear funcdat
-
-    ppparams.func(ie).prefix = ['f' ppparams.func(ie).prefix];
-
-    delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile])};
 end
 
 function fil_calc = filter_chunk(vol_calc, filter_lower, filter_upper, filter_tr)
