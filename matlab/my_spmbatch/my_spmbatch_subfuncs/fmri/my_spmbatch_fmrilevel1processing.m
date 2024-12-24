@@ -72,7 +72,7 @@ for ir=1:numel(params.iruns)
         return
     end
 
-    for ie=1:numel(params.func.echoes)
+    for ie=params.func.echoes
         if params.func.meepi && params.use_echoes_as_sessions %Filter list based on echo number
             tmp = find(or(contains({funcniilist.name},['_echo-' num2str(ie)]),contains({funcniilist.name},['_e' num2str(ie)])));
             if isempty(tmp), edirniilist = funcniilist; else edirniilist = funcniilist(tmp); end
