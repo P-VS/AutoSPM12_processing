@@ -72,9 +72,9 @@ for ir=1:numel(params.iruns)
         return
     end
 
-    for ie=params.func.echoes
+    for ie=1:numel(params.func.echoes)
         if params.func.meepi && params.use_echoes_as_sessions %Filter list based on echo number
-            tmp = find(or(contains({funcniilist.name},['_echo-' num2str(ie)]),contains({funcniilist.name},['_e' num2str(ie)])));
+            tmp = find(or(contains({funcniilist.name},['_echo-' num2str(params.func.echoes(ie))]),contains({funcniilist.name},['_e' num2str(params.func.echoes(ie))])));
             if isempty(tmp), edirniilist = funcniilist; else edirniilist = funcniilist(tmp); end
         else
             edirniilist = funcniilist;
@@ -87,7 +87,7 @@ for ir=1:numel(params.iruns)
         if ~isempty(tmp), ppparams.frun(ir).func(ie).funcfile = edirniilist(tmp).name; end
     
         if ~isfield(ppparams.frun(ir).func(ie),'funcfile')
-            fprintf(['no preprocessed fmri data found for run ' num2str(ir) ' for echo ' num2str(ie) '\n'])
+            fprintf(['no preprocessed fmri data found for run ' num2str(ir) ' for echo ' num2str(params.func.echoes(ie)) '\n'])
             fprintf('\nPP_Error\n');
             return
         end
