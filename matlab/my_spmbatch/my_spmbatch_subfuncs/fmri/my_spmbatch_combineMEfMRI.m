@@ -18,6 +18,8 @@ end
 tdim = numel(tefunc{1}.Vfunc);
 voldim = tefunc{1}.Vfunc(1).dim;
 
+nfname = split(ppparams.func(1).funcfile,'_echo-');
+
 spm_progress_bar('Init',tdim,'Combine TE images','volumes completed');
 
 nvols = params.loadmaxvols;
@@ -54,6 +56,15 @@ for ti=1:nvols:tdim
                 tefdat = mean(tefuncdat,4);
 
                 t2star = my_spmbacth_make_t2star_map(tefdat,te);
+
+                VT2 = tefunc{1}.Vfunc(1);
+                rmfield(VT2,'pinfo');
+                VT2.fname = fullfile(ppparams.subfuncdir,[ppparams.func(1).prefix nfname{1} '_t2star.nii']);
+                VT2.descrip = 'my_spmbatch - T2star map';
+                VT2.dt = [spm_type('float32'),spm_platform('bigend')];
+                VT2.n = [1 1];
+                VT2 = spm_write_vol(VT2,t2star);
+
                 t2star = reshape(t2star,[voldim(1)*voldim(2)*voldim(3),1]);
                 t2star_ind = find(t2star>0);
 
@@ -67,15 +78,13 @@ for ti=1:nvols:tdim
                     weights(t2star_ind,ne) = repmat(te(ne),numel(t2star_ind),1) .* weights(t2star_ind,ne);
                 end
             
-                %weights = reshape(weights,[voldim(1),voldim(2),voldim(3),nechoes]);
-                
                 sum_weights = sum(weights,2);
                 weights_mask = find(sum_weights>0);
 
                 clear t2star_ind t2star
             end
 
-            funcdat = zeros(voldim(1),voldim(2),voldim(3));
+            funcdat = zeros(voldim(1),voldim(2),voldim(3),nvols);
 
             for ne=1:nechoes
                 functidat = reshape(tefuncdat(:,:,:,:,ne),[voldim(1)*voldim(2)*voldim(3),nvols]);
@@ -95,8 +104,6 @@ for ti=1:nvols:tdim
     Vout = tefunc{1}.Vfunc(ti:ti+nvols-1);
     rmfield(Vout,'pinfo');
     
-    if ti==1, nfname = split(ppparams.func(1).funcfile,'_echo-'); end
-
     for iv=1:nvols
         Vout(iv).fname = fullfile(ppparams.subfuncdir,['c' ppparams.func(1).prefix nfname{1} '_bold.nii']);
         Vout(iv).descrip = 'my_spmbatch - combine echoes';
