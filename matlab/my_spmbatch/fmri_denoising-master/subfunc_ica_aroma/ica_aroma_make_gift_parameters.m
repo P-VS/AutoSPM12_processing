@@ -107,7 +107,7 @@ fprintf(fid,'%s','};');
 %end
 
 %% Enter directory to put results of analysis
-outdir = fullfile(ppparams.subfuncdir,'ica_dir');
+outdir = fullfile(ppparams.subfuncdir, ['ica-dir_' ppparams.task]);
 fprintf(fid,'\n%s',['outputDir = ''' outdir ''';']);
 
 %% Enter Name (Prefix) Of Output Files
