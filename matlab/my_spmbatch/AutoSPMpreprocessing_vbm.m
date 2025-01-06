@@ -48,13 +48,13 @@ params.save_intermediate_results = false;
 %% Preprocessing anatomical data for VBM with CAT12 toolbox
 
     % Normalization
-    params.vbm.do_normalization = true;
-    params.vbm.normvox = [0.5 0.5 0.5];
+    params.anat.do_normalization = true;
+    params.anat.normvox = [0.5 0.5 0.5];
 
     % Segmentation
-    params.vbm.do_segmentation = true;
-    params.vbm.do_roi_atlas = false;
-    params.vbm.do_surface = false;
+    params.anat.do_segmentation = true;
+    params.anat.do_roi_atlas = false;
+    params.anat.do_surface = false;
 
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------
