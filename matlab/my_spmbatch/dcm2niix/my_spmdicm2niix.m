@@ -844,7 +844,9 @@ for i = 1:nRun
         h{i}{1}.LastFile = h{i}{nFile}; % store partial last header into 1st
     end
     
+    spm_progress_bar('Init',nFile,['Converting DCM files for run ' num2str(i)],'Files done');
     for j = 1:nFile
+        if mod(j,100), spm_progress_bar('Set',j); end
         if j==1
             img = dicm_img(s, 0); % initialize img with dicm data type
             if ndims(img)>4 % err out, likely won't work for other series
@@ -862,6 +864,7 @@ for i = 1:nRun
             img(:,:,:,:,j) = img(:,:,:,:,j) * slope + inter;
         end
     end
+    spm_progress_bar('Clear');
     if strcmpi(tryGetField(s, 'DataRepresentation', ''), 'COMPLEX')
         img = complex(img(1:2:end), img(2:2:end));
     end
@@ -1415,6 +1418,7 @@ if isempty(t) && any(isfield(s, {'TriggerTime' 'RTIA_timer'})) % GE
         isl(1:2:nslex)=[0:1:(nslex-1)/2];
         isl(2:2:nslex)=[ceil(nslex/2):1:nslex-1];
         isl=repmat(isl,[1,MB_factor]);
+        isl=isl(1:nSL);
         t = isl*TA/nslex;
     else
         t = t - min(t);
