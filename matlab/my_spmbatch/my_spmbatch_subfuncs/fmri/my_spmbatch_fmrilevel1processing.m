@@ -353,3 +353,38 @@ for ic=1:numel(params.contrast)
 end
 
 matlabbatch{3}.spm.stats.con.delete = 0;
+
+%% SPM Results
+if params.save_spm_results
+    matlabbatch{4}.spm.stats.results.spmmat = cfg_dep('Contrast Manager: SPM.mat File', substruct('.','val', '{}',{3}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','spmmat'));
+    matlabbatch{4}.spm.stats.results.conspec.titlestr = '';
+    matlabbatch{4}.spm.stats.results.conspec.contrasts = Inf;
+    matlabbatch{4}.spm.stats.results.conspec.threshdesc = params.threshold_correction;
+    matlabbatch{4}.spm.stats.results.conspec.thresh = params.pthreshold;
+    matlabbatch{4}.spm.stats.results.conspec.extent = params.kthreshold;
+    matlabbatch{4}.spm.stats.results.conspec.conjunction = 1;
+    matlabbatch{4}.spm.stats.results.conspec.mask.none = 1;
+    matlabbatch{4}.spm.stats.results.units = 1;
+
+    oi = 1;
+    if params.save_thresholded_map
+        matlabbatch{4}.spm.stats.results.export{oi}.tspm.basename = 'thres';
+        oi = oi+1;
+    end
+    if params.save_minary_mask
+        matlabbatch{4}.spm.stats.results.export{oi}.binary.basename = 'bin';
+        oi = oi+1;
+    end
+    if params.save_naray
+        matlabbatch{4}.spm.stats.results.export{oi}.nary.basename = 'n-aray';
+        oi = oi+1;
+    end
+    if params.save_csv_file
+        matlabbatch{4}.spm.stats.results.export{oi}.csv = true;
+        oi = oi+1;
+    end
+    if params.save_pdf_file
+        matlabbatch{4}.spm.stats.results.export{oi}.pdf = true;
+        oi = oi+1;
+    end
+end
