@@ -38,17 +38,17 @@ params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject fold
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_func_ME-EmoFaces_meica'; %name of the folder to save the preprocessed bold data
+params.func_save_folder = 'preproc_func_SE-ICA'; %name of the folder to save the preprocessed bold data
 
-task ={'ME-EmoFaces'};
+task ={'SE-EFT','SE-EmoFaces'};
 
 %In case of multiple runs in the same session exist
 params.func.mruns = false; %true if run number is in filename
 params.func.runs = [1]; %the index of the runs (in filenames run-(index))
 
 % For ME-fMRI
-params.func.meepi = true; %true if echo number is in filename
-params.func.echoes = [1,2]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
+params.func.meepi = false; %true if echo number is in filename
+params.func.echoes = [1]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
 
 params.use_parallel = false; 
 params.maxprocesses = 2; %Best not too high to avoid memory problems
@@ -59,7 +59,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 
 %% Preprocessing anatomical data
 
-    params.preprocess_anatomical = false;
+    params.preprocess_anatomical = true;
 
     % Normalization
     params.anat.do_normalization = true; %(default=true)
@@ -71,10 +71,10 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     
 %% Preprocessing functional data (the order of the parameters represents the fixed order of the steps done)
 
-    params.preprocess_functional = true;
+    params.preprocess_functional = false;
 
     % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
-    params.func.dummytime = 6; %time in seconds
+    params.func.dummytime = 8; %time in seconds
     
     % Realignnment (motion correction)
     params.func.do_realignment = true; %(default=true)
@@ -89,7 +89,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.func.combination = 'T2star_weighted'; %only used for ME-EPI (default=T2star_weighted)
     %none: all echoes are preprocessed separatly
     %average: The combination is the average of the multiple echo images
-    %TE_weighted: The combination is done wi=TEi or 
+    %TE_weighted: The combination is done wi=TEi
     %T2star_weighted: dynamic T2* weighted combination (loglinear fit from tedana)
     %dyn_T2star: dynamic T2* mapping (not adviced due to the propagation of noise leading to spikes in the T2* maps)
     %see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
@@ -112,12 +112,12 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.do_denoising = false; %(default=false)
 
     % Extend motion regressors with derivatives and squared regressors
-    params.denoise.do_mot_derivatives = true; %derivatives+squares (24 regressors) (default=true)
+    params.denoise.do_mot_derivatives = false; %derivatives+squares (24 regressors) (default=true)
 
     % Band-pass filtering
-    params.denoise.do_bpfilter = false; %(default=true)
-    params.denoise.bpfilter = [0.008 0.1]; %no highpass filter is first 0, no lowpass filter is last Inf, default=[0.008 0.1]
-    params.denoise.polort = 2; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend, default=2)
+    params.denoise.do_bpfilter = true; %(default=true)
+    params.denoise.bpfilter = [0.008 Inf]; %no highpass filter is first 0, no lowpass filter is last Inf, default=[0.008 Inf]
+    params.denoise.polort = 1; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend, default=2)
 
     % aCompCor
     params.denoise.do_aCompCor = false; %(default=true)
@@ -130,7 +130,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.denoise.do_noiseregression = false; %(default=true)
 
     % Prepare data for DUNE denoising in python (WIP)
-    params.denoise.do_DUNE = true; %(default=false)
+    params.denoise.do_DUNE = false; %(default=false)
     
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------

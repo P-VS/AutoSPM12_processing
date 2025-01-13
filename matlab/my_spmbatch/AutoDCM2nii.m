@@ -26,10 +26,10 @@ params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/
 
 %% Give the basic input information of your data
 
-params.datpath = '/Volumes/LaCie/UZ_Brussel/zip_test';
+params.datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [2];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
-params.sub_digits = 4; %if 2 the result will be sub-01, if 3 the result will be sub-001
+sublist = [11];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+params.sub_digits = 2; %if 2 the result will be sub-01, if 3 the result will be sub-001
 
 %Add per sequence to convert an extra ssequence object to the mri_data structure as (folder,seqtype,name,task,[session],add_run,add_echo,add_acq)
 % folder: substructure starting from sub-## containing the dicom files
@@ -62,28 +62,39 @@ params.sub_digits = 4; %if 2 the result will be sub-01, if 3 the result will be 
 %params.mridata(1).add_echo = false;
 
 %% Example pepolar fmap scan
-%params.mridata(2).folder = 'dcm/aslbold_pi';
-%params.mridata(2).acqtype = 'fmap';
-%params.mridata(2).seqtype = 'pepolar';
-%params.mridata(2).task = '';
-%params.mridata(2).session = 1;
-%params.mridata(2).run = 1;
-%params.mridata(2).add_acq = false;
-%params.mridata(2).add_dir = true;
-%params.mridata(2).add_run = true;
-%params.mridata(2).add_echo = true;
-
-%% Example fMRI scan
-params.mridata(1).folder = 'dcm';
-params.mridata(1).acqtype = 'func';
-params.mridata(1).seqtype = 'fmri';
-params.mridata(1).task = 'test';
+params.mridata(1).folder = 'dcm/SE-fMRI_PI';
+params.mridata(1).acqtype = 'fmap';
+params.mridata(1).seqtype = 'pepolar';
+params.mridata(1).task = '';
 params.mridata(1).session = 1;
 params.mridata(1).run = 1;
 params.mridata(1).add_acq = false;
 params.mridata(1).add_dir = true;
-params.mridata(1).add_run = true;
-params.mridata(1).add_echo = true;
+params.mridata(1).add_run = false;
+params.mridata(1).add_echo = false;
+
+%% Example fMRI scan
+%params.mridata(1).folder = 'dcm/SE-fMRI_EFT';
+%params.mridata(1).acqtype = 'func';
+%params.mridata(1).seqtype = 'fmri';
+%params.mridata(1).task = 'SE-EFT';
+%params.mridata(1).session = 1;
+%params.mridata(1).run = 1;
+%params.mridata(1).add_acq = false;
+%params.mridata(1).add_dir = true;
+%params.mridata(1).add_run = false;
+%params.mridata(1).add_echo = true;
+
+%params.mridata(2).folder = 'dcm/SE-fMRI_EmoFaces';
+%params.mridata(2).acqtype = 'func';
+%params.mridata(2).seqtype = 'fmri';
+%params.mridata(2).task = 'SE-EmoFaces';
+%params.mridata(2).session = 1;
+%params.mridata(2).run = 1;
+%params.mridata(2).add_acq = false;
+%params.mridata(2).add_dir = true;
+%params.mridata(2).add_run = false;
+%params.mridata(2).add_echo = true;
 
 %% Example ASLBOLD scan
 %params.mridata(1).folder = 'dcm';
@@ -97,7 +108,7 @@ params.mridata(1).add_echo = true;
 %params.mridata(1).add_run = true;
 %params.mridata(1).add_echo = true;
 
-use_parallel = false; %only possible when parallel toolbox is installed
+params.use_parallel = true; %only possible when parallel toolbox is installed
 
 %Be careful with changing the code below this line!
 %--------------------------------------------------------------------------------
@@ -128,15 +139,7 @@ spm('defaults', 'FMRI');
 
 curdir = pwd;
 
-if use_parallel
-
-    my_spmbatch_paralleldcm2nii(sublist,params)
-
-else
-
-    my_spmbatch_noparalleldcm2nii(sublist,params)
-
-end
+my_spmbatch_noparalleldcm2nii(sublist,params)
 
 spm_figure('close',allchild(0));
 

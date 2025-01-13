@@ -69,14 +69,7 @@ params.keeplogs = false;
     %Save SPM results per ccontrast as thresholded map, binary mask, n-aray map (n=cluster number), 
     %csv file, pdf file
     params.save_spm_results = true;
-    params.threshold_correction = 'none'; %'none' or 'FWE' (default='none')
-    params.pthreshold = 0.001; % signifiance p-threshold (default=0.001) 
-    params.kthreshold = 0; %ccluster extend threshold (default=0)
-    params.save_thresholded_map = true;
-    params.save_minary_mask = true;
-    params.save_naray = true;
-    params.save_csv_file = true;
-    params.save_pdf_file = true;
+    params.threshold_ccorrection = 'none'; %'none
 
 %% Define the contrasts
     %contrast(i) is structure with fields
