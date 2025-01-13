@@ -117,7 +117,7 @@ for ti=1:nvols:tdim
             funcdat = funcdat(:,:,:,1:end-1);
             nvols = nvols-1;
 
-            if do_realignment && enum==params.func.echoes(1) && ti==1
+            if do_realignment && enum==params.func.echoes(1)
                 confounds = load(ppparams.rp_file);
                 confounds = confounds(1:end-1,:);
 
