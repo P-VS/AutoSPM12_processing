@@ -12,7 +12,7 @@ if ~contains(params.fmri_prefix,'s'), params.do_smoothing = true; else params.do
 if contains(params.fmri_prefix,'d'), params.add_regressors = false; end
 
 if params.func.mruns
-    switch params.use_runs
+    switch params.func.use_runs
         case 'separately'
             params.oruns = params.func.runs; 
             params.iruns = [1];
