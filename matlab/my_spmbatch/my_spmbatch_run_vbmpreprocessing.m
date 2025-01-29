@@ -7,7 +7,7 @@ try
     [delfiles,keepfiles] = my_spmbatch_preprocess_anat(sub,ses,datpath,params);
 
     % Clean up unnecessary files
-    cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params.save_intermediate_results,'anat',params.save_folder);
+    cleanup_intermediate_files(sub,ses,datpath,delfiles,keepfiles,params,'anat',params.save_folder);
 catch e
     fprintf('\nPP_Error\n');
     fprintf('\nThe error was: \n%s\n',e.message)
