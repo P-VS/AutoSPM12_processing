@@ -25,6 +25,8 @@ else
     params.iruns = [1];
 end
 
+if params.optimize_HRF; params.add_derivatives = false; end
+
 save(fullfile(datpath,'params.mat'),'params')
 
 datlist = zeros(numel(sublist)*numel(nsessions),3);
