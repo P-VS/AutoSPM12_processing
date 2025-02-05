@@ -285,7 +285,8 @@ for ir=1:numel(params.iruns)
 end
 
 matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
-matlabbatch{1}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0];
+if ~params.add_derivatives; matlabbatch{1}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0]; 
+else matlabbatch{1}.spm.stats.fmri_spec.bases.hrf.derivs = [1 1]; end
 matlabbatch{1}.spm.stats.fmri_spec.volt = 1;
 matlabbatch{1}.spm.stats.fmri_spec.global = 'None';
 
@@ -302,6 +303,8 @@ Vmask.dt = [spm_type('float32'),spm_platform('bigend')];
 Vmask.n = [1 1];
 Vmask = spm_write_vol(Vmask,mask);
 
+mask_file = Vmask.fname;
+
 clear fdata mask
 
 matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.0;
@@ -309,22 +312,40 @@ matlabbatch{1}.spm.stats.fmri_spec.mask = {Vmask.fname};
 
 matlabbatch{1}.spm.stats.fmri_spec.cvi = params.model_serial_correlations;
 
+%% Optimize GLM with TEDM
+if params.optimize_HRF
+    spm_jobman('run', matlabbatch)
+
+    clear matlabbatch
+
+    SPM_file = fullfile(resultmap,'SPM.mat');
+    SPM_file = my_spmmbatch_tedm(SPM_file,resultmap,mask_file);
+
+    mbidx = 1;
+    matlabbatch{mbidx}.spm.stats.fmri_est.spmmat(1) = {SPM_file};
+else
+    mbidx = 2;
+    matlabbatch{mbidx}.spm.stats.fmri_est.spmmat(1) = cfg_dep('fMRI model specification: SPM.mat File', substruct('.','val', '{}',{mbidx-1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','spmmat'));
+end
+
 %% Model estimation
 
-matlabbatch{2}.spm.stats.fmri_est.spmmat(1) = cfg_dep('fMRI model specification: SPM.mat File', substruct('.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','spmmat'));
-matlabbatch{2}.spm.stats.fmri_est.write_residuals = 0;
-matlabbatch{2}.spm.stats.fmri_est.method.Classical = 1;
+matlabbatch{mbidx}.spm.stats.fmri_est.write_residuals = 0;
+matlabbatch{mbidx}.spm.stats.fmri_est.method.Classical = 1;
+
+mbidx=mbidx+1;
 
 %% Contrast Manager
 
-matlabbatch{3}.spm.stats.con.spmmat(1) = cfg_dep('Model estimation: SPM.mat File', substruct('.','val', '{}',{2}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','spmmat'));
+matlabbatch{mbidx}.spm.stats.con.spmmat(1) = cfg_dep('Model estimation: SPM.mat File', substruct('.','val', '{}',{mbidx-1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','spmmat'));
 
 for ic=1:numel(params.contrast)
     contrastname='';
     weights = [];
 
     for ir=1:numel(params.iruns)
-        subweights = zeros(1,numel(edat{ir}.conditions));
+        if ~params.add_derivatives; ncondcol = 1; else ncondcol = 3; end
+        subweights = zeros(1,ncondcol*numel(edat{ir}.conditions));
         if params.add_regressors
             rpdat = load(ppparams.frun(ir).confoundsfile);
             subweights=[subweights zeros(1,numel(rpdat(1,:)))];
@@ -335,7 +356,7 @@ for ic=1:numel(params.contrast)
         
             indx=0;
             for icn2=1:numel(edat{ir}.conditions)
-                if strcmp(lower(params.contrast(ic).conditions{icn}),lower(edat{ir}.conditions{icn2}.name)); indx=icn2; end
+                if strcmp(lower(params.contrast(ic).conditions{icn}),lower(edat{ir}.conditions{icn2}.name)); indx=(icn2-1)*ncondcol+1; end
             end
     
             if indx>0; subweights(indx)=params.contrast(ic).vector(icn); end
@@ -346,45 +367,47 @@ for ic=1:numel(params.contrast)
         weights=[weights subweights];
     end
 
-    matlabbatch{3}.spm.stats.con.consess{ic}.tcon.name = contrastname;
-    matlabbatch{3}.spm.stats.con.consess{ic}.tcon.weights = weights;
+    matlabbatch{mbidx}.spm.stats.con.consess{ic}.tcon.name = contrastname;
+    matlabbatch{mbidx}.spm.stats.con.consess{ic}.tcon.weights = weights;
     
-    matlabbatch{3}.spm.stats.con.consess{ic}.tcon.sessrep = 'none';
+    matlabbatch{mbidx}.spm.stats.con.consess{ic}.tcon.sessrep = 'none';
 end
 
-matlabbatch{3}.spm.stats.con.delete = 0;
+matlabbatch{mbidx}.spm.stats.con.delete = 0;
+
+mbidx=mbidx+1;
 
 %% SPM Results
 if params.save_spm_results
-    matlabbatch{4}.spm.stats.results.spmmat = cfg_dep('Contrast Manager: SPM.mat File', substruct('.','val', '{}',{3}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','spmmat'));
-    matlabbatch{4}.spm.stats.results.conspec.titlestr = '';
-    matlabbatch{4}.spm.stats.results.conspec.contrasts = Inf;
-    matlabbatch{4}.spm.stats.results.conspec.threshdesc = params.threshold_correction;
-    matlabbatch{4}.spm.stats.results.conspec.thresh = params.pthreshold;
-    matlabbatch{4}.spm.stats.results.conspec.extent = params.kthreshold;
-    matlabbatch{4}.spm.stats.results.conspec.conjunction = 1;
-    matlabbatch{4}.spm.stats.results.conspec.mask.none = 1;
-    matlabbatch{4}.spm.stats.results.units = 1;
+    matlabbatch{mbidx}.spm.stats.results.spmmat = cfg_dep('Contrast Manager: SPM.mat File', substruct('.','val', '{}',{mbidx-1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','spmmat'));
+    matlabbatch{mbidx}.spm.stats.results.conspec.titlestr = '';
+    matlabbatch{mbidx}.spm.stats.results.conspec.contrasts = Inf;
+    matlabbatch{mbidx}.spm.stats.results.conspec.threshdesc = params.threshold_correction;
+    matlabbatch{mbidx}.spm.stats.results.conspec.thresh = params.pthreshold;
+    matlabbatch{mbidx}.spm.stats.results.conspec.extent = params.kthreshold;
+    matlabbatch{mbidx}.spm.stats.results.conspec.conjunction = 1;
+    matlabbatch{mbidx}.spm.stats.results.conspec.mask.none = 1;
+    matlabbatch{mbidx}.spm.stats.results.units = 1;
 
     oi = 1;
     if params.save_thresholded_map
-        matlabbatch{4}.spm.stats.results.export{oi}.tspm.basename = 'thres';
+        matlabbatch{mbidx}.spm.stats.results.export{oi}.tspm.basename = 'thres';
         oi = oi+1;
     end
     if params.save_minary_mask
-        matlabbatch{4}.spm.stats.results.export{oi}.binary.basename = 'bin';
+        matlabbatch{mbidx}.spm.stats.results.export{oi}.binary.basename = 'bin';
         oi = oi+1;
     end
     if params.save_naray
-        matlabbatch{4}.spm.stats.results.export{oi}.nary.basename = 'n-aray';
+        matlabbatch{mbidx}.spm.stats.results.export{oi}.nary.basename = 'n-aray';
         oi = oi+1;
     end
     if params.save_csv_file
-        matlabbatch{4}.spm.stats.results.export{oi}.csv = true;
+        matlabbatch{mbidx}.spm.stats.results.export{oi}.csv = true;
         oi = oi+1;
     end
     if params.save_pdf_file
-        matlabbatch{4}.spm.stats.results.export{oi}.pdf = true;
+        matlabbatch{mbidx}.spm.stats.results.export{oi}.pdf = true;
         oi = oi+1;
     end
 end
