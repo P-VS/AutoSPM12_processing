@@ -108,6 +108,9 @@ icaTimecourse = icatb_loadICATimeCourse(compFiles, 'real', [], [1:numComp]);
 dim = HInfo.DIM;
 tdim = size(icaTimecourse(:,1));
 
+% Reshape to 2d
+compData = reshape(compData, [prod(dim(1:3)),numComp]);
+
 %%%%%%%% End for getting the component data %%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%% Decision tree %%%%%%%%%%%%%%%%%
@@ -123,7 +126,7 @@ brainFract = zeros(numComp,1);
 
 for i = 1:numComp       
     
-    Compdat = compData(:,:,:,i);
+    Compdat = compData(:,i);
 
     totComp = sum(Compdat(Compdat>0),"all");
     brainComp = sum(Compdat(braindat>0),"all");
