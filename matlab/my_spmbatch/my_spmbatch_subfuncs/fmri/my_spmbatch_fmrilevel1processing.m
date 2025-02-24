@@ -394,7 +394,7 @@ if params.save_spm_results
         matlabbatch{mbidx}.spm.stats.results.export{oi}.tspm.basename = 'thres';
         oi = oi+1;
     end
-    if params.save_minary_mask
+    if params.save_binary_mask
         matlabbatch{mbidx}.spm.stats.results.export{oi}.binary.basename = 'bin';
         oi = oi+1;
     end
