@@ -26,14 +26,14 @@ params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data'; %'/Volumes/LaCie/UZ_Brussel/asl_bold/openfmri_data'; %'/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data'; 
 
-sublist = [1]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1,2,4:11]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
  
 params.task = {'ME-EFT'}; %{'bilateralfingertapping'}; %{'ME-EmoFaces'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
 
-params.analysisname = 'derivatives';
+params.analysisname = '_DUNE-BOLD';
 params.modality = 'fmri'; %'fmri' or 'fasl'
 
 params.use_parallel = false; 
@@ -42,8 +42,8 @@ params.loadmaxvols = 100; %to reduce memory load, the preprocessing can be split
 params.keeplogs = false;
 
 %% fMRI data parameters
-    params.preprocfmridir = 'preproc_func_ME-ICA'; %'preproc_bold_dune'; %'preproc_func_ME-EmoFaces_dune'; %directory with the preprocessed fMRI data
-    params.fmri_prefix = 'swacdfure'; %'swacdfre'; %'swacdure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
+    params.preprocfmridir = 'preproc_func_ME-DUNE_BOLD'; %'preproc_bold_dune'; %'preproc_func_ME-EmoFaces_dune'; %directory with the preprocessed fMRI data
+    params.fmri_prefix = 'swacdure'; %'swacdfre'; %'swacdure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
     
     params.dummytime = 0; %only if the timings in the _events.tsv file should be corrected for dummy scans
     
@@ -61,8 +61,8 @@ params.keeplogs = false;
 %% SPM first level analysis parameters
     params.confounds_prefix = 'rp_e'; %confounds file of form [confounds_prefix 'sub-ii_task-... .txt']
     params.add_regressors = false; %if data not denoised set true otherwhise false 
-    params.add_derivatives = true; %add temmperal and dispertion derivatives to the GLM (default=false)
-    params.optimize_HRF = false; %Optimize HRF parameters (peak time and duration) to the data using the TEDM toolbox (default=true)
+    params.add_derivatives = false; %add temmperal and dispertion derivatives to the GLM (default=false)
+    params.optimize_HRF = true; %Optimize HRF parameters (peak time and duration) to the data using the TEDM toolbox (default=true)
     params.use_ownmask = true;
     params.model_serial_correlations = 'AR(1)';
     params.hpf = 128; %default 128
@@ -75,10 +75,10 @@ params.keeplogs = false;
     params.pthreshold = 0.001; % signifiance p-threshold (default=0.001) 
     params.kthreshold = 0; %ccluster extend threshold (default=0)
     params.save_thresholded_map = true;
-    params.save_minary_mask = true;
+    params.save_binary_mask = true;
     params.save_naray = true;
-    params.save_csv_file = true;
-    params.save_pdf_file = true;
+    params.save_csv_file = false;
+    params.save_pdf_file = false;
 
 %% Define the contrasts
     %contrast(i) is structure with fields
