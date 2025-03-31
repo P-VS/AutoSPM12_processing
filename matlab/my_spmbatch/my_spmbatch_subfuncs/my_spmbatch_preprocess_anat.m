@@ -69,7 +69,7 @@ if ~isempty(ppanatniilist)
     tmp = find(contains({ppanatniilist.name},'_Crop_1'));
     if ~isempty(tmp), ppanatniilist = ppanatniilist(tmp); end
     
-    prefixlist = split({anatniilist.name},'sub-');
+    prefixlist = split({ppanatniilist.name},'sub-');
     prefixlist = prefixlist(:,:,1);
 end
     
