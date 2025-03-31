@@ -203,7 +203,7 @@ if params.denoise.do_noiseregression || params.denoise.do_ICA_AROMA
             fafuncdat = fafuncdat + spm_read_vols(fVfunc);
 
             for k=1:numel(fVfunc)
-                fVfunc(k).fname = fullfile(ppparams.subperfdir,['d' fpref{end} fname{1} '_asl.nii']);
+                fVfunc(k).fname = fullfile(ppparams.subperfdir,['d' fpref2{end} fname{1} '_asl.nii']);
                 fVfunc(k).descrip = 'my_spmbatch - meica';
                 fVfunc(k).pinfo = [1,0,0];
                 fVfunc(k).n = [k 1];
