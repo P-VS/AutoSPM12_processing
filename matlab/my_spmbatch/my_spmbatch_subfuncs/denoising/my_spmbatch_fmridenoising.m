@@ -196,9 +196,10 @@ if params.denoise.do_noiseregression || params.denoise.do_ICA_AROMA
             fafuncdat = my_spmbatch_noiseregression(funcdat,ppparams,params,'fasl');
 
             fname = split(ppparams.func(ie).funcfile,'_bold.nii');
-            fpref = split(ppparams.func(ie).prefix,'d');
+            fpref1 = split(ppparams.func(ie).prefix,'d');
+            fpref2 = split(fpref1{end},'a');
         
-            fVfunc = spm_vol(fullfile(ppparams.subperfdir,[fpref{end} fname{1} '_asl.nii']));
+            fVfunc = spm_vol(fullfile(ppparams.subperfdir,[fpref2{end} fname{1} '_asl.nii']));
             fafuncdat = fafuncdat + spm_read_vols(fVfunc);
 
             for k=1:numel(fVfunc)
