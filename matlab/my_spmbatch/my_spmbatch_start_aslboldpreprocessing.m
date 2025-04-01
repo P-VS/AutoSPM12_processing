@@ -19,6 +19,7 @@ if contains(params.asl.splitaslbold,'dune')
     params.denoise.do_ICA_AROMA = false;
     params.denoise.do_noiseregression = false;
     params.denoise.do_DUNE = true;
+    params.denoise.DUNE_part = 'bold';
 end
 
 if params.do_denoising
