@@ -5,6 +5,11 @@ if contains(ppparams.func(1).funcfile,'_echo-')
     ppparams.func(1).funcfile = [nfname{1} '_bold.nii'];
 end
 
+if contains(ppparams.func(1).funcfile,'_bold')
+    nfname = split(ppparams.func(1).funcfile,'_bold');
+    ppparams.func(1).funcfile = [nfname{1} '_dune-' params.denoise.DUNE_part '_bold.nii'];
+end
+
 ppparams.func = ppparams.func(1);
 ppparams.func(1).prefix = ['cd' ppparams.func(1).prefix];
 
@@ -14,10 +19,10 @@ if params.func.isaslbold
 
     ppparams.perf(1).prefix = ['cd' ppparams.perf(1).prefix];
 
-    oldfile = fullfile(ppparams.subfuncdir,[ppparams.perf(1).prefix ppparams.perf(1).funcfile]);
-    newfile = fullfile(ppparams.subperfdir,[ppparams.perf(1).prefix ppparams.perf(1).funcfile]);
+    oldfile = fullfile(ppparams.subfuncdir,[ppparams.perf(1).prefix ppparams.perf(1).perffile]);
+    newfile = fullfile(ppparams.subperfdir,[ppparams.perf(1).prefix ppparams.perf(1).perffile]);
 
-    movefile(oldfile,newfile);
+    if exist(oldfile, "file"), movefile(oldfile,newfile); end
 end
 
 ppparams.echoes = 1;
