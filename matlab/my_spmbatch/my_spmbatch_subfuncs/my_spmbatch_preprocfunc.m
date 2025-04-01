@@ -4,7 +4,7 @@ function [ppparams,delfiles,keepfiles] = my_spmbatch_preprocfunc(ppparams,params
 for ie=ppparams.echoes
     [ppparams,delfiles,keepfiles] = my_spmbatch_preprocfunc_perecho(ppparams,params,ie,delfiles,keepfiles);
 
-    if params.func.isaslbold && ~contains(params.asl.splitaslbold,'dune') && ~contains(ppparams.func(ie).prefix,'f')
+    if params.func.isaslbold && contains(ppparams.func(ie).funcfile,'_aslbold.nii') && ~contains(ppparams.func(ie).prefix,'f')
         [ppparams,delfiles,keepfiles] = my_spmbatch_split_asl_bold(params,ppparams,ie,delfiles,keepfiles);
     end
 end
@@ -15,31 +15,6 @@ for ie=ppparams.echoes
         ppparams.func(ie).funcfile = [fname{1} '_bold.nii'];
     end
 end
-
-%% Denoising the ME/SE fMRI data
-if (params.func.isaslbold || params.func.denoise) && ~contains(ppparams.func(1).prefix,'d')
-
-    [ppparams,delfiles,keepfiles] = my_spmbatch_fmridenoising(ppparams,params,delfiles,keepfiles);
-
-    if params.func.denoise && (params.denoise.do_noiseregression || params.denoise.do_bpfilter || params.denoise.do_ICA_AROMA)
-        delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile])};
-    end
-end
-
-%% Combine multiple TE timeseries for ME-fMRI
-if params.func.do_echocombination && ~contains(ppparams.func(1).prefix,'c')
-    [ppparams,delfiles] = my_spmbatch_combineMEfMRI(ppparams,params,delfiles);
-end
-if params.func.do_echocombination || contains(ppparams.func(1).prefix,'c')
-    if contains(ppparams.func(1).funcfile,'_echo-')
-        nfname = split(ppparams.func(1).funcfile,'_echo-');
-        ppparams.func(1).funcfile = [nfname{1} '_bold.nii'];
-    end
-    
-    ppparams.func = ppparams.func(1);
-    ppparams.echoes = 1;
-    ppparams.meepi = false;
-end  
 
 %% Slice time correction
 try
@@ -104,6 +79,18 @@ try
                 end
                 
                 funcdat=my_spmbatch_st(funcdat,tVfunc,ppparams.SliceTimes,ppparams.tr);
+
+                if params.func.isaslbold && params.denoise.do_DUNE
+                    fname = split(ppparams.func(ie).funcfile,'_bold.nii');
+                    aslfile = [fname{1} '_asl.nii'];
+                    Vasl = spm_vol(fullfile(ppparams.subperfdir,[ppparams.func(ie).prefix aslfile]));
+                    tVasl = Vasl(ti:ti+nvols-1); 
+
+                    funcdat = funcdat + spm_read_vols(tVasl);
+
+                    fname = split(ppparams.func(ie).funcfile,'_bold.nii');
+                    ppparams.func(ie).funcfile = [fname{1} '_aslbold.nii'];
+                end
             
                 for iv=1:nvols
                     tVfunc(iv).fname = fullfile(ppparams.subfuncdir,['a' ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
@@ -127,6 +114,37 @@ catch e
     fprintf('\nPP_Error\n');
     fprintf('\nThe error was: \n%s\n',e.message)
 end
+
+%% Denoising the ME/SE fMRI data
+if (params.func.isaslbold || params.func.denoise) && ~contains(ppparams.func(1).prefix,'d')
+
+    [ppparams,delfiles,keepfiles] = my_spmbatch_fmridenoising(ppparams,params,delfiles,keepfiles);
+
+    if params.func.denoise && (params.denoise.do_noiseregression || params.denoise.do_bpfilter || params.denoise.do_ICA_AROMA)
+        delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile])};
+    end
+
+    if params.denoise.do_DUNE
+        boldfile = fullfile(ppparams.subperfdir,[ppparams.perf(1).prefix ppparams.perf(1).perffile]);
+        if ~exist(boldfile,"file"), return; end
+    end
+end
+
+
+%% Combine multiple TE timeseries for ME-fMRI
+if params.func.do_echocombination && ~contains(ppparams.func(1).prefix,'c')
+    [ppparams,delfiles] = my_spmbatch_combineMEfMRI(ppparams,params,delfiles);
+end
+if params.func.do_echocombination || contains(ppparams.func(1).prefix,'c')
+    if contains(ppparams.func(1).funcfile,'_echo-')
+        nfname = split(ppparams.func(1).funcfile,'_echo-');
+        ppparams.func(1).funcfile = [nfname{1} '_bold.nii'];
+    end
+    
+    ppparams.func = ppparams.func(1);
+    ppparams.echoes = 1;
+    ppparams.meepi = false;
+end  
  
 %% Normalization of the func data
 for ie=ppparams.echoes
