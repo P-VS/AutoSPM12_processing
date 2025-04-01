@@ -96,6 +96,7 @@ for ie=params.func.echoes
         if ~for_functional
             %% For denoising after normalization
             studyprefix = 'sdw';
+            ppparams.func(ie).prefix = '';
 
             perfcheck = true;
             while perfcheck
@@ -126,11 +127,11 @@ for ie=params.func.echoes
         
             if params.func.do_realignment, studyprefix = ['r' studyprefix]; end
             if params.func.pepolar, studyprefix = ['u' studyprefix]; end
+            if params.func.do_slicetime, studyprefix = ['a' studyprefix]; end
             if params.func.isaslbold, studyprefix = ['f' studyprefix]; 
             elseif params.func.denoise && params.denoise.do_bpfilter, studyprefix = ['f' studyprefix]; end
             if params.func.denoise && (params.denoise.do_noiseregression || params.denoise.do_ICA_AROMA), studyprefix = ['d' studyprefix]; end
             if params.func.meepi && params.func.do_echocombination, studyprefix = ['c' studyprefix]; end
-            if params.func.do_slicetime, studyprefix = ['a' studyprefix]; end
             if params.func.do_normalization, studyprefix = ['w' studyprefix]; end
             if params.func.do_smoothing, studyprefix = ['s' studyprefix]; end
         
