@@ -6,13 +6,9 @@ for ie=ppparams.echoes
 
     if params.func.isaslbold && contains(ppparams.func(ie).funcfile,'_aslbold.nii') && ~contains(ppparams.func(ie).prefix,'f')
         [ppparams,delfiles,keepfiles] = my_spmbatch_split_asl_bold(params,ppparams,ie,delfiles,keepfiles);
-    end
-end
-
-for ie=ppparams.echoes
-    if contains(ppparams.func(ie).funcfile,'_aslbold.nii')
+    elseif params.func.isaslbold && contains(ppparams.func(ie).funcfile,'_aslbold.nii') && contains(ppparams.func(ie).prefix,'f')
         fname = split(ppparams.func(ie).funcfile,'_aslbold.nii');
-        ppparams.func(ie).funcfile = [fname{1} '_bold.nii'];
+        ppparams.func(ie).perffile = [ppparams.func(ie).prefix fname{1} '_label.nii'];
     end
 end
 
@@ -80,18 +76,6 @@ try
                 
                 funcdat=my_spmbatch_st(funcdat,tVfunc,ppparams.SliceTimes,ppparams.tr);
 
-                if params.func.isaslbold && params.denoise.do_DUNE
-                    fname = split(ppparams.func(ie).funcfile,'_bold.nii');
-                    aslfile = [fname{1} '_asl.nii'];
-                    Vasl = spm_vol(fullfile(ppparams.subperfdir,[ppparams.func(ie).prefix aslfile]));
-                    tVasl = Vasl(ti:ti+nvols-1); 
-
-                    funcdat = funcdat + spm_read_vols(tVasl);
-
-                    fname = split(ppparams.func(ie).funcfile,'_bold.nii');
-                    ppparams.func(ie).funcfile = [fname{1} '_aslbold.nii'];
-                end
-            
                 for iv=1:nvols
                     tVfunc(iv).fname = fullfile(ppparams.subfuncdir,['a' ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
                     tVfunc(iv).descrip = 'my_spmbatch';
@@ -117,7 +101,7 @@ end
 
 %% Denoising the ME/SE fMRI data
 if (params.func.isaslbold || params.func.denoise) && ~contains(ppparams.func(1).prefix,'d')
-
+    
     [ppparams,delfiles,keepfiles] = my_spmbatch_fmridenoising(ppparams,params,delfiles,keepfiles);
 
     if params.func.denoise && (params.denoise.do_noiseregression || params.denoise.do_bpfilter || params.denoise.do_ICA_AROMA)
@@ -130,6 +114,12 @@ if (params.func.isaslbold || params.func.denoise) && ~contains(ppparams.func(1).
     end
 end
 
+for ie=ppparams.echoes
+    if params.func.isaslbold && contains(ppparams.func(ie).funcfile,'_aslbold.nii')
+        fname = split(ppparams.func(ie).funcfile,'_aslbold.nii');
+        ppparams.func(ie).funcfile = [fname{1} '_bold.nii'];
+    end
+end
 
 %% Combine multiple TE timeseries for ME-fMRI
 if params.func.do_echocombination && ~contains(ppparams.func(1).prefix,'c')
