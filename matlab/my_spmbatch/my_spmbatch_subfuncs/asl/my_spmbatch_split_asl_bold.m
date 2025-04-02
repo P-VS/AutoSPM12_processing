@@ -2,10 +2,6 @@ function [ppparams,delfiles,keepfiles] = my_spmbatch_split_asl_bold(params,pppar
 
 fprintf('Split ASL/BOLD \n')
 
-if ~exist(fullfile(ppparams.subpath,'perf'),'dir'), mkdir(fullfile(ppparams.subpath,'perf')); end
-
-ppparams.subperfdir = fullfile(ppparams.subpath,'perf');
-
 Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
 funcdat = spm_read_vols(Vfunc);
 
@@ -25,7 +21,7 @@ fname = split(ppparams.func(ie).funcfile,'_aslbold.nii');
 
 Vbold = Vfunc;
 for iv=1:numel(Vbold)
-    Vbold(iv).fname = fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_bold.nii']);
+    Vbold(iv).fname = fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_aslbold.nii']);
     Vbold(iv).descrip = 'my_spmbatch - split bold';
     Vbold(iv).pinfo = [1,0,0];
     Vbold(iv).n = [iv 1];
@@ -38,7 +34,7 @@ nbolddat = reshape(nbolddat(:,:),s);
 
 Vasl = Vfunc;
 for iv=1:numel(Vasl)
-    Vasl(iv).fname = fullfile(ppparams.subperfdir,['f' ppparams.func(ie).prefix fname{1} '_asl.nii']);
+    Vasl(iv).fname = fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_label.nii']);
     Vasl(iv).descrip = 'my_spmbatch - split asl';
     Vasl(iv).pinfo = [1,0,0];
     Vasl(iv).n = [iv 1];
@@ -46,12 +42,12 @@ end
 
 Vasl = myspm_write_vol_4d(Vasl,nbolddat);
 
-delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_bold.nii'])};
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_aslbold.nii'])};
+delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_label.nii'])};
 
-ppparams.func(ie).funcfile = [fname{1} '_bold.nii'];
+ppparams.func(ie).funcfile = [fname{1} '_aslbold.nii'];
 ppparams.func(ie).prefix = ['f' ppparams.func(ie).prefix];
 
-ppparams.perf(ie).perffile = [fname{1} '_asl.nii'];
-ppparams.perf(ie).prefix = ['f' ppparams.func(ie).prefix];
+ppparams.func(ie).perffile = [ppparams.func(ie).prefix fname{1} '_label.nii'];
 
 clear funcdat bolddat Vfunc Vbold Vasl
