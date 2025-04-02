@@ -31,25 +31,25 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/ASLBOLD Manon/processing_ASLBOLD';
+datpath = '/Volumes/LaCie/UZ_Brussel/ASLBOLD_OpenNeuro_FT/IndData';
 
 sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_bold'; %name of the folder to save the preprocessed bold data
-params.perf_save_folder = 'preproc_asl'; %name of the folder to save the preprocessed asl data
+params.func_save_folder = 'preproc_dune_bold'; %name of the folder to save the preprocessed bold data
+params.perf_save_folder = 'preproc_dune_asl'; %name of the folder to save the preprocessed asl data
 
-task ={'stroop'};
+task ={'bilateralfingertapping'};
 
 %In case of multiple runs in the same session exist
-params.func.mruns = true; %true if run number is in filename
+params.func.mruns = false; %true if run number is in filename
 params.func.runs = [1]; %the index of the runs (in filenames run-(index))
 
 % For ME-fMRI
 params.func.meepi = true; %true if echo number is in filename (default=true)
-params.func.echoes = [1:3]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
+params.func.echoes = [1:4]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
 
 params.use_parallel = false; %(default=false)
 params.maxprocesses = 2; %Best not too high to avoid memory problems %(default=2)
@@ -61,7 +61,6 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 %% Preprocessing anatomical data
 
     params.preprocess_anatomical = false;
-
     % Normalization
     params.anat.do_normalization = true;
     params.anat.normvox = [2.0 2.0 2.0]; %(default=[2.0 2.0 2.0]) Same as for fMRI!!
@@ -72,7 +71,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     
 %% Preprocessing ASL data
 
-    params.preprocess_asl = true; %(default=true)
+    params.preprocess_asl = false; %(default=true)
 
     %ASL data
     params.asl.isM0scan = 'last'; %The M0 image is by defaullt the last volume @GE (set 'last')
@@ -85,7 +84,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     % 'reduced' : the mean CBF over a few timepoints (e.g. per minute) 
     params.asl.dt = 40; %new temporal resolution in seconds if params.asl.temp_resolution = 'reduced'
     
-    params.asl.splitaslbold = 'meica'; %'meica' or 'dune' (default='meica') 
+    params.asl.splitaslbold = 'dune'; %'meica' or 'dune' (default='meica') 
     %this step is part of params.preprocess_functional = true;
     %'meica': after filtering, ME-ICA (tedana based)
     %'dune': experimental splitting method
@@ -98,13 +97,13 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.preprocess_functional = true; %(default=true)
 
     % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
-    params.func.dummytime = 8; %time in seconds (default=2*TR)
+    params.func.dummytime = 0; %time in seconds (default=2*TR)
 
     % Realignnment (motion correction)
     params.func.do_realignment = true; %(default=true)
     
     % Geometric correction
-    params.func.pepolar = true; %(default=true)
+    params.func.pepolar = false; %(default=true)
 
     %Denoising before echo combination and normalization ussing the
     %parameters from params.denoise
@@ -119,7 +118,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     %see Heunis et al. 2021. The effects of multi-echo fMRI combination and rapid T2*-mapping on offline and real-time BOLD sensitivity. NeuroImage 238, 118244
           
     % Slice time correction
-    params.func.do_slicetime = false; %(default=true)
+    params.func.do_slicetime = true; %(default=true)
            
     % Normalization
     params.func.do_normalization = true; %(default=true)
@@ -136,7 +135,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.do_denoising = false; %(default=false)
 
     % Extend motion regressors with derivatives and squared regressors
-    params.denoise.do_mot_derivatives = false; %derivatives+squares (24 regressors) (default=true)
+    params.denoise.do_mot_derivatives = true; %derivatives+squares (24 regressors) (default=true)
 
     % Band-pass filtering
     params.denoise.do_bpfilter = false; %(default=true)
