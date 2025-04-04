@@ -38,8 +38,8 @@ params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject fold
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_dune_bold'; %name of the folder to save the preprocessed bold data
-params.perf_save_folder = 'preproc_dune_asl'; %name of the folder to save the preprocessed asl data
+params.func_save_folder = 'preproc_meica_bold_test'; %name of the folder to save the preprocessed bold data
+params.perf_save_folder = 'preproc_meica_asl_test'; %name of the folder to save the preprocessed asl data
 
 task ={'bilateralfingertapping'};
 
@@ -71,7 +71,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     
 %% Preprocessing ASL data
 
-    params.preprocess_asl = false; %(default=true)
+    params.preprocess_asl = true; %(default=true)
 
     %ASL data
     params.asl.isM0scan = 'last'; %The M0 image is by defaullt the last volume @GE (set 'last')
@@ -82,9 +82,9 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     % 'original' : temporal resolution of the original series
     % 'only_mean' : only 1 CBF image (mean over the whole series
     % 'reduced' : the mean CBF over a few timepoints (e.g. per minute) 
-    params.asl.dt = 40; %new temporal resolution in seconds if params.asl.temp_resolution = 'reduced'
+    params.asl.dt = 20; %new temporal resolution in seconds if params.asl.temp_resolution = 'reduced'
     
-    params.asl.splitaslbold = 'dune'; %'meica' or 'dune' (default='meica') 
+    params.asl.splitaslbold = 'meica'; %'meica' or 'dune' (default='meica') 
     %this step is part of params.preprocess_functional = true;
     %'meica': after filtering, ME-ICA (tedana based)
     %'dune': experimental splitting method
@@ -94,7 +94,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 
 %% Preprocessing functional (the order of the parameters represents the fixed order of the steps done)
 
-    params.preprocess_functional = true; %(default=true)
+    params.preprocess_functional = false; %(default=true)
 
     % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
     params.func.dummytime = 0; %time in seconds (default=2*TR)

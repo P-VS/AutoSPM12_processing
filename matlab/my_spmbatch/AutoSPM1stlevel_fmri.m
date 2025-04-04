@@ -33,7 +33,7 @@ nsessions = [1]; %nsessions>0
  
 params.task = {'bilateralfingertapping'}; %{'bilateralfingertapping'}; %{'ME-EmoFaces'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
 
-params.analysisname = '_DUNE_ASL';
+params.analysisname = '_MEICA_ASL_TEST';
 params.modality = 'fasl'; %'fmri' or 'fasl'
 
 params.use_parallel = false; 
@@ -42,8 +42,8 @@ params.loadmaxvols = 100; %to reduce memory load, the preprocessing can be split
 params.keeplogs = false;
 
 %% fMRI data parameters
-    params.preprocfmridir = 'preproc_dune_asl'; %'preproc_bold_dune'; %'preproc_func_ME-EmoFaces_dune'; %directory with the preprocessed fMRI data
-    params.fmri_prefix = 'swfre'; %'swacdfre'; %'swacdure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
+    params.preprocfmridir = 'preproc_meica_asl_test'; %'preproc_bold_dune'; %'preproc_func_ME-EmoFaces_dune'; %directory with the preprocessed fMRI data
+    params.fmri_prefix = 'swdafre'; %'swacdfre'; %'swacdure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
     
     params.dummytime = 0; %only if the timings in the _events.tsv file should be corrected for dummy scans
     
