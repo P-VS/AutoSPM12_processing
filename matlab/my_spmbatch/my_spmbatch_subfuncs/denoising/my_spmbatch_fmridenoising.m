@@ -146,27 +146,6 @@ end
 if params.denoise.do_DUNE
     fprintf('Start DUNE \n')
 
-    if params.func.isaslbold
-        for ie=ppparams.echoes  
-            if ~contains(ppparams.func(ie).prefix, 'l')
-                Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
-                Vasl = spm_vol(fullfile(ppparams.subfuncdir,ppparams.func(ie).perffile));
-                funcdat = spm_read_vols(Vfunc) + spm_read_vols(Vasl);
-        
-                for k=1:numel(Vfunc)
-                    Vfunc(k).fname = fullfile(ppparams.subfuncdir,['l' ppparams.func(ie).prefix ppparams.func(ie).funcfile]);
-                    Vfunc(k).descrip = 'my_spmbatch - denoise';
-                    Vfunc(k).pinfo = [1,0,0];
-                    Vfunc(k).n = [k 1];
-                end
-                
-                Vfunc = myspm_write_vol_4d(Vfunc,funcdat);
-    
-                ppparams.func(ie).prefix = ['l' ppparams.func(ie).prefix];
-            end
-        end
-    end
-
     [ppparams,keepfiles,delfiles] = my_spmbatch_dune(ppparams,params,keepfiles,delfiles);
 
     fprintf('Done DUNE \n')
@@ -222,9 +201,6 @@ if params.denoise.do_noiseregression || params.denoise.do_ICA_AROMA
             fname = split(ppparams.func(ie).funcfile,'_aslbold.nii');
             fpref = split(ppparams.func(ie).prefix,'d');
         
-            Vasl = spm_vol(fullfile(ppparams.subfuncdir,ppparams.func(ie).perffile));
-            fafuncdat = fafuncdat + spm_read_vols(Vasl);
-
             for k=1:numel(Vfunc)
                 Vfunc(k).fname = fullfile(ppparams.subperfdir,['d' fpref{end} fname{1} '_asl.nii']);
                 Vfunc(k).descrip = 'my_spmbatch - meica';
