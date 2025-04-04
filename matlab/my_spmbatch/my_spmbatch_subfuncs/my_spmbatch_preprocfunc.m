@@ -8,7 +8,8 @@ for ie=ppparams.echoes
         [ppparams,delfiles,keepfiles] = my_spmbatch_split_asl_bold(params,ppparams,ie,delfiles,keepfiles);
     elseif params.func.isaslbold && contains(ppparams.func(ie).funcfile,'_aslbold.nii') && contains(ppparams.func(ie).prefix,'f')
         fname = split(ppparams.func(ie).funcfile,'_aslbold.nii');
-        ppparams.func(ie).perffile = [ppparams.func(ie).prefix fname{1} '_label.nii'];
+        prefsplit = split(ppparams.func(ie).prefix,'f');
+        ppparams.func(ie).perffile = ['f' prefsplit{end} fname{1} '_label.nii'];
     end
 end
 
