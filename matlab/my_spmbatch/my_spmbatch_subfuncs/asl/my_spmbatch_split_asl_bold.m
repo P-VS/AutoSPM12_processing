@@ -29,13 +29,16 @@ end
 
 Vbold = myspm_write_vol_4d(Vbold,bolddat);
 
+if ~exist(fullfile(ppparams.subpath,'perf'),'dir'), mkdir(fullfile(ppparams.subpath,'perf')); end
+ppparams.subperfdir = fullfile(ppparams.subpath,'perf');
+
 [nbolddat,~] = fmri_cleaning(funcdat(:,:),0,[tr Ny-0.008 Ny],[],[],'restoremean','on');
 nbolddat = reshape(nbolddat(:,:),s);
 
 Vasl = Vfunc;
 for iv=1:numel(Vasl)
-    Vasl(iv).fname = fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_label.nii']);
-    Vasl(iv).descrip = 'my_spmbatch - split asl';
+    Vasl(iv).fname = fullfile(ppparams.subperfdir,['f' ppparams.func(ie).prefix fname{1} '_label.nii']);
+    Vasl(iv).descrip = 'my_spmbatch - label asl';
     Vasl(iv).pinfo = [1,0,0];
     Vasl(iv).n = [iv 1];
 end
@@ -43,11 +46,8 @@ end
 Vasl = myspm_write_vol_4d(Vasl,nbolddat);
 
 delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_aslbold.nii'])};
-delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_label.nii'])};
 
 ppparams.func(ie).funcfile = [fname{1} '_aslbold.nii'];
 ppparams.func(ie).prefix = ['f' ppparams.func(ie).prefix];
-
-ppparams.func(ie).perffile = [ppparams.func(ie).prefix fname{1} '_label.nii'];
 
 clear funcdat bolddat Vfunc Vbold Vasl

@@ -42,6 +42,35 @@ for ie=1:numel(params.func.echoes)
     end
 end
 
+% label data
+
+namefilters(5).name = '_label';
+namefilters(5).required = true;
+
+namefilters(6).name = '_echo-1';
+namefilters(6).required = true;
+
+labelniilist = my_spmbatch_dirfilelist(ppparams.subperfdir,'nii',namefilters,false);
+
+if isempty(labelniilist)
+    fprintf(['No label nifti file found for ' ppparams.substring ' ' ppparams.sesstring ' task-' ppparams.task '\n'])
+    fprintf('\nPP_Error\n');
+    return
+end
+
+prefixlist = split({labelniilist.name},'sub-');
+if numel(labelniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
+
+tmp = find(contains(prefixlist,'f'));
+
+if ~isempty(tmp)
+    ppparams.perf(1).labelprefix = prefixlist{tmp};
+
+    ffile = labelniilist(tmp).name;
+    fsplit = split(ffile,ppparams.perf(1).labelprefix);
+    ppparams.perf(1).labelfile = fsplit{end};
+end
+
 % m0scan data
 
 namefilters(5).name = '_m0scan';
@@ -61,7 +90,7 @@ end
 prefixlist = split({m0scanniilist.name},'sub-');
 if numel(m0scanniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
 
-fpresplit = split(ppparams.perf(ie).aslprefix,'f');
+fpresplit = split(ppparams.perf(1).aslprefix,'f');
 studyprefix = fpresplit{end};
 
 perfcheck = true;

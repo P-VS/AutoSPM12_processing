@@ -12,14 +12,20 @@ csfim(gmim+wmim>0) = 0;
 csfim(csfim<0.2) = 0;
 csfim(csfim>0) = 1;
 
-Vasl=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix ppparams.perf(1).aslfile]));
-
 jsondat = fileread(ppparams.func(1).jsonfile);
 jsondat = jsondecode(jsondat);
 tr = jsondat.RepetitionTime;
 
+Vasl=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix ppparams.perf(1).aslfile]));
 fasldata = spm_read_vols(Vasl);
+
 voldim = size(fasldata);
+
+Vlabel=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).labelprefix ppparams.perf(1).labelfile]));
+labeldata = spm_read_vols(Vlabel);
+labeldata = labeldata - repmat(mean(labeldata,4),[1,1,1,voldim(4)]);
+
+fasldata = fasldata + labeldata;
 
 mask = my_spmbatch_mask(fasldata);
 
@@ -50,6 +56,9 @@ labdat = fasldata(mask>0,labidx);
 
 ncondat = spline((conidx-1)*tr,condat,[0:tr:(voldim(4)-1)*tr]);
 nlabdat = spline((labidx-1)*tr,labdat,[0:tr:(voldim(4)-1)*tr]);
+
+condat = fasldata(mask>0,conidx);
+labdat = fasldata(mask>0,labidx);
 
 deltamdata(mask>0,:) = ncondat-nlabdat;
 
