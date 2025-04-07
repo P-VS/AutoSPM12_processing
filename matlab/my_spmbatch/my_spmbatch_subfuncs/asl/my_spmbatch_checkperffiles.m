@@ -25,20 +25,21 @@ if isempty(aslniilist)
     return
 end
 
-for ie=1:numel(params.func.echoes)
-    prefixlist = split({aslniilist.name},'sub-');
-    if numel(aslniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
+tmp = find(contains({aslniilist.name},'_echo-1'));
+if ~isempty(tmp), aslniilist = aslniilist(tmp); else aslniilist = []; end
 
-    for ip=1:numel(prefixlist)
-        pref = prefixlist{ip};
-        if contains(params.asl.splitaslbold,'meica'), test = strcmp(pref(1),'d'); end
-        if contains(params.asl.splitaslbold,'dune'), test = strcmp(pref(1:2),'cd'); end
+prefixlist = split({aslniilist.name},'sub-');
+if numel(aslniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
 
-        if test
-            ppparams.perf(ie).aslprefix = pref; 
-            fsplit = split(aslniilist(ip).name,ppparams.perf(ie).aslprefix);
-            ppparams.perf(ie).aslfile = fsplit{2};
-        end
+for ip=1:numel(prefixlist)
+    pref = prefixlist{ip};
+    if contains(params.asl.splitaslbold,'meica'), test = strcmp(pref(1),'d'); end
+    if contains(params.asl.splitaslbold,'dune'), test = strcmp(pref(1:2),'cd'); end
+
+    if test
+        ppparams.perf(1).aslprefix = pref; 
+        fsplit = split(aslniilist(ip).name,ppparams.perf(1).aslprefix);
+        ppparams.perf(1).aslfile = fsplit{2};
     end
 end
 

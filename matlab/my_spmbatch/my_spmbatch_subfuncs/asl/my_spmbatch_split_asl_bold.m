@@ -5,6 +5,8 @@ fprintf('Split ASL/BOLD \n')
 Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile]));
 funcdat = spm_read_vols(Vfunc);
 
+mask = my_spmbatch_mask(funcdat);
+
 jsondat = fileread(ppparams.func(ppparams.echoes(1)).jsonfile);
 jsondat = jsondecode(jsondat);
 
@@ -14,8 +16,16 @@ Ny = 1/(2*tr);
 s = size(funcdat);
 funcdat = reshape(funcdat(:,:,:,:),[prod(s(1:end-1)),s(end)]);
 
-[bolddat,~] = fmri_cleaning(funcdat(:,:),0,[tr 0.008 Ny-0.008],[],[],'restoremean','on');
+tmp=find(mask>0);
+mfuncdat = funcdat(tmp,:);
+
+mbolddat = my_spm_batch_filt_funcdata(mfuncdat, 0.008, Ny-0.008, tr);
+
+bolddat = zeros(size(funcdat));
+bolddat(tmp,:) = mbolddat;
 bolddat = reshape(bolddat(:,:),s);
+
+clear mbolddat 
 
 fname = split(ppparams.func(ie).funcfile,'_aslbold.nii');
 
@@ -29,11 +39,18 @@ end
 
 Vbold = myspm_write_vol_4d(Vbold,bolddat);
 
+clear bolddat Vbold
+
 if ~exist(fullfile(ppparams.subpath,'perf'),'dir'), mkdir(fullfile(ppparams.subpath,'perf')); end
 ppparams.subperfdir = fullfile(ppparams.subpath,'perf');
 
-[nbolddat,~] = fmri_cleaning(funcdat(:,:),0,[tr Ny-0.008 Ny],[],[],'restoremean','on');
-nbolddat = reshape(nbolddat(:,:),s);
+masldat = my_spm_batch_filt_funcdata(mfuncdat, Ny-0.008, Ny, tr);
+
+asldat = zeros(size(funcdat));
+asldat(tmp,:) = masldat;
+asldat = reshape(asldat(:,:),s);
+
+clear masldat mfuncdat
 
 Vasl = Vfunc;
 for iv=1:numel(Vasl)
@@ -43,11 +60,11 @@ for iv=1:numel(Vasl)
     Vasl(iv).n = [iv 1];
 end
 
-Vasl = myspm_write_vol_4d(Vasl,nbolddat);
+Vasl = myspm_write_vol_4d(Vasl,asldat);
 
 delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,['f' ppparams.func(ie).prefix fname{1} '_aslbold.nii'])};
 
 ppparams.func(ie).funcfile = [fname{1} '_aslbold.nii'];
 ppparams.func(ie).prefix = ['f' ppparams.func(ie).prefix];
 
-clear funcdat bolddat Vfunc Vbold Vasl
+clear funcdat asldat Vfunc Vasl
