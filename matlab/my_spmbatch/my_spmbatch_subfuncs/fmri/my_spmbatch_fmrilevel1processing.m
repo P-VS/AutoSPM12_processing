@@ -280,7 +280,11 @@ for ir=1:numel(params.iruns)
     
         matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).multi_reg = {ppparams.frun(ir).confoundsfile};
 
-        matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).hpf = params.hpf;
+        if ~contains(ppparams.frun(1).func(1).funcfile,'f'), matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).hpf = params.hpf;
+        else
+            Vfunc = spm_vol(fullfile(ppparams.preprocfmridir,ppparams.frun(1).func(1).funcfile));
+            atlabbatch{1}.spm.stats.fmri_spec.sess(nsess).hpf = tr * (numel(Vfunc)-1);
+        end
     end
 end
 
@@ -307,10 +311,14 @@ mask_file = Vmask.fname;
 
 clear fdata mask
 
-matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.0;
+if contains(params.modality,'fmri')
+    matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.0;
+    matlabbatch{1}.spm.stats.fmri_spec.cvi = params.model_serial_correlations;
+elseif contains(params.modality,'fasl')
+    matlabbatch{1}.spm.stats.fmri_spec.mthresh = -1.0; 
+    matlabbatch{1}.spm.stats.fmri_spec.cvi = 'none';
+end
 matlabbatch{1}.spm.stats.fmri_spec.mask = {Vmask.fname};
-
-matlabbatch{1}.spm.stats.fmri_spec.cvi = params.model_serial_correlations;
 
 %% Optimize GLM with TEDM
 if params.optimize_HRF
