@@ -33,13 +33,13 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ASLBOLD_OpenNeuro_FT/IndData';
 
-sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [11];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_meica_bold_test'; %name of the folder to save the preprocessed bold data
-params.perf_save_folder = 'preproc_meica_asl_test'; %name of the folder to save the preprocessed asl data
+params.func_save_folder = 'preproc_meica_bold'; %name of the folder to save the preprocessed bold data
+params.perf_save_folder = 'preproc_meica_asl'; %name of the folder to save the preprocessed asl data
 
 task ={'bilateralfingertapping'};
 
@@ -94,7 +94,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 
 %% Preprocessing functional (the order of the parameters represents the fixed order of the steps done)
 
-    params.preprocess_functional = false; %(default=true)
+    params.preprocess_functional = true; %(default=true)
 
     % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
     params.func.dummytime = 0; %time in seconds (default=2*TR)
