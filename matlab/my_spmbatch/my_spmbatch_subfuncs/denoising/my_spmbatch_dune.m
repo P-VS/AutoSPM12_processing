@@ -22,7 +22,7 @@ ppparams.func(1).prefix = ['cd' ppparams.func(1).prefix];
 
 if params.func.isaslbold
     nfname = split(ppparams.perf(1).perffile,'_echo-');
-    ppparams.perf(1).perffile = [nfname{1} '_asl.nii'];
+    ppparams.perf(1).perffile = [nfname{1} '_dune-asl_asl.nii'];
 
     ppparams.perf(1).prefix = ['cd' ppparams.perf(1).prefix];
 

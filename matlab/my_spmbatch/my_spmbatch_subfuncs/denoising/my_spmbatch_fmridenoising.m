@@ -198,7 +198,7 @@ if params.denoise.do_noiseregression || params.denoise.do_ICA_AROMA
 
             fafuncdat = my_spmbatch_noiseregression(funcdat,ppparams,params,'fasl');
 
-            fname = split(ppparams.func(ie).funcfile,'_aslbold.nii');
+            fname = split(ppparams.func(ie).funcfile,'_bold.nii');
             fpref = split(ppparams.func(ie).prefix,'d');
         
             for k=1:numel(Vfunc)
