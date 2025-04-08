@@ -188,7 +188,7 @@ if ~isempty(tmp)
 end
 
 % 3.    if ME-fMRI do MEICA
-if numel(ppparams.echoes)>1
+if numel(ppparams.echoes)>2
     fprintf('MEICA \n') 
 
     [kappas,rhos,kappa_elbow,rhos_elbow] = my_spmbatch_meica(compData,icaTimecourse,ppparams,params);

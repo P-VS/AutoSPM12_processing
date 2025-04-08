@@ -57,6 +57,7 @@ for i_comp=1:ncomp
         f_s0 = (alpha - sse_s0) * (j_echo - 1) ./ (sse_s0);
         f_s0(f_s0 > 500) = 500;
         f_s0_maps(mask_idx, i_comp) = f_s0(mask_idx);
+        f_s0_maps(isnan(f_s0_maps(:,i_comp)),i_comp)=0;
 
         clear coeffs_s0 pred_s0 sse_s0 f_s0
 
@@ -68,6 +69,7 @@ for i_comp=1:ncomp
         f_t2 = (alpha - sse_t2) * (j_echo - 1) ./ (sse_t2);
         f_t2(f_t2 > 500) = 500;
         f_t2_maps(mask_idx, i_comp) = f_t2(mask_idx);
+        f_t2_maps(isnan(f_t2_maps(:,i_comp)),i_comp)=0;
 
         clear coeffs_t2 pred_t2 sse_t2 f_t2
     end
@@ -79,6 +81,7 @@ clear mebeta mu x1 x2
 
 mask_idx = find(mask>=1);
 
+z_maps(isnan(z_maps))=0;
 weight_maps = z_maps.^2.0;
 kappas = zeros([ncomp,1]); rhos = zeros([ncomp,1]);
 for i_comp=1:ncomp
@@ -99,6 +102,7 @@ nonsig_arr = arr(arr<F01);
 nonsig_arr = sort(nonsig_arr,'descend');
 n_nns_arr = numel(nonsig_arr);
 coords = [0:n_nns_arr-1; nonsig_arr];
+
 p = coords-reshape(coords(:,1),[2,1]);
 b=p(:,end);
 b_hat=reshape(b./sqrt(sum(b.^2,'all')),[2,1]);
