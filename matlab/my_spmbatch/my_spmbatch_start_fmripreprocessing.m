@@ -28,7 +28,8 @@ if params.denoise.do_DUNE
     params.denoise.do_noiseregression = false;
     params.denoise.do_ICA_AROMA = false;
     params.denoise.do_aCompCor = false;
-    params.denoise.do_bpfilter = false;
+    params.denoise.do_bpfilter = true;
+    params.denoise.bpfilter = [0.008 Inf];
     params.denoise.do_mot_derivatives = true;
 end
 
