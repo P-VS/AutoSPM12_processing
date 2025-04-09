@@ -121,7 +121,7 @@ for ti=1:nvols:tdim
                 confounds = load(ppparams.rp_file);
                 confounds = confounds(1:end-1,:);
 
-                delete ppparams.rp_file
+                delete(ppparams.rp_file)
 
                 save(ppparams.rp_file,'confounds','-ascii');
             end
