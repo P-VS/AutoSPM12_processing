@@ -199,10 +199,10 @@ if numel(ppparams.echoes)>2
     tmp = find(and(3.0*rhos<kappas,rhos<rhos_elbow));
     if ~isempty(tmp), ASLComp(tmp) = 0; end
 else
-    kappas=0;
-    rhos=0;
-    kappa_elbow=0;
-    rhos_elbow=0;
+    kappas=zeros([numComp,1]);
+    rhos=zeros([numComp,1]);
+    kappa_elbow=zeros([numComp,1]);
+    rhos_elbow=zeros([numComp,1]);
 end
 
 % 4. """High frequency content"""
