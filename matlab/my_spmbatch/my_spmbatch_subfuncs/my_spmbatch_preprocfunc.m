@@ -105,12 +105,8 @@ if (params.func.isaslbold || params.func.denoise) && ~contains(ppparams.func(1).
     
     [ppparams,delfiles,keepfiles] = my_spmbatch_fmridenoising(ppparams,params,delfiles,keepfiles);
 
-    if params.func.denoise && (params.denoise.do_noiseregression || params.denoise.do_bpfilter || params.denoise.do_ICA_AROMA)
-        delfiles{numel(delfiles)+1} = {fullfile(ppparams.subfuncdir,[ppparams.func(ie).prefix ppparams.func(ie).funcfile])};
-    end
-
     if params.denoise.do_DUNE
-        boldfile = fullfile(ppparams.subperfdir,[ppparams.perf(1).prefix ppparams.perf(1).perffile]);
+        boldfile = fullfile(ppparams.subfuncdir,[ppparams.func(1).prefix ppparams.func(1).funcfile]);
         if ~exist(boldfile,"file"), return; end
     end
 end
