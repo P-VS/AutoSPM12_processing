@@ -33,25 +33,25 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [1,2,4:11];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [2,4:11];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_func_SE-ICA'; %name of the folder to save the preprocessed bold data
+params.func_save_folder = 'preproc_func_DUNE-BOLD'; %name of the folder to save the preprocessed bold data
 
-task ={'SE-EmoFaces'};
+task ={'ME-EmoFaces'};
 
 %In case of multiple runs in the same session exist
 params.func.mruns = false; %true if run number is in filename
 params.func.runs = [1]; %the index of the runs (in filenames run-(index))
 
 % For ME-fMRI
-params.func.meepi = false; %true if echo number is in filename
-params.func.echoes = [1]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
+params.func.meepi = true; %true if echo number is in filename
+params.func.echoes = [1,2]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
 
 params.use_parallel = true; 
-params.maxprocesses =1; %Best not too high to avoid memory problems
+params.maxprocesses = 2; %Best not too high to avoid memory problems
 params.loadmaxvols = 100; %to reduce memory load, the preprocessing can be split in smaller blocks (default = 100)
 params.keeplogs = false;
 
@@ -124,14 +124,14 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal (default=5)
 
     % ICA-AROMA
-    params.denoise.do_ICA_AROMA = true; %(default=true)
+    params.denoise.do_ICA_AROMA = false; %(default=true)
 
     % Noise regression / remove ICA-AROMA noise components
     params.denoise.do_noiseregression = false; %(default=true)
 
     % Prepare data for DUNE denoising in python (WIP)
-    params.denoise.do_DUNE = false; %(default=false)
-    params.denoise.DUNE_part = 'seep'; %'bold' or 'seep' (default='bold')
+    params.denoise.do_DUNE = true; %(default=false)
+    params.denoise.DUNE_part = 'bold'; %'bold' or 'nbold' (default='bold')
      
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------

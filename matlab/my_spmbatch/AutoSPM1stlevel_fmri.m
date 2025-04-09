@@ -26,14 +26,14 @@ params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ASLBOLD_OpenNeuro_FT/IndData'; %'/Volumes/LaCie/UZ_Brussel/asl_bold/openfmri_data'; %'/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data'; 
 
-sublist = [11]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
  
 params.task = {'bilateralfingertapping'}; %{'bilateralfingertapping'}; %{'ME-EmoFaces'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
 
-params.analysisname = '_MEICA_BOLD';
+params.analysisname = '_MEICA-BOLD';
 params.modality = 'fmri'; %'fmri' or 'fasl'
 
 params.use_parallel = false; 
@@ -56,7 +56,7 @@ params.keeplogs = false;
     
     % For ME-fMRI
     params.func.meepi = true; %true if echo number is in filename
-    params.func.echoes = [1]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
+    params.func.echoes = [1:4]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
 
 %% SPM first level analysis parameters
     params.confounds_prefix = 'rp_e'; %confounds file of form [confounds_prefix 'sub-ii_task-... .txt']
