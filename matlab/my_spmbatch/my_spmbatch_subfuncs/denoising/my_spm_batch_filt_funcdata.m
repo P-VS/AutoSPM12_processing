@@ -11,7 +11,11 @@ s = size(funcdat);
 mean_funcdat = mean(funcdat,2);
 funcdat = funcdat - repmat(mean_funcdat,[1,s(end)]);
 
-funcdat = brant_Filter_FFT_Butterworth(funcdat, ltrh, htrh, Fs, 0);
+if ~(ltrh==-1)
+    bpdat = brant_Filter_FFT_Butterworth(funcdat', -1, ltrh, Fs, 0)';
+    funcdat = funcdat-bpdat;
+end
+if ~(htrh==-1), funcdat = brant_Filter_FFT_Butterworth(funcdat', -1, htrh, Fs, 0)'; end
 
 funcdat = funcdat + repmat(mean_funcdat,[1,s(end)]);
 
