@@ -51,14 +51,29 @@ deltamdata = zeros([voldim(1)*voldim(2)*voldim(3),voldim(4)]);
 
 fasldata = reshape(fasldata,[voldim(1)*voldim(2)*voldim(3),voldim(4)]);
 
-condat = fasldata(mask>0,conidx);
-labdat = fasldata(mask>0,labidx);
+ncondat = fasldata(mask>0,:);
+nlabdat = fasldata(mask>0,:);
 
-ncondat = spline((conidx-1)*tr,condat,[0:tr:(voldim(4)-1)*tr]);
-nlabdat = spline((labidx-1)*tr,labdat,[0:tr:(voldim(4)-1)*tr]);
+for p=1:voldim(4)
+    if sum(conidx==p)==0
+        % 6 point sinc interpolation
+        idx=p+[-5 -3 -1 1 3 5];
+        normloc=3.5;
+        idx(find(idx<1))=min(idx(idx>=1));
+        idx(find(idx>voldim(4)))=max(idx(idx<=voldim(4)));
 
-condat = fasldata(mask>0,conidx);
-labdat = fasldata(mask>0,labidx);
+        ncondat(:,p)=sinc_interpVec(fasldata(mask>0,idx),normloc);
+    end
+    if sum(labidx==p)==0
+        % 6 point sinc interpolation
+        idx=p+[-5 -3 -1 1 3 5];
+        normloc=3.5;
+        idx(find(idx<1))=min(idx(idx>=1));
+        idx(find(idx>voldim(4)))=max(idx(idx<=voldim(4)));
+    
+        nlabdat(:,p)=sinc_interpVec(fasldata(mask>0,idx),normloc);
+    end
+end
 
 deltamdata(mask>0,:) = ncondat-nlabdat;
 
