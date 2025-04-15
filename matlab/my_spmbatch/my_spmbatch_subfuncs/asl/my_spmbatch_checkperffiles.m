@@ -26,7 +26,11 @@ if isempty(aslniilist)
 end
 
 tmp = find(contains({aslniilist.name},'_echo-1'));
-if ~isempty(tmp), aslniilist = aslniilist(tmp); else aslniilist = []; end
+if ~isempty(tmp), aslniilist = aslniilist(tmp); 
+else 
+    tmp = find(contains({aslniilist.name(1:2)},'cd'));
+    if ~isempty(tmp), aslniilist = aslniilist(tmp); end
+end
 
 prefixlist = split({aslniilist.name},'sub-');
 if numel(aslniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist(:,:,1); end
