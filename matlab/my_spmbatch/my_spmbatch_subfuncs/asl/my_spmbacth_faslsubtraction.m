@@ -23,7 +23,6 @@ voldim = size(fasldata);
 
 Vlabel=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).labelprefix ppparams.perf(1).labelfile]));
 labeldata = spm_read_vols(Vlabel);
-labeldata = labeldata - repmat(mean(labeldata,4),[1,1,1,voldim(4)]);
 
 fasldata = fasldata + labeldata;
 
@@ -62,7 +61,13 @@ for p=1:voldim(4)
         idx(find(idx<1))=min(idx(idx>=1));
         idx(find(idx>voldim(4)))=max(idx(idx<=voldim(4)));
 
-        ncondat(:,p)=sinc_interpVec(fasldata(mask>0,idx),normloc);
+        if p==1
+            ncondat(:,p)=mean(fasldata(mask>0,idx),2);
+        elseif p==voldim(4)
+            ncondat(:,p)=mean(fasldata(mask>0,idx),2);
+        else
+            ncondat(:,p)=sinc_interpVec(fasldata(mask>0,idx),normloc);
+        end
     end
     if sum(labidx==p)==0
         % 6 point sinc interpolation
@@ -71,7 +76,13 @@ for p=1:voldim(4)
         idx(find(idx<1))=min(idx(idx>=1));
         idx(find(idx>voldim(4)))=max(idx(idx<=voldim(4)));
     
-        nlabdat(:,p)=sinc_interpVec(fasldata(mask>0,idx),normloc);
+        if p==1
+            nlabdat(:,p)=mean(fasldata(mask>0,idx),2);
+        elseif p==voldim(4)
+            nlabdat(:,p)=mean(fasldata(mask>0,idx),2);
+        else
+            nlabdat(:,p)=sinc_interpVec(fasldata(mask>0,idx),normloc);
+        end
     end
 end
 
