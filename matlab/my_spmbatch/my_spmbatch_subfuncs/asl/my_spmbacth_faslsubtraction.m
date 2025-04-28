@@ -24,11 +24,13 @@ voldim = size(fasldata);
 Vlabel=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).labelprefix ppparams.perf(1).labelfile]));
 labeldata = spm_read_vols(Vlabel);
 
-fasldata = fasldata + labeldata;
+if ~params.denoise.do_DUNE, fasldata = fasldata + labeldata; end
 
 mask = my_spmbatch_mask(fasldata);
 
-csfdata = sum(reshape(fasldata .* repmat(csfim,[1,1,1,voldim(4)]),[voldim(1)*voldim(2)*voldim(3),voldim(4)]),1)/numel(find(csfim>0));
+csfdata = sum(reshape(labeldata .* repmat(csfim,[1,1,1,voldim(4)]),[voldim(1)*voldim(2)*voldim(3),voldim(4)]),1)/numel(find(csfim>0));
+
+clear Vlabel labeldata
 
 conidx = 2:2:voldim(4);
 labidx = 1:2:voldim(4);
@@ -57,32 +59,20 @@ for p=1:voldim(4)
     if sum(conidx==p)==0
         % 6 point sinc interpolation
         idx=p+[-5 -3 -1 1 3 5];
+        idx(find(idx<min(conidx)))=min(conidx);
+        idx(find(idx>max(conidx)))=max(conidx);
         normloc=3.5;
-        idx(find(idx<1))=min(idx(idx>=1));
-        idx(find(idx>voldim(4)))=max(idx(idx<=voldim(4)));
 
-        if p==1
-            ncondat(:,p)=mean(fasldata(mask>0,idx),2);
-        elseif p==voldim(4)
-            ncondat(:,p)=mean(fasldata(mask>0,idx),2);
-        else
-            ncondat(:,p)=sinc_interpVec(fasldata(mask>0,idx),normloc);
-        end
+        ncondat(:,p)=sinc_interpVec(fasldata(mask>0,idx),normloc);
     end
     if sum(labidx==p)==0
         % 6 point sinc interpolation
         idx=p+[-5 -3 -1 1 3 5];
+        idx(find(idx<min(labidx)))=min(labidx);
+        idx(find(idx>max(labidx)))=max(labidx);
         normloc=3.5;
-        idx(find(idx<1))=min(idx(idx>=1));
-        idx(find(idx>voldim(4)))=max(idx(idx<=voldim(4)));
     
-        if p==1
-            nlabdat(:,p)=mean(fasldata(mask>0,idx),2);
-        elseif p==voldim(4)
-            nlabdat(:,p)=mean(fasldata(mask>0,idx),2);
-        else
-            nlabdat(:,p)=sinc_interpVec(fasldata(mask>0,idx),normloc);
-        end
+        nlabdat(:,p)=sinc_interpVec(fasldata(mask>0,idx),normloc);
     end
 end
 
@@ -90,7 +80,7 @@ deltamdata(mask>0,:) = ncondat-nlabdat;
 
 deltamdata = reshape(deltamdata,[voldim(1),voldim(2),voldim(3),voldim(4)]);
 
-clear ncondat nlabdat condat labdat fasldata
+clear ncondat nlabdat fasldata
 
 nfname = split(ppparams.perf(1).aslfile,'_asl');
 
@@ -107,11 +97,11 @@ if contains(params.asl.temp_resolution,'original')
 elseif contains(params.asl.temp_resolution,'reduced')
     nvols = floor(params.asl.dt/tr); 
     
-    rdeltamdata = zeros([voldim(1),voldim(2),voldim(3),ceil(voldim(4)/nvols)]);
+    rdeltamdata = zeros([voldim(1),voldim(2),voldim(3),floor(voldim(4)/nvols)]);
 
     Vout = Vasl(1);
     rmfield(Vout,'pinfo');
-    for iv=1:ceil(voldim(4)/nvols)
+    for iv=1:floor(voldim(4)/nvols)
         minvol=max(2,(iv-1)*nvols+1);
         maxvol=min(iv*nvols,voldim(4)-1);
 

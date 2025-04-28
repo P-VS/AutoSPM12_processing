@@ -25,8 +25,6 @@ bolddat = zeros(size(funcdat));
 bolddat(tmp,:) = mbolddat;
 bolddat = reshape(bolddat(:,:),s);
 
-clear mbolddat 
-
 fname = split(ppparams.func(ie).funcfile,'_aslbold.nii');
 
 Vbold = Vfunc;
@@ -44,13 +42,14 @@ clear bolddat Vbold
 if ~exist(fullfile(ppparams.subpath,'perf'),'dir'), mkdir(fullfile(ppparams.subpath,'perf')); end
 ppparams.subperfdir = fullfile(ppparams.subpath,'perf');
 
-masldat = my_spm_batch_filt_funcdata(mfuncdat, Ny-0.008, Ny, tr);
+tmpdat = my_spm_batch_filt_funcdata(mfuncdat, 0.008, Inf, tr);
+masldat = tmpdat-mbolddat;
 
 asldat = zeros(size(funcdat));
 asldat(tmp,:) = masldat;
 asldat = reshape(asldat(:,:),s);
 
-clear masldat mfuncdat
+clear masldat mfuncdat tmpdat mbolddat
 
 Vasl = Vfunc;
 for iv=1:numel(Vasl)

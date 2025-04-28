@@ -12,7 +12,7 @@ if params.func.mruns, namefilters(3).required = true; else namefilters(3).requir
 namefilters(4).name = ['task-' ppparams.task];
 namefilters(4).required = true;
 
-% asl data
+%% asl data
 
 namefilters(5).name = '_asl';
 namefilters(5).required = true;
@@ -47,7 +47,7 @@ for ip=1:numel(prefixlist)
     end
 end
 
-% label data
+%% label data
 
 namefilters(5).name = '_label';
 namefilters(5).required = true;
@@ -76,7 +76,7 @@ if ~isempty(tmp)
     ppparams.perf(1).labelfile = fsplit{end};
 end
 
-% m0scan data
+%% m0scan data
 
 namefilters(5).name = '_m0scan';
 namefilters(5).required = true;
@@ -118,16 +118,45 @@ if ~isempty(tmp)
     ppparams.perf(1).m0scanfile = fsplit{2};
 end
 
-tmp=find(contains(prefixlist,'c1'));
-if ~isempty(tmp), ppparams.perf(1).c1m0scanfile = m0scanniilist(tmp).name; end
+%% Segmentation maps
 
-tmp=find(contains(prefixlist,'c2'));
-if ~isempty(tmp), ppparams.perf(1).c2m0scanfile = m0scanniilist(tmp).name; end
+if contains(params.asl.GMWM,'M0asl') 
+    tmp=find(contains(prefixlist,'c1'));
+    if ~isempty(tmp), ppparams.perf(1).c1m0scanfile = m0scanniilist(tmp).name; end
+    
+    tmp=find(contains(prefixlist,'c2'));
+    if ~isempty(tmp), ppparams.perf(1).c2m0scanfile = m0scanniilist(tmp).name; end
+    
+    tmp=find(contains(prefixlist,'c3'));
+    if ~isempty(tmp), ppparams.perf(1).c3m0scanfile = m0scanniilist(tmp).name; end
+else
+    ananamefilters(1).name = ppparams.substring;
+    ananamefilters(1).required = true;
+    
+    ananamefilters(2).name = ppparams.sesstring;
+    ananamefilters(2).required = false;
+    
+    ananamefilters(3).name = ['_T1w'];
+    ananamefilters(3).required = true;
 
-tmp=find(contains(prefixlist,'c3'));
-if ~isempty(tmp), ppparams.perf(1).c3m0scanfile = m0scanniilist(tmp).name; end
+    anatniilist = my_spmbatch_dirfilelist(ppparams.subperfdir,'nii',ananamefilters,false);
+    
+    if ~isempty(anatniilist)
+        prefixlist = split({anatniilist.name},'sub-');
+        if numel(anatniilist)==1, prefixlist=prefixlist{1}; else prefixlist = prefixlist(:,:,1); end
+        
+        tmp=find(contains(prefixlist,'rp1e'));
+        if ~isempty(tmp), ppparams.perf(1).c1m0scanfile = anatniilist(tmp).name; end
+        
+        tmp=find(contains(prefixlist,'rp2e'));
+        if ~isempty(tmp), ppparams.perf(1).c2m0scanfile = anatniilist(tmp).name; end
+        
+        tmp=find(contains(prefixlist,'rp3e'));
+        if ~isempty(tmp), ppparams.perf(1).c3m0scanfile = anatniilist(tmp).name; end
+    end
+end
 
-% deltam data
+%% deltam data
 
 namefilters(5).name = '_deltam';
 namefilters(5).required = true;
@@ -161,7 +190,7 @@ if ~isempty(deltamniilist)
     end
 end
 
-% CBF data
+%% CBF data
 
 namefilters(5).name = '_cbf';
 namefilters(5).required = true;

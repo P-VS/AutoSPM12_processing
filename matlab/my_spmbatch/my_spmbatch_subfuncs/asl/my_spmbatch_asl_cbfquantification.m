@@ -42,6 +42,8 @@ m0dat = double(spm_read_vols(M0));
 
 tcbfdat = zeros(asldim(1),asldim(2),asldim(3),tdim);
 
+CBF=DM;
+rmfield(CBF,'pinfo');
 for it=1:tdim
     dmdat = reshape(deltamdat(:,:,:,it),[asldim(1),asldim(2),asldim(3)]);
 
@@ -53,7 +55,6 @@ for it=1:tdim
     
     cbffile = fullfile(dmpth,['q' dmparts{1} '_cbf.nii']);
 
-    CBF(it) = DM;
     CBF(it).fname = cbffile;
     CBF(it).descrip = 'CBF';
     CBF(it).n = [it 1];

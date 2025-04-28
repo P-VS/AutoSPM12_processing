@@ -38,13 +38,15 @@ if isempty(SliceTimes)
         isl(1:2:nslex)=[0:1:(nslex-1)/2];
         isl(2:2:nslex)=[ceil(nslex/2):1:nslex-1];
         isl=repmat(isl,[1,hbf]);
+        isl = isl(1:voldim(3));
     else 
         isl = [1:2:voldim(3) 2:2:voldim(3)];
+        isl = isl-1;
         nslex = voldim(3);
     end
 
     TA = tr-LD-PLD;
-    SliceTimes = isl*TA/(nslex-1);
+    SliceTimes = isl*TA/nslex;
 else
     TA = tr-LD-PLD;
 
@@ -62,6 +64,8 @@ vol_PLD = reshape(repmat(SlicePLD,[voldim(1)*voldim(2),1]),voldim);
 Vm0=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).m0scanprefix ppparams.perf(1).m0scanfile]));
 m0vol = spm_read_vols(Vm0);
 
+mask = my_spmbatch_mask(m0vol);
+
 %ccorrect M0 for T1 effects
 % The T1 values used, are the averaged T1 values reported in the review of 
 % Bojorquez et al. 2017. What are normal relaxation times of tissues at 3 T? Magnetic Resonance Imaging 35:69-80
@@ -77,12 +81,13 @@ corr_T1 = zeros(voldim);
 corr_T1(T1dat>0) = 1 ./ (1-exp(-tr./T1dat(T1dat>0)));
 m0vol = m0vol .* corr_T1;
 
-mask = my_spmbatch_mask(m0vol);
-
 cm0vol = 2*alpha*m0vol*T1a.*(exp(-vol_PLD/T1a)-exp(-(LD+vol_PLD)/T1a));
 cm0vol = reshape(cm0vol,[voldim(1)*voldim(2)*voldim(3),1]);
 
 clear gmim wmim csfim GM WM CSF
+
+Vout = Vdeltam(1);
+rmfield(Vout,'pinfo');
 
 nvols = params.loadmaxvols;
 for ti=1:nvols:tdim
@@ -101,8 +106,6 @@ for ti=1:nvols:tdim
     cbfdata(cbfdata<-40) = 0;
     cbfdata(cbfdata>150) = 0;
 
-    Vout = Vdeltam(1);
-    rmfield(Vout,'pinfo');
     for iv=1:nvols
         Vout.fname = fullfile(ppparams.subperfdir,[ppparams.perf(1).deltamprefix nfname{1} '_cbf.nii']);
         Vout.descrip = 'my_spmbatch - cbf';
