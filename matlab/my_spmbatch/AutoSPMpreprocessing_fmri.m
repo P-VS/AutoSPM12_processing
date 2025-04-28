@@ -33,12 +33,12 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [2,4:11];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [11];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_func_DUNE-BOLD'; %name of the folder to save the preprocessed bold data
+params.func_save_folder = 'preproc_func_dune-bold'; %name of the folder to save the preprocessed bold data
 
 task ={'ME-EmoFaces'};
 
@@ -48,7 +48,7 @@ params.func.runs = [1]; %the index of the runs (in filenames run-(index))
 
 % For ME-fMRI
 params.func.meepi = true; %true if echo number is in filename
-params.func.echoes = [1,2]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
+params.func.echoes = [1]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
 
 params.use_parallel = true; 
 params.maxprocesses = 2; %Best not too high to avoid memory problems
@@ -131,7 +131,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 
     % Prepare data for DUNE denoising in python (WIP)
     params.denoise.do_DUNE = true; %(default=false)
-    params.denoise.DUNE_part = 'bold'; %'bold' or 'nbold' (default='bold')
+    params.denoise.DUNE_part = 'bold'; %'bold' or 'nonbold' (default='bold')
      
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------

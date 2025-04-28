@@ -24,17 +24,21 @@ params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/
 
 %% Give the basic input information of your data
 
-datpath = '/Volumes/LaCie/UZ_Brussel/ASLBOLD_OpenNeuro_FT/IndData'; %'/Volumes/LaCie/UZ_Brussel/asl_bold/openfmri_data'; %'/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data'; 
+datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data'; %'/Volumes/LaCie/UZ_Brussel/asl_bold/openfmri_data'; %'/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data'; 
 
-sublist = [1]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [11]; %﻿list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
  
-params.task = {'bilateralfingertapping'}; %{'bilateralfingertapping'}; %{'ME-EmoFaces'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
+params.task = {'ME-EmoFaces'}; %{'bilateralfingertapping'}; %{'ME-EmoFaces'}; %text string that is in between task_ and _bold in your fNRI nifiti filename
 
-params.analysisname = '_MEICA-BOLD';
+params.analysisname = '_DUNE-BOLD';
 params.modality = 'fmri'; %'fmri' or 'fasl'
+
+%if fasl is temporal resolution reduced
+params.reduced_temporal_resolution = true; %default=false
+params.newTR = 20.0; %in seconds
 
 params.use_parallel = false; 
 params.maxprocesses = 2; %Best not too high to avoid memory problems
@@ -42,8 +46,8 @@ params.loadmaxvols = 100; %to reduce memory load, the preprocessing can be split
 params.keeplogs = false;
 
 %% fMRI data parameters
-    params.preprocfmridir = 'preproc_meica_bold'; %'preproc_bold_dune'; %'preproc_func_ME-EmoFaces_dune'; %directory with the preprocessed fMRI data
-    params.fmri_prefix = 'swcdafre'; %'swacdfre'; %'swacdure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
+    params.preprocfmridir = 'preproc_func_dune-bold'; %'preproc_bold_dune'; %'preproc_func_ME-EmoFaces_dune'; %directory with the preprocessed fMRI data
+    params.fmri_prefix = 'swcdfaure'; %'swacdfre'; %'swacdure'; %fMRI file name of form [fmri_prefix 'sub-ii_task-..._' fmri_endfix '.nii']
     
     params.dummytime = 0; %only if the timings in the _events.tsv file should be corrected for dummy scans
     
@@ -56,7 +60,7 @@ params.keeplogs = false;
     
     % For ME-fMRI
     params.func.meepi = true; %true if echo number is in filename
-    params.func.echoes = [1:4]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
+    params.func.echoes = [1]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
 
 %% SPM first level analysis parameters
     params.confounds_prefix = 'rp_e'; %confounds file of form [confounds_prefix 'sub-ii_task-... .txt']
@@ -88,11 +92,11 @@ params.keeplogs = false;
     %   contrast(i).conditions={'condition 1','condition 2'};
     %   contrast(i).vector=[1 -1];
 
-    params.contrast(1).conditions = {'Finger'};
-    params.contrast(1).vector = [1];
+    %params.contrast(1).conditions = {'Finger'};
+    %params.contrast(1).vector = [1];
 
-    params.contrast(2).conditions = {'Finger'};
-    params.contrast(2).vector = [-1];
+    %params.contrast(2).conditions = {'Finger'};
+    %params.contrast(2).vector = [-1];
 
     %params.contrast(1).conditions = {'episodic','semantic'};
     %params.contrast(1).vector = [1,-1];
@@ -100,23 +104,23 @@ params.keeplogs = false;
     %params.contrast(2).conditions = {'episodic','semantic'};
     %params.contrast(2).vector = [-1,1];
     
-    %params.contrast(1).conditions = {'sad','neutral'};
-    %params.contrast(1).vector = [1,-1];
+    params.contrast(1).conditions = {'sad','neutral'};
+    params.contrast(1).vector = [1,-1];
     
-    %params.contrast(2).conditions = {'sad','neutral'};
-    %params.contrast(2).vector = [-1,1];
+    params.contrast(2).conditions = {'sad','neutral'};
+    params.contrast(2).vector = [-1,1];
     
-    %params.contrast(3).conditions = {'happy','neutral'};
-    %params.contrast(3).vector = [1,-1];
+    params.contrast(3).conditions = {'happy','neutral'};
+    params.contrast(3).vector = [1,-1];
     
-    %params.contrast(4).conditions = {'happy','neutral'};
-    %params.contrast(4).vector = [-1,1];
+    params.contrast(4).conditions = {'happy','neutral'};
+    params.contrast(4).vector = [-1,1];
     
-    %params.contrast(5).conditions = {'sad','happy'};
-    %params.contrast(5).vector = [1,-1];
+    params.contrast(5).conditions = {'sad','happy'};
+    params.contrast(5).vector = [1,-1];
     
-    %params.contrast(6).conditions = {'sad','happy'};
-    %params.contrast(6).vector = [-1,1];
+    params.contrast(6).conditions = {'sad','happy'};
+    params.contrast(6).vector = [-1,1];
 
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %--------------------------------------------------------------------------------

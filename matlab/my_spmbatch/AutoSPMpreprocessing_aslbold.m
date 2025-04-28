@@ -38,8 +38,8 @@ params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject fold
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_meica_bold'; %name of the folder to save the preprocessed bold data
-params.perf_save_folder = 'preproc_meica_asl'; %name of the folder to save the preprocessed asl data
+params.func_save_folder = 'preproc_dune_bold'; %name of the folder to save the preprocessed bold data
+params.perf_save_folder = 'preproc_dune_asl_MeanASL'; %name of the folder to save the preprocessed asl data
 
 task ={'bilateralfingertapping'};
 
@@ -77,14 +77,16 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.asl.isM0scan = 'last'; %The M0 image is by defaullt the last volume @GE (set 'last')
     params.asl.LabelingDuration = 1.450; % in seconds (parameter is ignored if LabelingDuration is in json file)
     params.asl.PostLabelDelay = 1.525; % in seconds (parameter is ignored if PostLabelDelay is in json file)
+
+    params.asl.GMWM = 'anat'; %wich data used for segmentation maps 'anat', 'M0asl' (default='anat')
     
-    params.asl.temp_resolution = 'original'; %tempporal resolution of the gennerated CBF series
+    params.asl.temp_resolution = 'only_mean'; %tempporal resolution of the gennerated CBF series
     % 'original' : temporal resolution of the original series
     % 'only_mean' : only 1 CBF image (mean over the whole series
     % 'reduced' : the mean CBF over a few timepoints (e.g. per minute) 
     params.asl.dt = 20; %new temporal resolution in seconds if params.asl.temp_resolution = 'reduced'
     
-    params.asl.splitaslbold = 'meica'; %'meica' or 'dune' (default='meica') 
+    params.asl.splitaslbold = 'dune'; %'meica' or 'dune' (default='meica') 
     %this step is part of params.preprocess_functional = true;
     %'meica': after filtering, ME-ICA (tedana based)
     %'dune': experimental splitting method
@@ -147,13 +149,13 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal (default=5)
 
     % ICA-AROMA
-    params.denoise.do_ICA_AROMA = true; %(default=true)
+    params.denoise.do_ICA_AROMA = false; %(default=true)
 
     % Noise regression / remove ICA-AROMA noise components
     params.denoise.do_noiseregression = false; %(default=true)
 
     % Prepare data for DUNE denoising in python (WIP)
-    params.denoise.do_DUNE = false; %(default=false)
+    params.denoise.do_DUNE = true; %(default=false)
     
 %% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
 %---------------------------------------------------------------------------------------
