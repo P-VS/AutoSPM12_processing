@@ -90,13 +90,19 @@ keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['mwp3' fname{1} '
 
 if params.vbm.do_normalization
     catestwrite.output.GM.native = 0;
+    catestwrite.output.GM.mod = 1;
     catestwrite.output.WM.native = 0;
+    catestwrite.output.WM.mod = 1;
     catestwrite.output.CSF.native = 0;
+    catestwrite.output.CSF.mod = 1;
     catestwrite.output.labelnative = 0;
 else
     catestwrite.output.GM.native = 1;
+    catestwrite.output.GM.mod = 0;
     catestwrite.output.WM.native = 1;
+    catestwrite.output.WM.mod = 0;
     catestwrite.output.CSF.native = 1;
+    catestwrite.output.CSF.mod = 0;
     catestwrite.output.labelnative = 1;
 
     keepfiles{numel(keepfiles)+1} = {fullfile(ppparams.subanatdir,['p0' fname{1} '.nii'])};
