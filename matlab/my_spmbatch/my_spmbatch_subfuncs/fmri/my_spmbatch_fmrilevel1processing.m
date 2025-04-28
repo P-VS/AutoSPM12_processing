@@ -194,7 +194,9 @@ mkdir(resultmap)
 
 jsondat = fileread(ppparams.frun(1).funcjsonfile);
 jsondat = jsondecode(jsondat);
-tr = jsondat.RepetitionTime;
+
+if ~params.reduced_temporal_resolution, tr = jsondat.RepetitionTime; else tr=params.newTR; end
+
 if isfield(jsondat,'SliceTiming')
     SliceTiming = jsondat.SliceTiming;
     nsl= ceil(numel(SliceTiming)/numel(find(SliceTiming==SliceTiming(1))));
@@ -313,11 +315,10 @@ clear fdata mask
 
 if contains(params.modality,'fmri')
     matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.0;
-    matlabbatch{1}.spm.stats.fmri_spec.cvi = params.model_serial_correlations;
 elseif contains(params.modality,'fasl')
     matlabbatch{1}.spm.stats.fmri_spec.mthresh = -1.0; 
-    matlabbatch{1}.spm.stats.fmri_spec.cvi = 'none';
 end
+matlabbatch{1}.spm.stats.fmri_spec.cvi = params.model_serial_correlations;
 matlabbatch{1}.spm.stats.fmri_spec.mask = {Vmask.fname};
 
 %% Optimize GLM with TEDM
