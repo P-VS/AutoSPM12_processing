@@ -181,12 +181,16 @@ if numel(edirniilist)==1, prefixlist=prefixlist(1); else prefixlist = prefixlist
 if params.func.do_realignment || params.do_denoising
     if ~isempty(funcrplist)
         %rp_... file
-        tmp = find(strcmp(rpprefixlist,'rp_e'));
+        tmp = find(and(contains(rpprefixlist,'rp_e'),and(~contains(rpprefixlist,'der_'),~contains(rpprefixlist,'acc_'))));
         if ~isempty(tmp), ppparams.rp_file = fullfile(funcrplist(tmp).folder,funcrplist(tmp).name); end
-    
+   
         %der_... file
         tmp = find(contains(rpprefixlist,'der_'));
         if ~isempty(tmp), ppparams.der_file = fullfile(funcrplist(tmp).folder,funcrplist(tmp).name); end
+
+        %acc_... file
+        tmp = find(contains(rpprefixlist,'acc_'));
+        if ~isempty(tmp), ppparams.acc_file = fullfile(funcrplist(tmp).folder,funcrplist(tmp).name); end
     end
 
     denpreff = '';
