@@ -2,6 +2,7 @@ function my_spmbatch_start_aslboldpreprocessing(sublist,nsessions,task,datpath,p
 
 params.func.isaslbold = true;
 params.func.meepi = true;
+params.echoes = params.func.echoes;
 
 if ~contains(params.func.combination,'none'), params.func.do_echocombination = true; else params.func.do_echocombination = false; end
 if contains(params.asl.splitaslbold,'meica')

@@ -71,7 +71,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     
 %% Preprocessing ASL data
 
-    params.preprocess_asl = true; %(default=true)
+    params.preprocess_asl = false; %(default=true)
 
     %ASL data
     params.asl.isM0scan = 'last'; %The M0 image is by defaullt the last volume @GE (set 'last')
@@ -96,7 +96,7 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 
 %% Preprocessing functional (the order of the parameters represents the fixed order of the steps done)
 
-    params.preprocess_functional = false; %(default=true)
+    params.preprocess_functional = true; %(default=true)
 
     % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
     params.func.dummytime = 0; %time in seconds (default=2*TR)
