@@ -275,7 +275,7 @@ FT = FT(1:(length(FT)/2) +1,:); % keep postivie frequencies (Hermitian symmetric
     
         writetable(T,aroma_file,'WriteRowNames',false);
                
-        funcfname = split([ppparams.func(1).prefix ppparams.func(1).funcfile],'.nii');
+        funcfname = split([ppparams.func(ppparams.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile],'.nii');
     
         if ~params.use_parallel
             fg = spm_figure('FindWin','Graphics');
