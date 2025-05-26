@@ -419,4 +419,8 @@ if params.save_spm_results
         matlabbatch{mbidx}.spm.stats.results.export{oi}.pdf = true;
         oi = oi+1;
     end
+    if params.save_tiff_file
+        matlabbatch{mbidx}.spm.stats.results.export{oi}.tif = true;
+        oi = oi+1;
+    end
 end

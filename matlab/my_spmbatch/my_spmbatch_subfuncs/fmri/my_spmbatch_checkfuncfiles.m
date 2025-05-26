@@ -194,15 +194,15 @@ if params.func.do_realignment || params.do_denoising
     end
 
     denpreff = '';
-    if contains(ppparams.func(1).prefix,'e'), denpreff = ['e' denpreff]; end
-    if contains(ppparams.func(1).prefix,'r'), denpreff = ['r' denpreff]; end
-    if contains(ppparams.func(1).prefix,'u'), denpreff = ['u' denpreff]; end
-    if params.func.isaslbold && contains(ppparams.func(1).prefix,'f'), denpreff = ['f' denpreff]; end
-    if contains(ppparams.func(1).prefix,'a'), denpreff = ['a' denpreff]; end
+    if contains(ppparams.func(params.func.echoes(1)).prefix,'e'), denpreff = ['e' denpreff]; end
+    if contains(ppparams.func(params.func.echoes(1)).prefix,'r'), denpreff = ['r' denpreff]; end
+    if contains(ppparams.func(params.func.echoes(1)).prefix,'u'), denpreff = ['u' denpreff]; end
+    if params.func.isaslbold && contains(ppparams.func(params.func.echoes(1)).prefix,'f'), denpreff = ['f' denpreff]; end
+    if contains(ppparams.func(params.func.echoes(1)).prefix,'a'), denpreff = ['a' denpreff]; end
 
     if params.do_denoising
-        if contains(ppparams.func(1).prefix,'c'), denpreff = ['c' denpreff]; end
-        if contains(ppparams.func(1).prefix,'w'), denpreff = ['w' denpreff]; end
+        if contains(ppparams.func(params.func.echoes(1)).prefix,'c'), denpreff = ['c' denpreff]; end
+        if contains(ppparams.func(params.func.echoes(1)).prefix,'w'), denpreff = ['w' denpreff]; end
     end
 
     %mask used for denoising if before normalization
