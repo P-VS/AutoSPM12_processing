@@ -101,12 +101,12 @@ catch e
 end
 
 %% Denoising the ME/SE fMRI data
-if (params.func.isaslbold || params.func.denoise) && ~contains(ppparams.func(1).prefix,'d')
+if (params.func.isaslbold || params.func.denoise) && ~contains(ppparams.func(ppparams.echoes(1)).prefix,'d')
     
     [ppparams,delfiles,keepfiles] = my_spmbatch_fmridenoising(ppparams,params,delfiles,keepfiles);
 
     if params.denoise.do_DUNE
-        boldfile = fullfile(ppparams.subfuncdir,[ppparams.func(1).prefix ppparams.func(1).funcfile]);
+        boldfile = fullfile(ppparams.subfuncdir,[ppparams.func(params.echoes(1)).prefix ppparams.func(ppparams.echoes(1)).funcfile]);
         if ~exist(boldfile,"file"), return; end
     end
 end
@@ -119,10 +119,10 @@ for ie=ppparams.echoes
 end
 
 %% Combine multiple TE timeseries for ME-fMRI
-if params.func.do_echocombination && ~contains(ppparams.func(1).prefix,'c')
+if params.func.do_echocombination && ~contains(ppparams.func(ppparams.echoes(1)).prefix,'c')
     [ppparams,delfiles] = my_spmbatch_combineMEfMRI(ppparams,params,delfiles);
 end
-if params.func.do_echocombination || contains(ppparams.func(1).prefix,'c')
+if params.func.do_echocombination || contains(ppparams.func(ppparams.echoes(1)).prefix,'c')
     if contains(ppparams.func(1).funcfile,'_echo-')
         nfname = split(ppparams.func(1).funcfile,'_echo-');
         ppparams.func(1).funcfile = [nfname{1} '_bold.nii'];
