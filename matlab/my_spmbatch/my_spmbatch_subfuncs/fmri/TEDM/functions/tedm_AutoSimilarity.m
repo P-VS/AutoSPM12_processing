@@ -25,13 +25,13 @@ function [cdl] = tedm_AutoSimilarity(SPM,ss)
 
 	% Remove constant atom (if it exists)
     if(~isempty(SPM.xX.iB))
-  		K = K-1;
+  		K = numel(SPM.Sess(ss).U); %K-1;
     end
 
 	for i = 1:K
-		R.names{i}     = SPM.Sess(ss).U(i).name;
-		R.onsets{i}    = SPM.Sess(ss).U(i).ons;
-		R.durations{i} = SPM.Sess(ss).U(i).dur;
+	    R.names{i}     = SPM.Sess(ss).U(i).name;
+	    R.onsets{i}    = SPM.Sess(ss).U(i).ons;
+	    R.durations{i} = SPM.Sess(ss).U(i).dur;
 	end
 
 	%--- Determine the variation per regressor ---
