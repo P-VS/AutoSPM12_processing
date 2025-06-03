@@ -6,9 +6,11 @@ for i=1:numel(Vfunc)
     wfuncfiles{i,1} = [Vfunc(i).fname ',' num2str(i)];
 end
 
+[bet_vol1file,delfiles] = my_spmbatch_bet(ppparams.subfuncdir,[ppparams.func(ne).prefix ppparams.func(ne).funcfile],ppparams,params,delfiles,keepfiles);
+
 %% Normalization of the functional scan
 if ne==ppparams.echoes(1) || ~isfield(ppparams,'deffile') %Based op OldNorm
-    funcnormest.subj.source = {wfuncfiles{1,1}};
+    funcnormest.subj.source = {fullfile(ppparams.subfuncdir,bet_vol1file)};
     funcnormest.subj.wtsrc = '';
     funcnormest.eoptions.template = {fullfile(spm('Dir'),'toolbox','OldNorm','EPI.nii')};
     funcnormest.eoptions.weight = '';
@@ -21,9 +23,9 @@ if ne==ppparams.echoes(1) || ~isfield(ppparams,'deffile') %Based op OldNorm
 
     spm_run_normalise(funcnormest);
 
-    fnm = split(ppparams.func(ne).funcfile,'.nii');
+    fnm = split(bet_vol1file,'.nii');
 
-    ppparams.deffile = fullfile(ppparams.subfuncdir,[ppparams.func(ne).prefix fnm{1} '_sn.mat']);
+    ppparams.deffile = fullfile(ppparams.subfuncdir,[fnm{1} '_sn.mat']);
     delfiles{numel(delfiles)+1} = {ppparams.deffile};
 end
 

@@ -58,7 +58,8 @@ for ir=1:numel(params.iruns)
     %fMRI data
     
     if contains(params.modality,'fmri'), namefilters(5).name = '_bold'; end
-    if contains(params.modality,'fasl'), namefilters(5).name = '_cbf'; end
+    if contains(params.modality,'fcbf'), namefilters(5).name = '_cbf'; end
+    if contains(params.modality,'fasl'), namefilters(5).name = '_asl'; end
     namefilters(5).required = true;
 
     namefilters(6).name = params.fmri_prefix;
@@ -195,7 +196,7 @@ mkdir(resultmap)
 jsondat = fileread(ppparams.frun(1).funcjsonfile);
 jsondat = jsondecode(jsondat);
 
-if ~params.reduced_temporal_resolution, tr = jsondat.RepetitionTime; else tr=params.newTR; end
+if contains(params.modality,'fcbf') && params.reduced_temporal_resolution, tr=params.newTR; else tr = jsondat.RepetitionTime; end
 
 if isfield(jsondat,'SliceTiming')
     SliceTiming = jsondat.SliceTiming;
@@ -278,7 +279,15 @@ for ir=1:numel(params.iruns)
         end
     
         matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).multi = {''};
-        matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).regress = struct('name', {}, 'val', {});
+
+        if ~contains(params.modality,'fasl')
+            matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).regress = struct('name', {}, 'val', {});
+        else
+            labregressor=zeros(numel(Vfunc),1);
+            labregressor([2:2:numel(Vfunc)])=1;
+            matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).regress.name = 'labeling';
+            matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).regress.val = labregressor;
+        end
     
         matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).multi_reg = {ppparams.frun(ir).confoundsfile};
 
@@ -315,8 +324,10 @@ clear fdata mask
 
 if contains(params.modality,'fmri')
     matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.0;
-elseif contains(params.modality,'fasl')
+elseif contains(params.modality,'fcbf')
     matlabbatch{1}.spm.stats.fmri_spec.mthresh = -1.0; 
+elseif contains(params.modality,'fasl')
+    matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.0;
 end
 matlabbatch{1}.spm.stats.fmri_spec.cvi = params.model_serial_correlations;
 matlabbatch{1}.spm.stats.fmri_spec.mask = {Vmask.fname};
