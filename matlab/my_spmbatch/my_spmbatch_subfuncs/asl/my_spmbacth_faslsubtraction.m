@@ -28,25 +28,25 @@ if ~params.denoise.do_DUNE, fasldata = fasldata + labeldata; end
 
 mask = my_spmbatch_mask(fasldata);
 
-csfdata = sum(reshape(labeldata .* repmat(csfim,[1,1,1,voldim(4)]),[voldim(1)*voldim(2)*voldim(3),voldim(4)]),1)/numel(find(csfim>0));
+%csfdata = sum(reshape(labeldata .* repmat(csfim,[1,1,1,voldim(4)]),[voldim(1)*voldim(2)*voldim(3),voldim(4)]),1)/numel(find(csfim>0));
 
 clear Vlabel labeldata
 
 conidx = 2:2:voldim(4);
 labidx = 1:2:voldim(4);
 
-mean_csfcon = mean(csfdata(conidx));
-mean_csflab = mean(csfdata(labidx));
+%mean_csfcon = mean(csfdata(conidx));
+%mean_csflab = mean(csfdata(labidx));
 
-if mean_csflab>mean_csfcon
-    conidx = 1:2:voldim(4);
-    labidx = 2:2:voldim(4);
-end
+%if mean_csflab>mean_csfcon
+%    conidx = 1:2:voldim(4);
+%    labidx = 2:2:voldim(4);
+%end
 
 ppparams.asl.conidx = conidx;
 ppparams.asl.labidx = labidx;
 
-clear csfdata mean_csflab mean_csfcon
+%clear csfdata mean_csflab mean_csfcon
 
 deltamdata = zeros([voldim(1)*voldim(2)*voldim(3),voldim(4)]);
 
@@ -76,7 +76,33 @@ for p=1:voldim(4)
     end
 end
 
-deltamdata(mask>0,:) = ncondat-nlabdat;
+bl_signal = fasldata(mask>0,:)-(ncondat+nlabdat)/2;
+
+ncondat = bl_signal;
+nlabdat = bl_signal;
+
+for p=1:voldim(4)
+    if sum(conidx==p)==0
+        % 6 point sinc interpolation
+        idx=p+[-5 -3 -1 1 3 5];
+        idx(find(idx<min(conidx)))=min(conidx);
+        idx(find(idx>max(conidx)))=max(conidx);
+        normloc=3.5;
+
+        ncondat(:,p)=sinc_interpVec(bl_signal(:, idx),normloc);
+    end
+    if sum(labidx==p)==0
+        % 6 point sinc interpolation
+        idx=p+[-5 -3 -1 1 3 5];
+        idx(find(idx<min(labidx)))=min(labidx);
+        idx(find(idx>max(labidx)))=max(labidx);
+        normloc=3.5;
+    
+        nlabdat(:,p)=sinc_interpVec(bl_signal(:, idx),normloc);
+    end
+end
+
+deltamdata(mask>0,:) = (ncondat-nlabdat);
 
 deltamdata = reshape(deltamdata,[voldim(1),voldim(2),voldim(3),voldim(4)]);
 

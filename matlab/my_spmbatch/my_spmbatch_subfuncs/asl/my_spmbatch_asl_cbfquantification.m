@@ -1,5 +1,18 @@
 function [ppparams,delfiles,keepfiles] = my_spmbatch_asl_cbfquantification(ppparams,delfiles,keepfiles)
 
+try
+    jsondat = fileread(ppparams.deltamjson);
+    jsondat = jsondecode(jsondat);
+    
+    LabelingDuration = jsondat.LabelingDuration;
+    PLD = jsondat.PostLabelDelay;
+    NumberOfAverages = jsondat.NumberOfAverages;
+catch
+    LabelingDuration = 1.5;
+    PLD = 1.525;
+    NumberOfAverages = 1;
+end
+
 %% Step 1: make head mask
 
 M0I = spm_vol(ppparams.tm0scan);
@@ -12,19 +25,6 @@ BloodT1 = 1.650;
 LabelingEfficiency = 0.85; %labeling efficiency for PCASL
 SupressionEfficiency = 0.75; %Effect of background suppression on labeled spins (0.75 for GE 3D PCASL)
 Lambda = 0.9; %blood-brain partition coefficient
-
-try
-    jsondat = fileread(ppparams.deltamjson);
-    jsondat = jsondecode(jsondat);
-    
-    LabelingDuration = jsondat.LabelingDuration;
-    PLD = jsondat.PostLabelDelay;
-    NumberOfAverages = jsondat.NumberOfAverages;
-catch
-    LabelingDuration = 1.5;
-    PLD = 1.0;
-    NumberOfAverages = 1;
-end
 
 %% Step 2: Calculating the CBF images
 

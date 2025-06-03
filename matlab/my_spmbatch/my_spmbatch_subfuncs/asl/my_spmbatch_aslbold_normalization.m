@@ -1,7 +1,10 @@
 function [ppparams,delfiles,keepfiles] = my_spmbatch_aslbold_normalization(ppparams,params,delfiles,keepfiles)
 
+[bet_m0file,delfiles] = my_spmbatch_bet(ppparams.subperfdir,[ppparams.perf(1).m0scanprefix ppparams.perf(1).m0scanfile],ppparams,params,delfiles,keepfiles);
+ppparams.perf(1).m0scanprefix = ['b' ppparams.perf(1).m0scanprefix];
+
 %% Normalization of the functional scan based op OldNorm
-aslnormest.subj.source = {fullfile(ppparams.subperfdir,[ppparams.perf(1).m0scanprefix ppparams.perf(1).m0scanfile])};
+aslnormest.subj.source = {fullfile(ppparams.subperfdir,bet_m0file)};
 aslnormest.subj.wtsrc = '';
 aslnormest.eoptions.template = {fullfile(spm('Dir'),'toolbox','OldNorm','EPI.nii')};
 aslnormest.eoptions.weight = '';
@@ -14,9 +17,9 @@ aslnormest.eoptions.reg = 1;
 
 spm_run_normalise(aslnormest);
 
-fnm = split(ppparams.perf(1).m0scanfile,'.nii');
+fnm = split(bet_m0file,'.nii');
 
-ppparams.deffile = fullfile(ppparams.subperfdir,[ppparams.perf(1).m0scanprefix fnm{1} '_sn.mat']);
+ppparams.deffile = fullfile(ppparams.subperfdir,[fnm{1} '_sn.mat']);
 delfiles{numel(delfiles)+1} = {ppparams.deffile};
 
 %% Normalise CBF data
