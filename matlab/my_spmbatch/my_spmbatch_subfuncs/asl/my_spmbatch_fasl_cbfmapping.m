@@ -5,13 +5,7 @@ function [ppparams,delfiles,keepfiles] = my_spmbatch_fasl_cbfmapping(ppparams,pa
 % Consortium for ASL in Dementia. Magnetic Resonance in Medicine 73:102–116 (2015)
 %(https://onlinelibrary.wiley.com/doi/epdf/10.1002/mrm.25197?src=getftr)
 
-GM = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c1m0scanfile));
-WM = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c2m0scanfile));
-CSF = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c3m0scanfile));
-
-gmim = spm_read_vols(GM);
-wmim = spm_read_vols(WM);
-csfim = spm_read_vols(CSF);
+%% Coorecting PLD for slice time differences
 
 Vdeltam=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).deltamprefix ppparams.perf(1).deltamfile]));
 
@@ -55,21 +49,33 @@ end
 
 SlicePLD = PLD+SliceTimes;
 
+vol_PLD = reshape(repmat(SlicePLD,[voldim(1)*voldim(2),1]),voldim);
+
+%% Correct M0 for T1 effects
+% The T1 values used, are the averaged T1 values reported in the review of 
+% Bojorquez et al. 2017. What are normal relaxation times of tissues at 3 T? Magnetic Resonance Imaging 35:69-80
+% (https://mri-q.com/uploads/3/4/5/7/34572113/normal_relaxation_times_at_3t.pdf)
+
 T1a = 1.650; %longitudinal relaxation time of arterial blood
 lambda = 0.9; %blood-brain partition coefficient for gray matter
 alpha = 0.85; %laeling efficiency
 
-vol_PLD = reshape(repmat(SlicePLD,[voldim(1)*voldim(2),1]),voldim);
+Vasl=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix ppparams.perf(1).aslfile]));
+fasldata = spm_read_vols(Vasl);
 
-Vm0=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).m0scanprefix ppparams.perf(1).m0scanfile]));
-m0vol = spm_read_vols(Vm0);
+conidx = 2:2:numel(Vasl);
+
+m0vol = mean(fasldata(:,:,:,conidx),4);
 
 mask = my_spmbatch_mask(m0vol);
 
-%ccorrect M0 for T1 effects
-% The T1 values used, are the averaged T1 values reported in the review of 
-% Bojorquez et al. 2017. What are normal relaxation times of tissues at 3 T? Magnetic Resonance Imaging 35:69-80
-% (https://mri-q.com/uploads/3/4/5/7/34572113/normal_relaxation_times_at_3t.pdf)
+GM = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c1m0scanfile));
+WM = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c2m0scanfile));
+CSF = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c3m0scanfile));
+
+gmim = spm_read_vols(GM);
+wmim = spm_read_vols(WM);
+csfim = spm_read_vols(CSF);
 
 T1gm = 1.459;
 T1wm = 0.974;
@@ -81,10 +87,11 @@ corr_T1 = zeros(voldim);
 corr_T1(T1dat>0) = 1 ./ (1-exp(-tr./T1dat(T1dat>0)));
 m0vol = m0vol .* corr_T1;
 
+clear fasldat gmim wmim csfim T1dat corr_T1 GM WM CSF Vasl
+
+%% CBF calculations
 cm0vol = 2*alpha*m0vol*T1a.*(exp(-vol_PLD/T1a)-exp(-(LD+vol_PLD)/T1a));
 cm0vol = reshape(cm0vol,[voldim(1)*voldim(2)*voldim(3),1]);
-
-clear gmim wmim csfim GM WM CSF
 
 Vout = Vdeltam(1);
 rmfield(Vout,'pinfo');

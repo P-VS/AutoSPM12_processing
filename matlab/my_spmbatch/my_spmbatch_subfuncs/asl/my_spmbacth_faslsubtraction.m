@@ -1,21 +1,5 @@
 function [ppparams,delfiles,keepfiles] = my_spmbacth_faslsubtraction(ppparams,params,delfiles,keepfiles)
 
-GM = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c1m0scanfile));
-WM = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c2m0scanfile));
-CSF = spm_vol(fullfile(ppparams.subperfdir,ppparams.perf(1).c3m0scanfile));
-
-gmim = spm_read_vols(GM);
-wmim = spm_read_vols(WM);
-csfim = spm_read_vols(CSF);
-
-csfim(gmim+wmim>0) = 0;
-csfim(csfim<0.2) = 0;
-csfim(csfim>0) = 1;
-
-jsondat = fileread(ppparams.func(1).jsonfile);
-jsondat = jsondecode(jsondat);
-tr = jsondat.RepetitionTime;
-
 Vasl=spm_vol(fullfile(ppparams.subperfdir,[ppparams.perf(1).aslprefix ppparams.perf(1).aslfile]));
 fasldata = spm_read_vols(Vasl);
 
@@ -28,25 +12,13 @@ if ~params.denoise.do_DUNE, fasldata = fasldata + labeldata; end
 
 mask = my_spmbatch_mask(fasldata);
 
-%csfdata = sum(reshape(labeldata .* repmat(csfim,[1,1,1,voldim(4)]),[voldim(1)*voldim(2)*voldim(3),voldim(4)]),1)/numel(find(csfim>0));
-
 clear Vlabel labeldata
 
 conidx = 2:2:voldim(4);
 labidx = 1:2:voldim(4);
 
-%mean_csfcon = mean(csfdata(conidx));
-%mean_csflab = mean(csfdata(labidx));
-
-%if mean_csflab>mean_csfcon
-%    conidx = 1:2:voldim(4);
-%    labidx = 2:2:voldim(4);
-%end
-
 ppparams.asl.conidx = conidx;
 ppparams.asl.labidx = labidx;
-
-%clear csfdata mean_csflab mean_csfcon
 
 deltamdata = zeros([voldim(1)*voldim(2)*voldim(3),voldim(4)]);
 
