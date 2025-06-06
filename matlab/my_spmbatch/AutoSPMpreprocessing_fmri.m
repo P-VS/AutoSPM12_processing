@@ -33,7 +33,7 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ME_fMRI_GE/data';
 
-sublist = [2,4:11];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1:13];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
@@ -57,9 +57,17 @@ params.keeplogs = false;
 
 params.save_intermediate_results = true; %clean up the directory by deleting unnecessary files generated during the processing (default = false)
 
-%% Preprocessing anatomical data
+params.preprocess_anatomical = false;
+params.preprocess_functional = true;
 
-    params.preprocess_anatomical = false;
+% Geometric correction if fmap is available
+params.func.pepolar = true; %(default=true)
+   
+%---------------------------------------------------------------------------------------
+% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
+%---------------------------------------------------------------------------------------
+
+%% Preprocessing anatomical data
 
     % Normalization
     params.anat.do_normalization = true; %(default=true)
@@ -71,17 +79,12 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     
 %% Preprocessing functional data (the order of the parameters represents the fixed order of the steps done)
 
-    params.preprocess_functional = true;
-
     % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
     params.func.dummytime = 8; %time in seconds
     
     % Realignnment (motion correction)
     params.func.do_realignment = true; %(default=true)
 
-    % Geometric correction
-    params.func.pepolar = true; %(default=true)
-       
     %Denoising before echo combination and normalization ussing the
     %parameters from params.denoise
     params.func.denoise = true; %(default=true)
@@ -132,9 +135,8 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     % Prepare data for DUNE denoising in python (WIP)
     params.denoise.do_DUNE = false; %(default=false)
     params.denoise.DUNE_part = 'bold'; %'bold' or 'nonbold' (default='bold')
-     
-%% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
-%---------------------------------------------------------------------------------------
+   
+%% Start preprocessing
 
 restoredefaultpath
 

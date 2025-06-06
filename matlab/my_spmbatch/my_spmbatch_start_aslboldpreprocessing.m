@@ -3,6 +3,7 @@ function my_spmbatch_start_aslboldpreprocessing(sublist,nsessions,task,datpath,p
 params.func.isaslbold = true;
 params.func.meepi = true;
 params.echoes = params.func.echoes;
+params.do_denoising = false;
 
 if ~contains(params.func.combination,'none'), params.func.do_echocombination = true; else params.func.do_echocombination = false; end
 if contains(params.asl.splitaslbold,'meica')
@@ -21,26 +22,6 @@ if contains(params.asl.splitaslbold,'dune')
     params.denoise.do_noiseregression = false;
     params.denoise.do_DUNE = true;
     params.denoise.DUNE_part = 'bold';
-end
-
-if params.do_denoising
-    if params.preprocess_functional
-        params.denoise.meepi = true;
-        params.denoise.echoes = params.func.echoes;
-
-        params.denoise.prefix = 'e';
-        if params.func.fieldmap, params.denoise.prefix = ['u' params.denoise.prefix]; end
-        if params.func.do_realignment && ~params.func.fieldmap, params.denoise.prefix = ['r' params.denoise.prefix]; end
-        if params.func.pepolar, params.denoise.prefix = ['u' params.denoise.prefix]; end
-        if params.func.do_slicetime, params.denoise.prefix = ['a' params.denoise.prefix]; end
-        if params.func.meepi && ~contains(params.func.combination,'none')
-            params.denoise.prefix = ['c' params.denoise.prefix]; 
-            params.denoise.mecombined = true;
-        else
-            params.denoise.mecombined = false;
-        end
-        if params.func.do_normalization, params.denoise.prefix = ['w' params.denoise.prefix]; end
-    end
 end
 
 save(fullfile(datpath,'params.mat'),'params')

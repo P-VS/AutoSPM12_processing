@@ -9,7 +9,11 @@ try
     end
 
     %% make batch
-    matlabbatch = my_spmbatch_fmrilevel1processing(sub,ses,run,task,datpath,params);
+    if contains(params.modality,'fasl') && contains(params.analysis_type,'within_subject') 
+        matlabbatch = my_spmbatch_asllevel1processing(sub,ses,run,task,datpath,params); 
+    else
+        matlabbatch = my_spmbatch_fmrilevel1processing(sub,ses,run,task,datpath,params);
+    end
 
     if ~isempty(matlabbatch), spm_jobman('run', matlabbatch); end
 catch e

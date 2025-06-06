@@ -33,34 +33,59 @@ params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/M
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ASLBOLD_OpenNeuro_FT/IndData';
 
-sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [2:13];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
 
 params.func_save_folder = 'preproc_dune_bold'; %name of the folder to save the preprocessed bold data
-params.perf_save_folder = 'preproc_dune_asl_MeanASL'; %name of the folder to save the preprocessed asl data
+params.perf_save_folder = 'preproc_dune_cbf'; %name of the folder to save the preprocessed asl data
 
 task ={'bilateralfingertapping'};
 
-%In case of multiple runs in the same session exist
+%% In case of multiple runs in the same session exist
 params.func.mruns = false; %true if run number is in filename
 params.func.runs = [1]; %the index of the runs (in filenames run-(index))
 
-% For ME-fMRI
-params.func.meepi = true; %true if echo number is in filename (default=true)
-params.func.echoes = [1:4]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
-
+%% If parallel processing is posible (only tested on Mac!!)
 params.use_parallel = false; %(default=false)
 params.maxprocesses = 2; %Best not too high to avoid memory problems %(default=2)
 params.loadmaxvols = 100; %to reduce memory load, the preprocessing can be split in smaller blocks (default = 100)
 params.keeplogs = false; %(default=false)
 
+%% Save intermediate results needed?
 params.save_intermediate_results = true; %clean up the directory by deleting unnecessary files generated during the processing (default = false)
+
+%% Which analyses to do
+params.preprocess_anatomical = false;  %(default=true)  
+params.preprocess_asl = true; %(default=true)
+params.preprocess_functional = true; %(default=true)
+
+%% FMRI parameters
+params.func.meepi = true; %true if echo number is in filename (default=true)
+params.func.echoes = [1:4]; %the index of echoes in ME-fMRI used in the analysis. If meepi=false, echoes=[1]. 
+
+params.func.dummytime = 0; %time in seconds (default=2*TR)
+
+params.func.fmapscan = false; %true if fmap scan exist otherwise false (default=true)
+
+%% ASL Parameters
+params.asl.temp_resolution = 'original'; %tempporal resolution of the gennerated CBF series
+% 'original' : temporal resolution of the original series
+% 'only_mean' : only 1 CBF image (mean over the whole series
+% 'reduced' : the mean CBF over a few timepoints (e.g. per minute) 
+params.asl.dt = 40; %new temporal resolution in seconds if params.asl.temp_resolution = 'reduced'
+
+params.asl.splitaslbold = 'dune'; %'meica' or 'dune' (default='meica') 
+%'meica': after filtering, ME-ICA (tedana based)
+%'dune': experimental splitting method
+
+%---------------------------------------------------------------------------------------
+%%% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
+%---------------------------------------------------------------------------------------
 
 %% Preprocessing anatomical data
 
-    params.preprocess_anatomical = false;
     % Normalization
     params.anat.do_normalization = true;
     params.anat.normvox = [2.0 2.0 2.0]; %(default=[2.0 2.0 2.0]) Same as for fMRI!!
@@ -71,8 +96,6 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     
 %% Preprocessing ASL data
 
-    params.preprocess_asl = false; %(default=true)
-
     %ASL data
     params.asl.isM0scan = 'last'; %The M0 image is by defaullt the last volume @GE (set 'last')
     params.asl.LabelingDuration = 1.450; % in seconds (parameter is ignored if LabelingDuration is in json file)
@@ -80,32 +103,13 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 
     params.asl.GMWM = 'anat'; %wich data used for segmentation maps 'anat', 'M0asl' (default='anat')
     
-    params.asl.temp_resolution = 'only_mean'; %tempporal resolution of the gennerated CBF series
-    % 'original' : temporal resolution of the original series
-    % 'only_mean' : only 1 CBF image (mean over the whole series
-    % 'reduced' : the mean CBF over a few timepoints (e.g. per minute) 
-    params.asl.dt = 20; %new temporal resolution in seconds if params.asl.temp_resolution = 'reduced'
-    
-    params.asl.splitaslbold = 'dune'; %'meica' or 'dune' (default='meica') 
-    %this step is part of params.preprocess_functional = true;
-    %'meica': after filtering, ME-ICA (tedana based)
-    %'dune': experimental splitting method
-    %T2* part = BOLD and S0 part is ASL
-    %See Cohen et al 2018. Multiband multi-echo simultaneous ASL/BOLD for
-    %task-induced functional MRI. PLoS One 13(2):e0190427
-
 %% Preprocessing functional (the order of the parameters represents the fixed order of the steps done)
-
-    params.preprocess_functional = true; %(default=true)
-
-    % Remove the dummy scans n_dummy_scans = floor(dummytime/TR)
-    params.func.dummytime = 0; %time in seconds (default=2*TR)
 
     % Realignnment (motion correction)
     params.func.do_realignment = true; %(default=true)
     
     % Geometric correction
-    params.func.pepolar = false; %(default=true)
+    if params.func.fmapscan, params.func.pepolar = true; else params.func.pepolar = false; end
 
     %Denoising before echo combination and normalization ussing the
     %parameters from params.denoise
@@ -130,36 +134,8 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
     params.func.do_smoothing = true; %(default=true)
     params.func.smoothfwhm = 6; %(default=6)
 
-%% Denoising
-    %if do_denoising = true and preprocess_functional = false -> only denoising of the normalised data
-    %Denoising will not run if it was already done before
-
-    params.do_denoising = false; %(default=false)
-
-    % Extend motion regressors with derivatives and squared regressors
-    params.denoise.do_mot_derivatives = true; %derivatives+squares (24 regressors) (default=true)
-
-    % Band-pass filtering
-    params.denoise.do_bpfilter = false; %(default=true)
-    params.denoise.bpfilter = [0.008 0.1]; %no highpass filter is first 0, no lowpass filter is last Inf, default=[0.008 0.1]
-    params.denoise.polort = 2; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend, default=2)
-
-    % aCompCor
-    params.denoise.do_aCompCor = false; %(default=false)
-    params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal (default=5)
-
-    % ICA-AROMA
-    params.denoise.do_ICA_AROMA = false; %(default=true)
-
-    % Noise regression / remove ICA-AROMA noise components
-    params.denoise.do_noiseregression = false; %(default=true)
-
-    % Prepare data for DUNE denoising in python (WIP)
-    params.denoise.do_DUNE = true; %(default=false)
+%% Start the analysis
     
-%% BE CAREFUL WITH CHANGING THE CODE BELOW THIS LINE !!
-%---------------------------------------------------------------------------------------
-
 restoredefaultpath
 
 [params.my_spmbatch_path,~,~] = fileparts(mfilename('fullpath'));
