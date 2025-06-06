@@ -58,8 +58,7 @@ for ir=1:numel(params.iruns)
     %fMRI data
     
     if contains(params.modality,'fmri'), namefilters(5).name = '_bold'; end
-    if contains(params.modality,'fcbf'), namefilters(5).name = '_cbf'; end
-    if contains(params.modality,'fasl'), namefilters(5).name = '_asl'; end
+    if contains(params.modality,'fasl'), namefilters(5).name = '_cbf'; end
     namefilters(5).required = true;
 
     namefilters(6).name = params.fmri_prefix;
@@ -196,7 +195,7 @@ mkdir(resultmap)
 jsondat = fileread(ppparams.frun(1).funcjsonfile);
 jsondat = jsondecode(jsondat);
 
-if contains(params.modality,'fcbf') && params.reduced_temporal_resolution, tr=params.newTR; else tr = jsondat.RepetitionTime; end
+if contains(params.modality,'fasl') && params.reduced_temporal_resolution, tr=params.newTR; else tr = jsondat.RepetitionTime; end
 
 if isfield(jsondat,'SliceTiming')
     SliceTiming = jsondat.SliceTiming;
@@ -275,26 +274,20 @@ for ir=1:numel(params.iruns)
             matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).cond(nc).duration = edat{ir}.conditions{nc}.durations;
             matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).cond(nc).tmod = 0;
             matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).cond(nc).pmod = struct('name', {}, 'param', {}, 'poly', {});
-            matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).cond(nc).orth = 1;
+            if params.reduced_temporal_resolution, matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).cond(nc).orth = 0; 
+            else matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).cond(nc).orth = 1; end
         end
     
         matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).multi = {''};
 
-        if ~contains(params.modality,'fasl')
-            matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).regress = struct('name', {}, 'val', {});
-        else
-            labregressor=zeros(numel(Vfunc),1);
-            labregressor([2:2:numel(Vfunc)])=1;
-            matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).regress.name = 'labeling';
-            matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).regress.val = labregressor;
-        end
+        matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).regress = struct('name', {}, 'val', {});
     
         matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).multi_reg = {ppparams.frun(ir).confoundsfile};
 
         if ~contains(ppparams.frun(1).func(1).funcfile,'f'), matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).hpf = params.hpf;
         else
             Vfunc = spm_vol(fullfile(ppparams.preprocfmridir,ppparams.frun(1).func(1).funcfile));
-            atlabbatch{1}.spm.stats.fmri_spec.sess(nsess).hpf = tr * (numel(Vfunc)-1);
+            matlabbatch{1}.spm.stats.fmri_spec.sess(nsess).hpf = tr * (numel(Vfunc)-1);
         end
     end
 end
@@ -324,10 +317,8 @@ clear fdata mask
 
 if contains(params.modality,'fmri')
     matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.0;
-elseif contains(params.modality,'fcbf')
-    matlabbatch{1}.spm.stats.fmri_spec.mthresh = -1.0; 
 elseif contains(params.modality,'fasl')
-    matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.0;
+    matlabbatch{1}.spm.stats.fmri_spec.mthresh = -1.0; 
 end
 matlabbatch{1}.spm.stats.fmri_spec.cvi = params.model_serial_correlations;
 matlabbatch{1}.spm.stats.fmri_spec.mask = {Vmask.fname};
