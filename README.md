@@ -36,8 +36,9 @@ Required software installed:
 * GIFT (https://trendscenter.org/software/gift/) to use ICA-AROMA denoising
 
 To use the Matlab script within SPM:
-* ACID SPM toolbox (http://www.diffusiontools.com/index.html)
+* ACID SPM toolbox (http://www.diffusiontools.com/index.html) (included in my_spmbatch)
 * MEHBfMRI SPM toolbox (https://github.com/P-VS/MEHBfMRI)
+* MRTool (https://www.nitrc.org/projects/mrtool/)
 
 To use the Python script (Linux annd Mac only):
 * Anaconda (https://www.anaconda.com/distribution/)
