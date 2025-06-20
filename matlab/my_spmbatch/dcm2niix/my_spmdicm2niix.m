@@ -137,7 +137,7 @@ function varargout = my_spmdicm2niix(src, niiFolder, fmt, outfname, useparfor)
 % 150209 Support output format for SPM style: 3D output;
 % 150405 Implement BrainVoyager dmr/fmr/vmr conversion: need BVQX_file. 
 % 150514 set_nii_ext: start to store txt edata (ecode=6).
-% 160127 dicm_hdr & dicm_img: support big endian dicom.
+% 160127 my_spmbatch_dicm_hdr & dicm_img: support big endian dicom.
 % 160229 reorient now makes det<0, instead negative 1st axis (cor slice affected).
 % 170404 set MB slice_code to 0 to avoid FreeSurfer error. Thx JacobM.
 % 170826 Use 'VolumeTiming' for missing volumes based on BIDS.
@@ -262,6 +262,7 @@ elseif ischar(src) % 1 dicom or zip/tgz file
 else
     error('Unknown dicom source.');
 end
+
 nFile = numel(fnames);
 if nFile<1, error(' No files found in the data source.'); end
 
@@ -277,7 +278,7 @@ pf.dicom_ext        = false; %getpref('dicm2nii_gui_para', 'dicom_ext', false);
 
 %% Check each file, store partial header in cell array hh
 %Check vendor
-vendortag = dicm_hdr(fnames{1},{'0008' '0070' 'LO' 'Manufacturer'});
+vendortag = my_spmbatch_dicm_hdr(fnames{1},{'0008' '0070' 'LO' 'Manufacturer'});
 
 if contains(upper(vendortag.Manufacturer),'GE MEDICAL'), isvendor='GE'; end
 if contains(upper(vendortag.Manufacturer),'SIEMENS'), isvendor='SIEMENS'; end
@@ -298,17 +299,17 @@ flds = {'Columns' 'Rows' 'BitsAllocated' 'SeriesInstanceUID' 'SeriesNumber' ...
     'PerFrameFunctionalGroupsSequence' ...
     'MRImageGradientOrientationNumber' 'MRImageLabelType' 'SliceNumberMR' 'PhaseNumber'};
 
-dict = dicm_dict(isvendor, flds); % dicm_hdr will update vendor if needed
+dict = my_spmbatch_dicm_dict(isvendor, flds); % my_spmbatch_dicm_hdr will update vendor if needed
 
 % read header for all files, use parpool if available and worthy
 if ~no_save, fprintf('Validating %g files ... ', nFile); end
 hh = cell(1, nFile); errStr = cell(1, nFile);
 doParFor = pf.use_parfor && nFile>2000 && useParTool;
 for k = 1:nFile
-    [hh{k}, errStr{k}, dict] = dicm_hdr(fnames{k}, dict);
+    [hh{k}, errStr{k}, dict] = my_spmbatch_dicm_hdr(fnames{k}, dict);
     if doParFor && ~isempty(hh{k}) % parfor wont allow updating dict
         parfor i = k+1:nFile
-            [hh{i}, errStr{i}] = dicm_hdr(fnames{i}, dict); 
+            [hh{i}, errStr{i}] = my_spmbatch_dicm_hdr(fnames{i}, dict); 
         end
         break; 
     end
@@ -387,8 +388,12 @@ end
 a = cellfun(@isempty, h);
 h(a) = []; hSuf(a) = [];
 
-%% sort each series by InstanceNumber
+%% sort each series by InstanceNumber and remove doubles
 for i = 1:numel(h)
+    sIN=cellfun(@(c)c.InstanceNumber, h{i});
+    [~, tin, ~] = unique(sIN);
+    th = h{i}(tin);
+    h{i} = th;
     try
         [~, ia] = sort(cellfun(@(c)c.InstanceNumber, h{i}));
         h{i} = h{i}(ia);
@@ -418,7 +423,7 @@ fldsCk = {'ImageOrientationPatient' 'NumberOfFrames' 'Columns' 'Rows' ...
 for i = 1:nRun
     s = h{i}{1};
     if ~isfield(s, 'LastFile') % avoid re-read for PAR/HEAD/BV file
-        s = dicm_hdr(s.Filename); % full header for 1st file
+        s = my_spmbatch_dicm_hdr(s.Filename); % full header for 1st file
     end
     if ~isfield(s, 'Manufacturer'), s.Manufacturer = 'Unknown'; end
     subjs{i} = PatientName(s);
@@ -462,7 +467,7 @@ for i = 1:nRun
             h{i}(ind) = []; % remove first or last, but keep the series
             nFile = nFile - 1;
             if ind(1) % re-do full header for new 1st file
-                s = dicm_hdr(h{i}{1}.Filename);
+                s = my_spmbatch_dicm_hdr(h{i}{1}.Filename);
                 s.isDTI = isDTI(s);
                 s.isEnh = isfield(s, 'PerFrameFunctionalGroupsSequence');
                 h{i}{1} = s;
@@ -483,10 +488,10 @@ for i = 1:nRun
         if numel(unique(diff(4)))>1 % like CMRR ISSS seq or multi echo. Error for UIH
             errorLog(['InstanceNumber discontinuity detected for ' series '.' ...
                 'See VolumeTiming in NIfTI ext or dcmHeaders.mat.']);
-            dict = dicm_dict('', {'AcquisitionDate' 'AcquisitionTime'});
+            dict = my_spm_batch_dicm_dict('', {'AcquisitionDate' 'AcquisitionTime'});
             vTime = nan(1, nFile);
             for j = 1:nFile
-                s2 = dicm_hdr(h{i}{j}.Filename, dict);
+                s2 = my_spmbatch_dicm_hdr(h{i}{j}.Filename, dict);
                 dt = [s2.AcquisitionDate s2.AcquisitionTime];
                 vTime(j) = datenum(dt, 'yyyymmddHHMMSS.fff'); %#ok<*DATNM>
             end
@@ -1026,7 +1031,7 @@ if ~isfield(h{1}, 'CardiacTriggerDelayTimes') && nVol>1 && isfield(h{1}, fld)
         iFrames = 1:dim(3):dim(3)*nVol;
         if isfield(h{1}, 'SortFrames'), iFrames = h{1}.SortFrames(iFrames); end
         s2 = struct(fld, nan(1,nVol));
-        s2 = dicm_hdr(h{1}, s2, iFrames);
+        s2 = my_spmbatch_dicm_hdr(h{1}, s2, iFrames);
         tt = s2.(fld);
     else
         tt = zeros(1, nVol);
@@ -1043,7 +1048,7 @@ if ~isfield(h{1}, 'EchoTimes') && nVol>1 && isfield(h{1}, 'EchoTime') && numel(h
     iFrames = 1:dim(3):dim(3)*nVol;
     if isfield(h{1}, 'SortFrames'), iFrames = h{1}.SortFrames(iFrames); end
     s2 = struct('EffectiveEchoTime', nan(1,nVol));
-    s2 = dicm_hdr(h{1}, s2, iFrames);
+    s2 = my_spmbatch_dicm_hdr(h{1}, s2, iFrames);
     ETs = s2.EffectiveEchoTime;
     if ~all(diff(ETs)==0), h{1}.EchoTimes = ETs; end
 end
@@ -1086,9 +1091,9 @@ end
 if isfield(s, 'FrameReferenceTime') && nVol>1
     inc = numel(h) / nVol;
     vTime = zeros(1, nVol);
-    dict = dicm_dict('', 'FrameReferenceTime');
+    dict = my_spmbatch_dicm_dict('', 'FrameReferenceTime');
     for j = 1:nVol
-        s2 = dicm_hdr(h{(j-1)*inc+1}.Filename, dict);
+        s2 = my_spmbatch_dicm_hdr(h{(j-1)*inc+1}.Filename, dict);
         vTime(j) = tryGetField(s2, 'FrameReferenceTime', 0);
     end
     if vTime(1) > vTime(end) % could also re-read sorted h{i}{1}
@@ -1398,9 +1403,9 @@ if isempty(t) && strncmpi(s.Manufacturer, 'UIH', 3)
             t(j) = datenum(str, 'yyyymmddHHMMSS.fff');
         end
     else
-        dict = dicm_dict('', 'AcquisitionDateTime');
+        dict = my_spm_batch_dicm_dict('', 'AcquisitionDateTime');
         for j = 1:nSL
-            s1 = dicm_hdr(h{j}.Filename, dict);
+            s1 = my_spmbatch_dicm_hdr(h{j}.Filename, dict);
             t(j) = datenum(s1.AcquisitionDateTime, 'yyyymmddHHMMSS.fff');
         end
     end
@@ -1446,11 +1451,11 @@ if isempty(t) && s.isEnh && ~isempty(csa_header(s, 'TimeAfterStart'))
     % Use TimeAfterStart, not FrameAcquisitionDatetime. See
     % https://github.com/rordenlab/dcm2niix/issues/240#issuecomment-433036901
     % s2 = struct('FrameAcquisitionDatetime', {cell(nSL,1)});
-    % s2 = dicm_hdr(h{end}, s2, 1:nSL);
+    % s2 = my_spmbatch_dicm_hdr(h{end}, s2, 1:nSL);
     % t = datetime(s2.FrameAcquisitionDatetime, 'InputFormat', 'yyyyMMddHHmmss.SSSSSS');
     % t = milliseconds(t - min(t));
     s2 = struct('TimeAfterStart', nan(1, nSL));
-    s2 = dicm_hdr(h{end}, s2, 1:nSL); % avoid 1st vol
+    s2 = my_spmbatch_dicm_hdr(h{end}, s2, 1:nSL); % avoid 1st vol
     t = s2.TimeAfterStart; % in secs
     t = (t - min(t)) * 1000;
 end
@@ -1459,10 +1464,10 @@ end
 % check, but GE/Philips AcquisitionTime seems useless
 if isempty(t) && ~tryGetField(s, 'isMos', 0) && ~s.isEnh && mod(numel(h), nSL)==0 ...
       && strncmpi(s.Manufacturer, 'SIEMENS', 7)
-    dict = dicm_dict('', {'AcquisitionDateTime' 'AcquisitionDate' 'AcquisitionTime'});
+    dict = my_spm_batch_dicm_dict('', {'AcquisitionDateTime' 'AcquisitionDate' 'AcquisitionTime'});
     t = zeros(nSL, 1);
     for j = 1:nSL
-        s1 = dicm_hdr(h{j}.Filename, dict);
+        s1 = my_spmbatch_dicm_hdr(h{j}.Filename, dict);
         try str = s1.AcquisitionDateTime;
         catch
             try str = [s1.AcquisitionDate s1.AcquisitionTime];
@@ -1542,7 +1547,7 @@ elseif s.isEnh
         if isfield(s, 'SortFrames'), iDir = s.SortFrames(iDir); end
         s2 = struct('B_value', bval', 'DiffusionGradientDirection', bvec', ...
             'MRDiffusionGradOrientation', bvec');
-        s2 = dicm_hdr(s, s2, iDir); % call search_MF_val
+        s2 = my_spmbatch_dicm_hdr(s, s2, iDir); % call search_MF_val
         bval = s2.B_value';
         bvec = s2.DiffusionGradientDirection';
         if all(isnan(bvec(:)))
@@ -1576,7 +1581,7 @@ elseif s.isEnh
         return;
     end
 elseif nFile>1 % multiple files: order already in slices then volumes
-    dict = dicm_dict(s.Manufacturer, {'B_value' 'B_factor' 'SlopInt_6_9' ...
+    dict = my_spmbatch_dicm_dict(s.Manufacturer, {'B_value' 'B_factor' 'SlopInt_6_9' ...
        'DiffusionDirectionX' 'DiffusionDirectionY' 'DiffusionDirectionZ' ...
        'MRDiffusionGradOrientation' 'ImageComments'});
     iDir = (0:nDir-1) * nFile/nDir + 1; % could be mosaic or multiframe
@@ -1586,7 +1591,7 @@ elseif nFile>1 % multiple files: order already in slices then volumes
         if val == 0, continue; end
         vec = tryGetField(s2, 'DiffusionGradientDirection'); % Siemens/Philips
         if isempty(val) || isempty(vec) % GE/UIH/CANON
-            s2 = dicm_hdr(s2.Filename, dict);
+            s2 = my_spmbatch_dicm_hdr(s2.Filename, dict);
         end
         
         if isempty(val), val = tryGetField(s2, 'B_factor'); end % old Philips
@@ -2240,7 +2245,7 @@ if n>0 && isfield(s, 'DimensionIndexSequence')
         'B_value' 'MRDiffusionSequence' 'DiffusionGradientDirection' ...
         'TemporalPositionTimeOffset' 'TemporalPositionIndex' ...
         'ImagePositionVolume' 'InStackPositionNumber'}; % last for slice
-    dict = dicm_dict(s.Manufacturer, ids);
+    dict = my_spmbatch_dicm_dict(s.Manufacturer, ids);
     [~, j] = ismember(ids, dict.name);
     tags = dict.tag(j(j>0)); % ids = dict.name(j(j>0))
     iPointer = zeros(1, n); % unknown pointers stay at beginning
@@ -2254,11 +2259,11 @@ if n>0 && isfield(s, 'DimensionIndexSequence')
     end
     [~, iPointer] = sort(iPointer); % sorted in order of ids
     s2 = struct('DimensionIndexValues', nan(n,nFrame));
-    s2 = dicm_hdr(s, s2, 1:nFrame);
+    s2 = my_spmbatch_dicm_hdr(s, s2, 1:nFrame);
     [sorted, ind] = sortrows(s2.DimensionIndexValues(iPointer,:)');
     if ~isequal(ind', 1:nFrame)
         if ind(1) ~= 1 || ind(end) ~= nFrame 
-            s = dicm_hdr(s.Filename, [], ind([1 end])); % re-read frames [1 end]
+            s = my_spmbatch_dicm_hdr(s.Filename, [], ind([1 end])); % re-read frames [1 end]
         end
         s.SortFrames = ind; % to sort img and get iVol/iSL for PerFrameSQ
     end
@@ -2363,7 +2368,7 @@ end
 
 try val = s.(sfgs).Item_1.(sq).Item_1.(fld); return; end
 try val = s.(pffgs).(sprintf('Item_%g', iFrame)).(sq).Item_1.(fld); return; end
-s1 = dicm_hdr(s, struct(fld, []), iFrame);
+s1 = my_spmbatch_dicm_hdr(s, struct(fld, []), iFrame);
 val = s1.(fld);
 
 %% subfunction: split nii components into multiple nii
@@ -2373,9 +2378,9 @@ if s.isEnh && strncmpi(s.Manufacturer, 'Siemens', 7)
     % do TE for now only. May add ICE_Dims "X" means combined
     nTE = asc_header(s, 'lContrasts', 1);
     if nTE<2, return; end
-    dict = dicm_dict('Siemens', 'EffectiveEchoTime');
+    dict = my_spmbatch_dicm_dict('Siemens', 'EffectiveEchoTime');
     for i = min(nTE, numel(h)):-1:1 % _SBRef has no 1st TE
-        s1 = dicm_hdr(h{i}.Filename, dict);
+        s1 = my_spmbatch_dicm_hdr(h{i}.Filename, dict);
         ETs(i) = s1.EffectiveEchoTime;
     end
     if numel(h) <= nTE % no split for vNav or _SBRef
@@ -2402,7 +2407,7 @@ if ~isfield(s, 'Volumes') % PAR file and single-frame file have this
     if isfield(s, 'SortFrames'), iFrames = s.SortFrames(iFrames); end
     s1 = struct(fld, {cell(1, nVol)}, 'MRScaleSlope', nan(1,nVol), ...
             'RescaleSlope', nan(1,nVol), 'RescaleIntercept', nan(1,nVol));
-    s.Volumes = dicm_hdr(s, s1, iFrames);
+    s.Volumes = my_spmbatch_dicm_hdr(s, s1, iFrames);
 end
 if ~isfield(s, 'Volumes'), return; end
 
@@ -2626,8 +2631,8 @@ end
 % In PDF: 0,10 - 3,13 - 6,16 - 9,19 - 1,11 - 4,14 - 7,17 - 2,12 - 5,15 - 8,18
 % result: 0,10 - 3,13 - 6,16 - 9,19 - 2,12 - 5,15 - 8,18 - 1,11 - 4,14 - 7,17
 function t = mb_slicetiming(s, TA)
-dict = dicm_dict(s.Manufacturer, 'CSAImageHeaderInfo');
-s2 = dicm_hdr(s.LastFile.Filename, dict);
+dict = my_spmbatch_dicm_dict(s.Manufacturer, 'CSAImageHeaderInfo');
+s2 = my_spmbatch_dicm_hdr(s.LastFile.Filename, dict);
 t = csa_header(s2, 'MosaicRefAcqTimes'); % try last volume first
 
 % No SL acc factor. Not even multiband flag. This is UGLY
@@ -2708,7 +2713,7 @@ if isempty(rows), return; end
 [~, ind] = sortrows(rows);
 h = h(ind);
 if ind(1) == 1, return; end % first file kept
-h{1} = dicm_hdr(h{1}.Filename); % read full hdr
+h{1} = my_spmbatch_dicm_hdr(h{1}.Filename); % read full hdr
 flds = fieldnames(s);
 [~, i] = ismember('PixelData', flds);
 for j = i+1:numel(flds)

@@ -32,22 +32,29 @@ for si=1:numel(params.mridata)
         tmp = find(~contains({dirlist.name},'._')); %Remove the hiden files from Mac from the list
         if ~isempty(tmp), dirlist = dirlist(tmp); end
     
-        tmp = find(contains({dirlist.name},'.zip'));    
-        if ~isempty(tmp)
-            for iz=1:numel(tmp)
-                fname = split(dirlist(tmp(iz)).name,'.zip');
-                if ~isfolder(fullfile(dirlist(tmp(iz)).folder,fname{1}))
-                    unzip(fullfile(dirlist(tmp(iz)).folder,dirlist(tmp(iz)).name),infolder)
-                end
-            end
-        end
-    
         dirlist = [dir(fullfile(infolder,['**' filesep '*MRDC*.*'])),...
                     dir(fullfile(infolder,['**' filesep '*.dcm'])),...
                     dir(fullfile(infolder,['**' filesep '*.DCM']))];
+
         if isempty(dirlist)
-            fprintf('No dicom files found')
-            return
+            tmp = find(contains({dirlist.name},'.zip'));    
+            if ~isempty(tmp)
+                for iz=1:numel(tmp)
+                    fname = split(dirlist(tmp(iz)).name,'.zip');
+                    if ~isfolder(fullfile(dirlist(tmp(iz)).folder,fname{1}))
+                        unzip(fullfile(dirlist(tmp(iz)).folder,dirlist(tmp(iz)).name),infolder)
+                    end
+                end
+            end
+    
+            dirlist = [dir(fullfile(infolder,['**' filesep '*MRDC*.*'])),...
+                        dir(fullfile(infolder,['**' filesep '*.dcm'])),...
+                        dir(fullfile(infolder,['**' filesep '*.DCM']))];
+
+            if ~isempty(tmp)
+                fprintf('No dicom files found')
+                return
+            end
         end
     
         my_spmdicm2niix(infolder, outfolder, '.nii', outfname, useparfor);
