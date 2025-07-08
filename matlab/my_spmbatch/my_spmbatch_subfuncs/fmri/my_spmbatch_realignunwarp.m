@@ -4,7 +4,6 @@ Vref = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ne).tprefix ppparams.
 Vfunc = spm_vol(fullfile(ppparams.subfuncdir,[ppparams.func(ne).tprefix ppparams.func(ne).funcfile]));
 
 wrap = [0 0 0];
-if params.func.pepolar, wrap(ppparams.pepolar.pedim) = 1; end
 
 %% estimate the realignment parameters
 if ne==params.func.echoes(1)
@@ -91,68 +90,6 @@ if ~params.func.pepolar
 
     % Reslice to reference image grid
     rfuncdat = my_spmbatch_reslice(P,Vref,roptions);
-end
-
-if params.func.pepolar
-    uweoptions = spm_get_defaults('unwarp.estimate');
-    uwroptions = spm_get_defaults('unwarp.write');
-    uweflags.fwhm      = 0; %uweoptions.fwhm;
-    uweflags.order     = uweoptions.basfcn;
-    uweflags.regorder  = uweoptions.regorder;
-    uweflags.lambda    = uweoptions.regwgt;
-    uweflags.jm        = uwroptions.jm;
-    uweflags.fot       = uweoptions.foe;
-    
-    if ~isempty(uweoptions.soe)
-        cnt = 1;
-        for i=1:size(uweoptions.soe,2)
-            for j=i:size(uweoptions.soe,2)
-                sotmat(cnt,1) = uweoptions.soe(i);
-                sotmat(cnt,2) = uweoptions.soe(j);
-                cnt = cnt+1;
-            end
-        end
-    else
-        sotmat = [];
-    end
-    uweflags.sot       = sotmat;
-    uweflags.fwhm      = uweoptions.fwhm;
-    uweflags.rem       = 0;
-    uweflags.noi       = uweoptions.noi;
-    uweflags.exp_round = 'First';
-    
-    uwrflags.interp    = 4;
-    uwrflags.rem       = 0;
-    uwrflags.wrap      = wrap;
-    uwrflags.mask      = 1;
-    uwrflags.which     = 2;
-    uwrflags.mean      = 0;
-    uwrflags.jm        = uwroptions.jm;
-    pref    = 'ur';
-    
-    if uweflags.jm == 1
-        uwrflags.udc = 2;
-    else
-        uwrflags.udc = 1;
-    end
-    
-    sfP = spm_vol(ppparams.pepolar.vdm);
-    P = Vfunc(nt:nt+nvols-1);
-    for i=1:nvols
-        P(i).mat = ppparams.realign.R(nt+i-1).mat;
-    end
-
-    %-Unwarp Estimate
-    %--------------------------------------------------------------------------
-    uweflags.sfP = sfP;
-    uweflags.M = Vref.mat;
-
-    ds = my_spmbatch_uw_estimate(P,Vref,uweflags);
-
-    %-Unwarp Write - Sessions should be within subjects
-    %--------------------------------------------------------------------------
-    rfuncdat = my_spmbatch_uw_apply(cat(2,ds),Vref,uwrflags);
-    rfuncdat(rfuncdat<0) = 0;
 end
 
 if nt==1, prefix = [pref prefix]; end
