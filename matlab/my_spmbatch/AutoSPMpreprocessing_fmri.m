@@ -26,7 +26,7 @@ function AutoSPMpreprocessing_fmri
 
 %% Give path to SPM25 and GroupICA
 
-params.spm_path = '/Users/accurad/Library/Mobile Documents/com~apple~CloudDocs/Matlab/spm25';
+params.spm_path = '/Users/accurad/Library/Mobile Documents/com~apple~CloudDocs/Matlab/spm12';
 params.GroupICAT_path = '/Users/accurad/Library/Mobile Documents/com~apple~CloudDocs/Matlab/GroupICATv40c';
 
 %% Give the basic input information of your data
