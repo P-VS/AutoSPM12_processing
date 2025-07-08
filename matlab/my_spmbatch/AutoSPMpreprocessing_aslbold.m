@@ -24,22 +24,22 @@ function AutoSPMpreprocessing_aslbold
 
 %Script written by dr. Peter Van Schuerbeek (Radiology UZ Brussel)
 
-%% Give path to SPM12 and GroupICA
+%% Give path to SPM25 and GroupICA
 
-params.spm_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/spm12';
-params.GroupICAT_path = '/Users/accurad/Library/CloudStorage/OneDrive-Personal/Matlab/GroupICATv40c';
+params.spm_path = '/Users/accurad/Library/Mobile Documents/com~apple~CloudDocs/Matlab/spm25';
+params.GroupICAT_path = '/Users/accurad/Library/Mobile Documents/com~apple~CloudDocs/Matlab/GroupICATv40c';
 
 %% Give the basic input information of your data
 
 datpath = '/Volumes/LaCie/UZ_Brussel/ASLBOLD_OpenNeuro_FT/IndData';
 
-sublist = [2:13];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
+sublist = [1];%list with subject id of those to preprocess separated by , (e.g. [1,2,3,4]) or alternatively use sublist = [first_sub:1:last_sub]
 params.sub_digits = 2; %if 2 the subject folder is sub-01, if 3 the subject folder is sub-001, ...
 
 nsessions = [1]; %nsessions>0
 
-params.func_save_folder = 'preproc_dune_bold'; %name of the folder to save the preprocessed bold data
-params.perf_save_folder = 'preproc_dune_cbf'; %name of the folder to save the preprocessed asl data
+params.func_save_folder = 'preproc_spm25_bold'; %name of the folder to save the preprocessed bold data
+params.perf_save_folder = 'preproc_spm25_cbf'; %name of the folder to save the preprocessed asl data
 
 task ={'bilateralfingertapping'};
 
@@ -58,8 +58,8 @@ params.save_intermediate_results = true; %clean up the directory by deleting unn
 
 %% Which analyses to do
 params.preprocess_anatomical = false;  %(default=true)  
+params.preprocess_functional = false; %(default=true)
 params.preprocess_asl = true; %(default=true)
-params.preprocess_functional = true; %(default=true)
 
 %% FMRI parameters
 params.func.meepi = true; %true if echo number is in filename (default=true)
@@ -67,7 +67,7 @@ params.func.echoes = [1:4]; %the index of echoes in ME-fMRI used in the analysis
 
 params.func.dummytime = 0; %time in seconds (default=2*TR)
 
-params.func.fmapscan = false; %true if fmap scan exist otherwise false (default=true)
+params.func.pepolar = false; %true if fmap scan exist otherwise false (default=true)
 
 %% ASL Parameters
 params.asl.temp_resolution = 'original'; %tempporal resolution of the gennerated CBF series
@@ -76,7 +76,7 @@ params.asl.temp_resolution = 'original'; %tempporal resolution of the gennerated
 % 'reduced' : the mean CBF over a few timepoints (e.g. per minute) 
 params.asl.dt = 40; %new temporal resolution in seconds if params.asl.temp_resolution = 'reduced'
 
-params.asl.splitaslbold = 'dune'; %'meica' or 'dune' (default='meica') 
+params.asl.splitaslbold = 'meica'; %'meica' or 'dune' (default='meica') 
 %'meica': after filtering, ME-ICA (tedana based)
 %'dune': experimental splitting method
 
@@ -108,8 +108,8 @@ params.asl.splitaslbold = 'dune'; %'meica' or 'dune' (default='meica')
     % Realignnment (motion correction)
     params.func.do_realignment = true; %(default=true)
     
-    % Geometric correction
-    if params.func.fmapscan, params.func.pepolar = true; else params.func.pepolar = false; end
+    % Detect and correct bad volumes
+    params.func.do_ArtRepair = true; %(default=true)
 
     %Denoising before echo combination and normalization ussing the
     %parameters from params.denoise

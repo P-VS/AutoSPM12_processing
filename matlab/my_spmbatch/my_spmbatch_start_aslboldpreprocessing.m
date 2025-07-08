@@ -9,7 +9,10 @@ if ~contains(params.func.combination,'none'), params.func.do_echocombination = t
 if contains(params.asl.splitaslbold,'meica')
     params.denoise.do_mot_derivatives = true;
     params.denoise.do_aCompCor = false;
+    params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal (default=5)
     params.denoise.do_bpfilter = false;
+    params.denoise.bpfilter = [0.008 Inf]; %no highpass filter is first 0, no lowpass filter is last Inf, default=[0.008 Inf]
+    params.denoise.polort = 1; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend, default=2)
     params.denoise.do_ICA_AROMA = true;
     params.denoise.do_noiseregression = true;
     params.denoise.do_DUNE = false;
@@ -17,7 +20,10 @@ end
 if contains(params.asl.splitaslbold,'dune')
     params.denoise.do_mot_derivatives = true;
     params.denoise.do_aCompCor = false;
+    params.denoise.Ncomponents = 5; %if in range [0 1] then the number of aCompCor components is equal to the number of components that explain the specified percentage of variation in the signal (default=5)
     params.denoise.do_bpfilter = false;
+    params.denoise.bpfilter = [0.008 Inf]; %no highpass filter is first 0, no lowpass filter is last Inf, default=[0.008 Inf]
+    params.denoise.polort = 1; %order of the polynomial function used to remove the signal trend (0: only mean, 1: linear trend, 2: quadratic trend, default=2)
     params.denoise.do_ICA_AROMA = false;
     params.denoise.do_noiseregression = false;
     params.denoise.do_DUNE = true;
