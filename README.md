@@ -1,3 +1,6 @@
+THIS VERSION IS NO LONGER ACTIVELY DEVELOPED OR SUPORTED. A NEW SPM25 BASED VERSIONS CAN BE FOUND AT https://github.com/P-VS/my_SPM_AutoProcessingBatch
+
+
 UZB-fmr-processing-scripts
 
 This repository contains the scripts used at UZ Brussel to standardise, optimise and automate the processing of single echo and multi-echo fMRI data. Additionally, a batch script is provided to do the segmentation in CAT12 for VBM.
