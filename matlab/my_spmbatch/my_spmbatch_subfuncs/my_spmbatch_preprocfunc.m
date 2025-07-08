@@ -11,6 +11,10 @@ for ie=ppparams.echoes
         prefsplit = split(ppparams.func(ie).prefix,'f');
         ppparams.func(ie).perffile = ['f' prefsplit{end} fname{1} '_label.nii'];
     end
+    
+    if params.func.do_ArtRepair && ~contains(ppparams.func(ie).prefix,'v')
+        [ppparams,delfiles,keepfiles] = my_spmbatch_artrepair(ppparams,params,ie,delfiles,keepfiles);
+    end
 end
 
 %% Slice time correction
